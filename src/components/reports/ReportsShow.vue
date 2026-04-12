@@ -251,7 +251,7 @@ const REPORT_ACTIONS = [
   {
     text: t("reports.actions.edit"),
     icon: "basil:edit-outline",
-    color: "green",
+    color: "blue",
     action: "edit",
   },
   {

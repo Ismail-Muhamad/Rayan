@@ -1,9 +1,5 @@
 <template>
-  <BasePageWrapper
-    titleKey="farms.title"
-    subtitleKey="farms.subtitle"
-    iconName="solar:buildings-3-outline"
-  >
+  <BasePageWrapper titleKey="farms.title" subtitleKey="farms.subtitle" iconName="solar:buildings-3-outline">
     <div class="farms">
       <section class="farms__hero">
         <div class="farms__hero-content">
@@ -22,11 +18,7 @@
       </section>
 
       <div class="farms__stats">
-        <article
-          v-for="stat in overviewStats"
-          :key="stat.key"
-          class="farms__stat-card"
-        >
+        <article v-for="stat in overviewStats" :key="stat.key" class="farms__stat-card">
           <div class="farms__stat-icon">
             <BaseIcon :name="stat.icon" />
           </div>
@@ -38,25 +30,11 @@
       </div>
 
       <div class="farms__list">
-        <BaseTable
-          :headers="TABLE_HEADERS"
-          :items="farmsList"
-          :meta="meta"
-          :isLoading="uiFlags.isFetchingList"
-          :title="t('farms.list.table_title')"
-          :search-placeholder="t('farms.list.search_placeholder')"
-          pagination
-          bordered
-          @onPageChange="fetchRecords"
-          @on-search="handleTableSearch"
-        >
+        <BaseTable :headers="TABLE_HEADERS" :items="farmsList" :meta="meta" :isLoading="uiFlags.isFetchingList"
+          :title="t('farms.list.table_title')" :search-placeholder="t('farms.list.search_placeholder')" pagination
+          bordered @onPageChange="fetchRecords" @on-search="handleTableSearch">
           <template #buttons>
-            <BaseButton
-              variant="soft"
-              color="green"
-              size="sm"
-              @click="router.push({ name: 'create_farm' })"
-            >
+            <BaseButton variant="soft" color="blue" size="sm" @click="router.push({ name: 'create_farm' })">
               <BaseIcon name="solar:add-circle-outline" />
               {{ t('auth.register.actions.add_farm') }}
             </BaseButton>
@@ -68,10 +46,7 @@
                 <BaseIcon name="solar:buildings-3-outline" />
               </div>
               <div class="farm-row__content">
-                <router-link
-                  class="farm-row__name"
-                  :to="{ name: 'show_farm', params: { id: item.id } }"
-                >
+                <router-link class="farm-row__name" :to="{ name: 'show_farm', params: { id: item.id } }">
                   {{ item.farm_name }}
                 </router-link>
                 <p class="farm-row__meta">
@@ -108,22 +83,12 @@
 
           <template #actions="{ item }">
             <div class="farms__actions-cell">
-              <BaseButton
-                variant="soft"
-                color="green"
-                size="icon-sm"
-                @click="router.push({ name: 'show_farm', params: { id: item.id } })"
-              >
+              <BaseButton variant="soft" color="blue" size="icon-sm"
+                @click="router.push({ name: 'show_farm', params: { id: item.id } })">
                 <BaseIcon name="solar:eye-outline" />
               </BaseButton>
-              <BaseButton
-                dropdown
-                variant="soft"
-                color="gray"
-                size="icon-sm"
-                :dropdownItems="ROW_ACTIONS"
-                @dropdown-select="(action) => triggerShowModal(action.key, item)"
-              >
+              <BaseButton dropdown variant="soft" color="gray" size="icon-sm" :dropdownItems="ROW_ACTIONS"
+                @dropdown-select="(action) => triggerShowModal(action.key, item)">
                 <BaseIcon name="pepicons-pop:dots-y" />
               </BaseButton>
             </div>
@@ -301,12 +266,12 @@ const triggerShowModal = (action, item) => {
     align-items: center;
     gap: 20px;
     padding: 24px;
-    border: 1px solid var(--emerald-100);
     border-radius: 24px;
+    border: 1px solid var(--blue-100);
     background:
-      linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(255, 255, 255, 0.98)),
+      linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(255, 255, 255, 0.98)),
       var(--white);
-    box-shadow: 0 20px 40px rgba(2, 44, 34, 0.08);
+    box-shadow: 0 20px 40px rgba(30, 64, 175, 0.08);
   }
 
   &__hero-content {
@@ -318,8 +283,8 @@ const triggerShowModal = (action, item) => {
     align-items: center;
     padding: 6px 12px;
     border-radius: 999px;
-    background-color: var(--emerald-100);
-    color: var(--emerald-800);
+    background-color: var(--blue-100);
+    color: var(--blue-800);
     font-size: 1.25rem;
     font-weight: 700;
     margin-block-end: 12px;
@@ -369,8 +334,8 @@ const triggerShowModal = (action, item) => {
     align-items: center;
     justify-content: center;
     border-radius: 16px;
-    background: linear-gradient(135deg, var(--emerald-100), var(--green-50));
-    color: var(--emerald-700);
+background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
+color: var(--blue-700);
     font-size: 2rem;
     flex-shrink: 0;
   }
@@ -422,8 +387,8 @@ const triggerShowModal = (action, item) => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--green-100), var(--emerald-50));
-    color: var(--emerald-700);
+    background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
+    color: var(--blue-700);
     font-size: 2.8rem;
   }
 
@@ -454,8 +419,8 @@ const triggerShowModal = (action, item) => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--emerald-100), var(--green-50));
-    color: var(--emerald-700);
+    background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
+    color: var(--blue-700);
     font-size: 2rem;
   }
 
@@ -467,7 +432,7 @@ const triggerShowModal = (action, item) => {
   }
 
   &__name {
-    color: var(--emerald-700);
+    color: var(--blue-700);
     font-size: 1.65rem;
     font-weight: 800;
     text-decoration: none;
@@ -506,8 +471,8 @@ const triggerShowModal = (action, item) => {
 
 .farm-chip {
   &--emerald {
-    background-color: var(--emerald-50);
-    color: var(--emerald-700);
+    background-color: var(--blue-50);
+    color: var(--blue-700);
   }
 
   &--amber {
@@ -525,8 +490,8 @@ const triggerShowModal = (action, item) => {
   min-width: 42px;
 
   &--emerald {
-    background-color: var(--emerald-100);
-    color: var(--emerald-800);
+    background-color: var(--blue-100);
+    color: var(--blue-800);
   }
 
   &--amber {

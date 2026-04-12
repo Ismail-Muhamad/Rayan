@@ -32,7 +32,7 @@
 
           <div class="farm__hero-actions">
             <BaseButton
-              color="gray"
+              color="blue"
               variant="outline"
               size="sm"
               @click="router.push({ name: 'farms_list' })"
@@ -41,6 +41,7 @@
               {{ t('farms.actions.back') }}
             </BaseButton>
             <BaseButton
+              color="blue"
               size="sm"
               @click="router.push({ name: 'edit_farm', params: { id: currentRouteId } })"
             >
@@ -162,7 +163,7 @@
                     </div>
                     <BaseButton
                       variant="soft"
-                      color="green"
+                      color="blue"
                       size="sm"
                       :loading="exportingReportId === report.id"
                       @click="handleDownloadReport(report)"
@@ -510,11 +511,11 @@ const handleDownloadReport = async (report) => {
     gap: 20px;
     padding: 24px;
     border-radius: 24px;
-    border: 1px solid var(--emerald-100);
-    background:
-      linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(255, 255, 255, 0.98)),
-      var(--white);
-    box-shadow: 0 20px 40px rgba(2, 44, 34, 0.08);
+border: 1px solid var(--blue-100);
+background:
+  linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(255, 255, 255, 0.98)),
+  var(--white);
+box-shadow: 0 20px 40px rgba(30, 64, 175, 0.08);
   }
 
   &__hero-copy {
@@ -525,8 +526,8 @@ const handleDownloadReport = async (report) => {
     display: inline-flex;
     padding: 6px 12px;
     border-radius: 999px;
-    background-color: var(--emerald-100);
-    color: var(--emerald-800);
+background-color: var(--blue-100);
+color: var(--blue-800);
     font-size: 1.25rem;
     font-weight: 700;
     margin-block-end: 12px;
@@ -572,8 +573,8 @@ const handleDownloadReport = async (report) => {
     }
 
     &--emerald {
-      background-color: var(--emerald-100);
-      color: var(--emerald-800);
+background-color: var(--blue-100);
+color: var(--blue-800);
     }
   }
 
@@ -623,8 +624,8 @@ const handleDownloadReport = async (report) => {
     align-items: center;
     justify-content: center;
     border-radius: 16px;
-    background: linear-gradient(135deg, var(--emerald-100), var(--green-50));
-    color: var(--emerald-700);
+background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
+color: var(--blue-700);
     flex-shrink: 0;
     font-size: 2rem;
   }
@@ -701,13 +702,13 @@ const handleDownloadReport = async (report) => {
 
   &__pill {
     &--emerald {
-      background-color: var(--emerald-50);
-      color: var(--emerald-700);
+background-color: var(--blue-50);
+color: var(--blue-700);
     }
 
     &--amber {
-      background-color: var(--amber-50);
-      color: var(--amber-700);
+background-color: var(--blue-100);
+color: var(--blue-800);
     }
 
     &--slate {
