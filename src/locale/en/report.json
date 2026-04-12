@@ -1,0 +1,44 @@
+{
+  "title": "Monthly Agricultural Report",
+  "subtitle": "Track fertilization, irrigation, and spraying activities",
+  "form": {
+    "labels": {
+      "fertilization": "Fertilization",
+      "fertilization_per_tree": "Fertilization Per Tree (kg)",
+      "fertilization_total": "Fertilization Total (kg)",
+      "irrigation": "Irrigation",
+      "irrigation_per_tree": "Irrigation Per Tree (L)",
+      "irrigation_total": "Irrigation Total (L)",
+      "spraying": "Spraying",
+      "spraying_per_tree": "Spraying Per Tree (ml)",
+      "spraying_total": "Spraying Total (ml)"
+    },
+    "placeholders": {
+      "fertilization": "Enter fertilization",
+      "irrigation": "Enter irrigation",
+      "spraying": "Enter spraying"
+    },
+    "options": {
+      "week": "Week",
+      "weeks": "Weeks",
+      "day": "Day",
+      "date": "Date",
+      "week_number": {
+        "1": "Week 1",
+        "2": "Week 2",
+        "3": "Week 3",
+        "4": "Week 4"
+      }
+    },
+    "actions": {
+      "add_fertilization": "Add Fertilization"
+    }
+  },
+  "actions": {
+    "submit": "Submit Report",
+    "saveDraft": "Save as Draft",
+    "reset": "Reset",
+    "print": "Print",
+    "export": "Export"
+  }
+}

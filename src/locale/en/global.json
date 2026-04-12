@@ -1,0 +1,75 @@
+{
+  "TABLE": {
+    "CUSTOMIZE_COLUMNS": "Customize Columns",
+    "REQUIRED": "Required",
+    "EMPTY": "No available data can be shown",
+    "PAGINATION": {
+      "INFO": {
+        "SHOWING": "Showing",
+        "TO": "to",
+        "OF": "of",
+        "ENTRIES": "entries"
+      },
+      "CONTROLS": {
+        "PREVIOUS": "Previous",
+        "NEXT": "Next"
+      }
+    },
+    "SEARCH": "Enter search term"
+  },
+  "ACTIONS": {
+    "EDIT": "Edit",
+    "DELETE": "Delete",
+    "VIEW": "View",
+    "ADD": "Add",
+    "CANCEL": "Cancel",
+    "SAVE": "Save",
+    "CLOSE": "Close",
+    "APPLY": "Apply",
+    "ADD_NEW": "Add New",
+    "DUPLICATE": "Duplicate",
+    "OPEN_IN_BUILDER": "Open in Builder"
+  },
+  "DOWNLOAD": {
+    "CSV": "Download as CSV",
+    "EXCEL": "Download as Excel",
+    "PDF": "Download as PDF"
+  },
+  "MESSAGES": {
+    "SUCCESS": {
+      "SAVE": "Data was saved successfully! 🎉",
+      "DELETE": "Data was deleted successfully!",
+      "UPDATE": "Data was updated successfully!",
+      "BATCH_DELETE": "Data was deleted successfully!"
+    },
+    "FAILURE": {
+      "SAVE": "Failed to save data. Please try again.",
+      "DELETE": "Failed to delete data. Please try again.",
+      "UPDATE": "Failed to update data. Please try again.",
+      "BATCH_DELETE": "Failed to delete data. Please try again."
+    },
+    "WARNING": {
+      "UNSAVED_CHANGES": "You have unsaved changes. Do you really want to leave?",
+      "DELETE_CONFIRMATION": "Are you sure you want to delete this item?"
+    },
+    "INFO": {
+      "NO_RESULTS": "No results found.",
+      "LOADING": "Loading, please wait..."
+    },
+    "LOGIN": {
+      "SUCCESS": "Login successful! Welcome back.",
+      "FAILURE": "Login failed. Please check your credentials and try again.",
+      "LOCKED": "Your account is locked. Please contact support.",
+      "REQUIRED": "Username and password are required.",
+      "LOGOUT": "You have been logged out successfully."
+    },
+    "SIGNUP": {
+      "SUCCESS": "Signup successful! Welcome aboard.",
+      "FAILURE": "Signup failed. Please try again later.",
+      "EMAIL_EXISTS": "This email is already in use. Please try another one.",
+      "WEAK_PASSWORD": "Your password is too weak. Please choose a stronger one.",
+      "REQUIRED": "All fields are required to complete the signup."
+    },
+    "EMPTY": "No available data can be shown"
+  }
+}

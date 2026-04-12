@@ -1,0 +1,98 @@
+{
+  "title": "التقارير",
+  "subtitle": "انشاء التقارير الشهرية للمزارع وادارتها",
+  "table": {
+    "headers": {
+      "farm_info": "معلومات المزرعة",
+      "farm_name": "اسم المزرعة",
+      "location": "الموقع",
+      "tree_type": "نوع النخيل",
+      "palm_type": "نوع النخيل",
+      "palm_types": "أنواع النخيل",
+      "palm_age": "عمر النخيل (بالسنوات)",
+      "palm_count": "عدد النخيل",
+      "month": "الشهر",
+      "owner_name": "اسم المالك",
+      "actions": "الإجراءات"
+    }
+  },
+  "form": {
+    "labels": {
+      "owner": "المالك",
+      "farm": "المزرعة",
+      "palm_type": "نوع النخيل",
+      "month": "الشهر",
+      "review": "المعاينة الفنية",
+      "recommendations": "التوصيات الفنية",
+      "day": "اليوم",
+      "date": "التاريخ",
+      "type_of_fertilization": " نوع التسميد",
+      "fertilizer_quantity_per_palm_tree": "كمية التسميد لكل نخلة (جرام)",
+      "fertilization_total": "إجمالي التسميد (كجم)",
+      "irrigation_amount_per_palm_tree": "كمية الري لكل نخلة (لتر)",
+      "duration_of_irrigation_per_palm_tree": "مدة الري لكل نخلة (دقيقة)",
+      "total_amount_of_irrigation": "إجمالي كمية الري",
+      "spraying": "نوع المبيد",
+      "spraying_per_tree": "كمية المبيد لكل نخلة",
+      "amount_of_spray": "إجمالي كمية المبيد لكل نخلة (جرام)"
+    },
+    "placeholders": {
+      "owner": "اختر المالك",
+      "farm": "اختر المزرعة",
+      "palm_type": "اختر نوع النخيل",
+      "month": "اختر الشهر",
+      "review": "أدخل بيانات المعينة الفنية",
+      "recommendations": "أدخل بيانات التوصيات الفنية",
+      "day": "اختر اليوم",
+      "date": "اختر التاريخ",
+      "fertilizations": "أدخل بيانات التسميد",
+      "type_of_fertilization": "أدخل نوع التسميد",
+      "fertilizer_quantity_per_palm_tree": "أدخل كمية السماد لكل نخلة",
+      "irrigation_amount_per_palm_tree": "أدخل كمية الري لكل نخلة",
+      "duration_of_irrigation_per_palm_tree": "أدخل مدة الري لكل نخلة",
+      "total_amount_of_irrigation": "أدخل إجمالي كمية الري",
+      "spraying": "أدخل نوع الرش",
+      "amount_of_spray": "أدخل كمية الرش"
+    },
+    "options": {
+      "week": "الأسبوع",
+      "weeks": "الأسابيع",
+      "day": "اليوم",
+      "date": "التاريخ",
+      "week_number": {
+        "1": "الأسبوع الأول",
+        "2": "الأسبوع الثاني",
+        "3": "الأسبوع الثالث",
+        "4": "الأسبوع الرابع"
+      },
+      "days": {
+        "0": "الإثنين",
+        "1": "الثلاثاء",
+        "2": "الأربعاء",
+        "3": "الخميس",
+        "4": "الجمعة",
+        "5": "السبت",
+        "6": "الأحد"
+      }
+    }
+  },
+  "dialogs": {
+    "delete": {
+      "title": "حذف التقرير",
+      "message": "هل أنت متأكد من حذف تقرير شهر <strong>{month}</strong> الخاص بالمزرعة <strong>{farm_name}</strong> لنوع النخيل <strong>{palm_type}</strong>؟"
+    }
+  },
+  "actions": {
+    "submit": "حفظ التغييرات",
+    "saveDraft": "حفظ كمسودة",
+    "reset": "إعادة تعيين",
+    "print": "طباعة",
+    "export": "تصدير",
+    "cancel": "إلغاء",
+    "add_fertilization": "إضافة تسميد",
+    "create": "إنشاء تقرير",
+    "edit": "تعديل التقرير",
+    "delete": "حذف التقرير",
+    "download": "تحميل التقرير"
+  }
+}

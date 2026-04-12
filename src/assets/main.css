@@ -1,0 +1,99 @@
+/* DatePicker */
+.dp__main {
+  --font-family: "Ubuntu", sans-serif;
+  --dp-font-size: 16px;
+  height: 100%;
+  --dp-font-family: var(--font-family);
+}
+.dp__menu {
+  --font-family: "Ubuntu", sans-serif;
+  --dp-font-family: var(--font-family);
+}
+.dp--menu-wrapper {
+  --dp-font-size: 16px;
+}
+
+.dp__main > div {
+  height: 100%;
+  /* display: flex; */
+  /* align-items: center; */
+}
+
+.dp__input_wrap {
+  height: 100%;
+}
+
+.dp__input {
+  --dp-border-radius: 8px;
+  --dp-border-color: var(--gray-300);
+  --dp-border-color-focus: var(--blue-500);
+  --dp-border-color-hover: var(--gray-300);
+  height: 100%;
+  border: none;
+  border-radius: var(--dp-border-radius);
+  background-color: var(--white);
+  padding-inline-start: 40px;
+  border: 1px solid var(--dp-border-color);
+}
+
+.dp__input:not(.dp__input_focus):hover {
+  --dp-border-color-hover: var(--gray-300);
+  border-color: var(--dp-border-color-hover);
+}
+.dp__input_focus {
+  box-shadow: 0 0 0 4px var(--blue-50);
+}
+
+/* .dp__clear_icon {
+  display: none;
+} */
+.dp__icon {
+  color: var(--blue-600);
+}
+.dp__arrow_top {
+  --dp-menu-border-color: var(--gray-300);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+[dir="rtl"] .dp__arrow_top {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* Vue FloatingVue */
+.v-popper__popper {
+  max-width: 380px;
+}
+.v-popper--theme-tooltip .v-popper__inner {
+  font-size: 1.4rem;
+  background: var(--gray-700) !important;
+}
+.v-popper__arrow-container {
+  display: none;
+}
+[dir="rtl"] .ql-editor {
+  direction: rtl;
+  text-align: start;
+}
+[dir="rtl"] .ql-editor li[data-list="bullet"]::before {
+  width: 5px;
+  height: 5px;
+  background: #000;
+  border-radius: 50%;
+  content: "";
+}
+
+[dir="rtl"] .ql-editor li:not(.ql-direction-rtl)::before {
+  margin-left: 0;
+}
+.ql-toolbar.ql-snow,
+.ql-container.ql-snow {
+  border: 1px solid var(--gray-300);
+}
+
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.ql-container.ql-snow {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}

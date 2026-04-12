@@ -1,0 +1,18 @@
+{
+  "TABLE": {
+    "USER_NAME": "User name",
+    "WHATSAPP_NUMBER": "Whatsapp Number",
+    "PHONE_NUMBER": "Phone Number",
+    "SERVICE": "Service",
+    "MESSAGE": "Message",
+    "CREATED_AT": "Created At"
+  },
+  "SERVICES": {
+    "consulting": "خدمة الاستشارات الزراعية",
+    "management": "خدمة الإدارة الكاملة للمزرعة",
+    "supply": "خدمة توريد الأسمدة والمبيدات",
+    "palm": "خدمة توريد فسائل وأنسجة النخيل",
+    "visit": "خدمة الزيارة والمعاينة للمزرعة",
+    "daily": "خدمة إنجاز المهام اليومية والعمليات الفنية"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "title": "المستخدمين",
+  "subtitle": "قائمة المستخدمين",
+  "table": {
+    "headers": {
+      "user_name": "اسم المستخدم",
+      "whatsapp_number": "رقم الواتساب",
+      "email": "البريد الإلكتروني",
+      "created_at": "تاريخ الإنشاء",
+      "status": "الحالة",
+      "user_info": "معلومات المستخدم",
+      "farms_info": "معلومات المزارع الخاصة بالمستخدم",
+      "farm_info": "معلومات المزرعة رقم {number}",
+      "farm_name": "اسم المزرعة",
+      "location": "الموقع",
+      "palm_type": "نوع النخيل",
+      "palm_types": "أنواع النخيل",
+      "palm_count": "عدد النخيل",
+      "palm_age": "عمر النخيل (بالسنوات)",
+      "month": "شهر",
+      "owner_name": "اسم المالك",
+      "actions": "الإجراءات",
+      "review": "المعاينة الفنية",
+      "recommendations": "التوصيات الفنية",
+      "reports": "التقارير"
+    }
+  },
+  "dialogs": {
+    "active": {
+      "title": "تفعيل الحساب",
+      "description": "هل انت متاكد من تفعيل حساب <strong>{name}</strong>"
+    },
+    "rejected": {
+      "title": "الغاء تفعيل الحساب",
+      "description": "هل انت متاكد من الغاء تفعيل حساب <strong>{name}</strong>"
+    },
+    "delete": {
+      "title": "حذف الحساب",
+      "description": "هل انت متاكد من حذف حساب <strong>{name}</strong>"
+    }
+  },
+  "actions": {
+    "active": "تفعيل الحساب",
+    "rejected": "الغاء تفعيل الحساب",
+    "delete": "حذف الحساب",
+    "cancel": "الغاء"
+  },
+  "status": {
+    "active": "مفعل",
+    "pending": "قيد الانتظار",
+    "rejected": "مرفوض"
+  }
+}

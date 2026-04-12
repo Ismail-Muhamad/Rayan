@@ -1,0 +1,202 @@
+{
+  "DASHBOARD": {
+    "TEXT": "Dashboard"
+  },
+  "CONVERSATIONS": {
+    "TEXT": "Conversations"
+  },
+  "CONTACTS": {
+    "TEXT": "Contacts"
+  },
+  "BROADCAST": {
+    "TEXT": "Broadcast"
+  },
+  "WORKFLOWS": {
+    "TEXT": "Workflows"
+  },
+  "PAGE_BUILDER": {
+    "TEXT": "Page Builder"
+  },
+  "WEBPHONE": {
+    "TEXT": "Webphone"
+  },
+  "REPORTS": {
+    "TEXT": "Reports",
+    "CHILDREN": {
+      "REPORTS_CONVERSATIONS": {
+        "TEXT": "Conversations",
+        "TITLE": "Conversations"
+      },
+      "REPORTS_RESPONSES": {
+        "TEXT": "Responses",
+        "TITLE": "Responses"
+      },
+      "REPORTS_RESOLUTIONS": {
+        "TEXT": "Resolutions",
+        "TITLE": "Resolutions"
+      },
+      "REPORTS_MESSAGES": {
+        "TEXT": "Messages",
+        "TITLE": "Messages"
+      },
+      "REPORTS_CONTACTS": {
+        "TEXT": "Contacts",
+        "TITLE": "Contacts"
+      },
+      "REPORTS_ASSIGNMENTS": {
+        "TEXT": "Assignments",
+        "TITLE": "Assignments"
+      },
+      "REPORTS_LEADERBOARD": {
+        "TEXT": "Leaderboard",
+        "TITLE": "Leaderboard"
+      },
+      "REPORTS_USERS": {
+        "TEXT": "Users",
+        "TITLE": "Users"
+      },
+      "REPORTS_BROADCAST": {
+        "TEXT": "Broadcast",
+        "TITLE": "Broadcast"
+      }
+    }
+  },
+  "SETTINGS": {
+    "TEXT": "Settings",
+    "CHILDREN": {
+      "PERSONAL_SETTINGS": {
+        "TEXT": "Personal Settings",
+        "CHILDREN": {
+          "PROFILE": {
+            "TEXT": "Profile",
+            "TITLE": "Profile Settings",
+            "DESCRIPTION": "Manage your profile and sign-in details."
+          },
+          "NOTIFICATIONS": {
+            "TEXT": "Notifications",
+            "TITLE": "Notifications",
+            "DESCRIPTION": "Manage notifications preferences."
+          },
+          "WEBPHONE": {
+            "TEXT": "Webphone Configuration",
+            "TITLE": "Webphone Configuration",
+            "DESCRIPTION": "Configure your Webphone settings."
+          }
+        }
+      },
+      "WORKSPACE_SETTINGS": {
+        "TEXT": "Workspace Settings",
+        "CHILDREN": {
+          "GENERAL": {
+            "TEXT": "General",
+            "TITLE": "General",
+            "DESCRIPTION": "Change general Workspace-level settings."
+          },
+          "USERS": {
+            "TEXT": "Users",
+            "TITLE": "Users",
+            "DESCRIPTION": "Manage and invite team members to your Workspace."
+          },
+          "ROLES_PERMISSIONS": {
+            "TEXT": "Roles & Permissions",
+            "TITLE": "Roles & Permissions",
+            "DESCRIPTION": "Manage roles and permissions for your Workspace."
+          },
+          "TEAMS": {
+            "TEXT": "Teams",
+            "TITLE": "Teams",
+            "DESCRIPTION": "Create and manage teams to group the users in your Workspace."
+          },
+          "CHANNELS": {
+            "TEXT": "Channels",
+            "TITLE": "Channels",
+            "DESCRIPTION": "Manage your messaging channels and discover new ones to help you acquire more customers."
+          },
+          "WHATSAPP_TEMPLATES": {
+            "TEXT": "WhatsApp Templates",
+            "TITLE": "WhatsApp Templates",
+            "DESCRIPTION": "Create and manage WhatsApp templates to be used in Messages, Broadcasts, and Workflows."
+          },
+          "GROWTH_WIDGETS": {
+            "TEXT": "Growth Widgets",
+            "TITLE": "Growth Widgets",
+            "DESCRIPTION": "Create and manage widgets that can be embedded on your website to grow your contacts."
+          },
+          "CONTACT_FIELDS": {
+            "TEXT": "Contact Fields",
+            "TITLE": "Contact Fields",
+            "DESCRIPTION": "Create and manage contact fields to save additional information about your contacts."
+          },
+          "INTEGRATIONS": {
+            "TEXT": "Integrations",
+            "TITLE": "Integrations",
+            "DESCRIPTION": "Connect your respond.io Workspace with third-party integrations."
+          },
+          "AI": {
+            "TEXT": "AI",
+            "TITLE": "AI",
+            "DESCRIPTION": "Leverage Respond AI to enhance your customers' experience and elevate your customer service"
+          },
+          "CLOSING_NOTES": {
+            "TEXT": "Closing Notes",
+            "TITLE": "Closing Notes",
+            "DESCRIPTION": "Manage closing notes settings and conversation categories of the workspace."
+          },
+          "SNIPPETS": {
+            "TEXT": "Snippets",
+            "TITLE": "Snippets",
+            "DESCRIPTION": "Create canned responses to be used in Messages, Broadcasts, and Workflows."
+          },
+          "TAGS": {
+            "TEXT": "Tags",
+            "TITLE": "Tags",
+            "DESCRIPTION": "Create and manage Tags to organize conversations and inboxes"
+          },
+          "FILES": {
+            "TEXT": "Files",
+            "TITLE": "Files",
+            "DESCRIPTION": "Store files to be used in Messages, Broadcasts, and Workflows."
+          },
+          "DATA_EXPORT": {
+            "TEXT": "Data Export",
+            "TITLE": "Data Export",
+            "DESCRIPTION": "Export workspace related records for further data analytics and other purposes."
+          },
+          "DATA_IMPORT": {
+            "TEXT": "Data Import",
+            "TITLE": "Data Import",
+            "DESCRIPTION": "Review previous imports or start a new import."
+          }
+        }
+      },
+      "ORGANIZATION_SETTINGS": {
+        "TEXT": "Organization Settings",
+        "CHILDREN": {
+          "ORGANIZATION_SETTINGS": {
+            "TEXT": "General",
+            "TITLE": "Organization",
+            "DESCRIPTION": "Manage your organization information and settings."
+          },
+          "ORGANIZATION_SECURITY": {
+            "TEXT": "Organization Security",
+            "TITLE": "Organization Security",
+            "DESCRIPTION": "Manage your organization security settings here."
+          },
+          "ORGANIZATION_WORKSPACES": {
+            "TEXT": "Organization Workspaces",
+            "TITLE": "Organization Workspaces",
+            "DESCRIPTION": "Manage your organization's workspaces here."
+          },
+          "ORGANIZATION_BILLING": {
+            "TEXT": "Billing & Usage",
+            "TITLE": "Organization Billing",
+            "DESCRIPTION": "Manage your plan & billing information here."
+          }
+        }
+      }
+    }
+  },
+  "HELP": {
+    "TEXT": "Help"
+  }
+}
