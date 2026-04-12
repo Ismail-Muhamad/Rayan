@@ -10,6 +10,18 @@
           <p class="farm-builder__text">{{ t('farms.form.builder_text') }}</p>
         </div>
 
+        <div class="farm-builder__hero-actions">
+          <BaseButton
+            color="gray"
+            variant="outline"
+            size="sm"
+            @click="router.push({ name: 'farms_list' })"
+          >
+            <BaseIcon name="solar:arrow-right-outline" :width="18" :height="18" />
+            الرجوع لقائمة المزارع
+          </BaseButton>
+        </div>
+
         <div class="farm-builder__stats">
           <article class="farm-builder__stat-card">
             <span class="farm-builder__stat-label">{{ t('farms.show.stats.palm_types') }}</span>
@@ -178,7 +190,12 @@ const totalTrees = computed(() => {
 const submitForm = async () => {
   v$.value.$validate();
   if (v$.value.$invalid) return;
-  await farmsStore.createRecord(farmForm.value);
+
+  const response = await farmsStore.createRecord(farmForm.value);
+
+  if (response?.isCreated) {
+    router.push({ name: 'farms_list' });
+  }
 };
 
 const addPalmType = () => {
@@ -207,19 +224,19 @@ const removePalmType = (palmIndex) => {
     gap: 20px;
     padding: 24px;
     border-radius: 24px;
-    border: 1px solid var(--emerald-100);
+    border: 1px solid var(--blue-100);
     background:
-      linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(255, 255, 255, 0.98)),
+      linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(255, 255, 255, 0.98)),
       var(--white);
-    box-shadow: 0 20px 40px rgba(2, 44, 34, 0.08);
+    box-shadow: 0 20px 40px rgba(30, 64, 175, 0.08);
   }
 
   &__eyebrow {
     display: inline-flex;
     padding: 6px 12px;
     border-radius: 999px;
-    background-color: var(--emerald-100);
-    color: var(--emerald-800);
+    background-color: var(--blue-100);
+    color: var(--blue-800);
     font-size: 1.25rem;
     font-weight: 700;
     margin-block-end: 12px;
@@ -237,6 +254,12 @@ const removePalmType = (palmIndex) => {
     font-size: 1.5rem;
     line-height: 1.8;
     max-width: 620px;
+  }
+
+  &__hero-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
   }
 
   &__stats {
@@ -313,8 +336,8 @@ const removePalmType = (palmIndex) => {
     display: inline-flex;
     padding: 4px 10px;
     border-radius: 999px;
-    background-color: var(--emerald-100);
-    color: var(--emerald-800);
+    background-color: var(--blue-100);
+    color: var(--blue-800);
     font-size: 1.2rem;
     font-weight: 700;
     margin-block-end: 8px;
@@ -362,6 +385,11 @@ const removePalmType = (palmIndex) => {
     &__hero {
       flex-direction: column;
       align-items: stretch;
+    }
+
+    &__hero-actions {
+      width: 100%;
+      justify-content: flex-start;
     }
 
     &__stats {
