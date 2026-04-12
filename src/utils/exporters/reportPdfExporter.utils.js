@@ -239,7 +239,12 @@ export async function exportReportToPDF({
 }
 
 // ─── Row builders ──────────────────────────────────────────────────────────────
-
+function getDayNameFromDate(dateStr, t) {
+  const [year, month, day] = dateStr.split("-");
+  const date = new Date(year, month - 1, day);
+  const dayIndex = date.getDay();
+  return t(`reports.form.options.days.${dayIndex}`);
+}
 function buildFertilizationRows(days, report, numberOfTreesFor, t) {
   const rows = [];
   for (const day of days) {
@@ -251,7 +256,7 @@ function buildFertilizationRows(days, report, numberOfTreesFor, t) {
     for (let i = 0; i < validFertilizations.length; i++) {
       const f = validFertilizations[i];
       rows.push({
-        day: i === 0 ? day.day : "",
+        day: i === 0 ? getDayNameFromDate(day.date, t) : "",
         date: i === 0 ? day.date : "",
         type_of_fertilization: f.type_of_fertilization,
         fertilizer_quantity_per_palm_tree:
@@ -271,7 +276,7 @@ function buildIrrigationRows(days, t) {
       return amt || dur;
     })
     .map((day) => ({
-      day: day.day,
+      day: getDayNameFromDate(day.date, t),
       date: day.date,
       irrigation_amount_per_palm_tree: day.irrigation_amount_per_palm_tree,
       duration_of_irrigation_per_palm_tree:
@@ -289,7 +294,7 @@ function buildSprayingRows(days, t) {
       return spray || amt;
     })
     .map((day) => ({
-      day: day.day,
+      day: getDayNameFromDate(day.date, t),
       date: day.date,
       spraying: day.spraying,
       spraying_per_tree: day.spraying_per_tree,

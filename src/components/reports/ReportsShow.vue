@@ -328,6 +328,12 @@ const formatDuration = (totalMinutes) => {
   if (hours) return `${hours} ${t("farms.form.options.units.hour")}`;
   return `${minutes} ${t("farms.form.options.units.minute")}`;
 };
+const getDayNameFromDate = (dateStr) => {
+  const date = parseLocalDate(dateStr);
+  const dayIndex = date.getDay();
+  return t(`reports.form.options.days.${dayIndex}`);
+};
+
 const mapWeeksReport = (report) => {
   const weeks = (report?.report_weeks || [])
     .map((week) => {
@@ -356,6 +362,7 @@ const mapWeeksReport = (report) => {
         days: validDays.map((day) => {
           return {
             ...day,
+             day: getDayNameFromDate(day.date),
             // Fertilization
             fertilizations: day.fertilizations.map((f) => {
               return {

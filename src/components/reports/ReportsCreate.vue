@@ -443,17 +443,13 @@ const navigateBack = () => {
 };
 // Generate 4 weeks based on selected month
 const generateWeeks = ({ year, month }) => {
-  // Clear existing weeks
   report.value.report_weeks = [];
-  // Get first and last day of month
+
   const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = new Date(year, month + 1, 0);
-  // Calculate days in month
-  const daysInMonth = lastDayOfMonth.getDate();
-  // Generate 4 weeks (28 days) or adjust based on month
-  // Starting from the first day of the month
   let currentDate = new Date(firstDayOfMonth);
-  for (let weekNum = 1; weekNum <= 4; weekNum++) {
+  let weekNum = 1;
+
+  while (currentDate.getMonth() === month) {
     const week = {
       week_number: weekNum,
       date: moment(currentDate).format("YYYY-MM-DD"),
@@ -462,32 +458,22 @@ const generateWeeks = ({ year, month }) => {
       days: [],
     };
 
-    // Generate 7 days for each week
     for (let dayNum = 0; dayNum < 7; dayNum++) {
-      // Check if we've exceeded the month
-      if (currentDate.getMonth() !== month) {
-        break;
-      }
+      if (currentDate.getMonth() !== month) break;
 
       const row = createRow(currentDate);
       week.days.push(row);
 
-      // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Set week end date to last row's date or start date if no days
     week.week_end_date =
       week.days.length > 0
         ? week.days[week.days.length - 1].date
         : moment(week.week_start_date).format("YYYY-MM-DD");
 
     report.value.report_weeks.push(week);
-
-    // If we've passed the end of month, stop
-    if (currentDate.getMonth() !== month) {
-      break;
-    }
+    weekNum++;
   }
 };
 
