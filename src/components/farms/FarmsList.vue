@@ -1,5 +1,5 @@
 <template>
-  <BasePageWrapper titleKey="farms.title" subtitleKey="farms.subtitle" iconName="solar:buildings-3-outline">
+  <BasePageWrapper titleKey="farms.title" subtitleKey="farms.subtitle" iconName="tabler:trees">
     <div class="farms">
       <section class="farms__hero">
         <div class="farms__hero-content">
@@ -20,7 +20,7 @@
       <div class="farms__stats">
         <article v-for="stat in overviewStats" :key="stat.key" class="farms__stat-card">
           <div class="farms__stat-icon">
-            <BaseIcon :name="stat.icon" />
+            <BaseIcon name="mdi:palm-tree" />
           </div>
           <div class="farms__stat-copy">
             <p class="farms__stat-label">{{ stat.label }}</p>
@@ -30,9 +30,18 @@
       </div>
 
       <div class="farms__list">
-        <BaseTable :headers="TABLE_HEADERS" :items="farmsList" :meta="meta" :isLoading="uiFlags.isFetchingList"
-          :title="t('farms.list.table_title')" :search-placeholder="t('farms.list.search_placeholder')" pagination
-          bordered @onPageChange="fetchRecords" @on-search="handleTableSearch">
+        <BaseTable
+          :headers="TABLE_HEADERS"
+          :items="farmsList"
+          :meta="meta"
+          :isLoading="uiFlags.isFetchingList"
+          :title="t('farms.list.table_title')"
+          :search-placeholder="t('farms.list.search_placeholder')"
+          pagination
+          bordered
+          @onPageChange="fetchRecords"
+          @on-search="handleTableSearch"
+        >
           <template #buttons>
             <BaseButton variant="soft" color="blue" size="sm" @click="router.push({ name: 'create_farm' })">
               <BaseIcon name="solar:add-circle-outline" />
@@ -43,7 +52,7 @@
           <template #farm_name="{ item }">
             <div class="farm-row">
               <div class="farm-row__avatar">
-                <BaseIcon name="solar:buildings-3-outline" />
+                <BaseIcon name="mdi:palm-tree" />
               </div>
               <div class="farm-row__content">
                 <router-link class="farm-row__name" :to="{ name: 'show_farm', params: { id: item.id } }">
@@ -83,12 +92,22 @@
 
           <template #actions="{ item }">
             <div class="farms__actions-cell">
-              <BaseButton variant="soft" color="blue" size="icon-sm"
-                @click="router.push({ name: 'show_farm', params: { id: item.id } })">
+              <BaseButton
+                variant="soft"
+                color="blue"
+                size="icon-sm"
+                @click="router.push({ name: 'show_farm', params: { id: item.id } })"
+              >
                 <BaseIcon name="solar:eye-outline" />
               </BaseButton>
-              <BaseButton dropdown variant="soft" color="gray" size="icon-sm" :dropdownItems="ROW_ACTIONS"
-                @dropdown-select="(action) => triggerShowModal(action.key, item)">
+              <BaseButton
+                dropdown
+                variant="soft"
+                color="gray"
+                size="icon-sm"
+                :dropdownItems="ROW_ACTIONS"
+                @dropdown-select="(action) => triggerShowModal(action.key, item)"
+              >
                 <BaseIcon name="pepicons-pop:dots-y" />
               </BaseButton>
             </div>
@@ -97,7 +116,7 @@
           <template #initial>
             <div class="farms__empty-state">
               <div class="farms__empty-icon">
-                <BaseIcon name="solar:leaf-outline" />
+                <BaseIcon name="mdi:palm-tree" />
               </div>
               <h3 class="farms__empty-title">{{ t('farms.list.empty_title') }}</h3>
               <p class="farms__empty-text">
@@ -212,7 +231,7 @@ const overviewStats = computed(() => {
       key: 'farms_count',
       label: t('farms.list.stats.farms_count'),
       value: farmsCount,
-      icon: 'solar:buildings-3-outline',
+      icon: 'solar:leaf-outline',
     },
     {
       key: 'palm_types_count',
@@ -224,7 +243,7 @@ const overviewStats = computed(() => {
       key: 'trees_count',
       label: t('farms.list.stats.trees_count'),
       value: totalTrees,
-      icon: 'solar:trees-outline',
+      icon: 'solar:leaf-outline',
     },
   ];
 });
@@ -334,8 +353,8 @@ const triggerShowModal = (action, item) => {
     align-items: center;
     justify-content: center;
     border-radius: 16px;
-background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
-color: var(--blue-700);
+    background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
+    color: var(--blue-700);
     font-size: 2rem;
     flex-shrink: 0;
   }

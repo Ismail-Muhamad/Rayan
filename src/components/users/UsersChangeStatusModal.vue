@@ -46,7 +46,7 @@ import { useUsersStore } from "@/stores/users.store";
 // Composables
 // Components
 // ===== PROPS & EMITS =====
-const emit = defineEmits(["onSuccess"]);
+const emit = defineEmits(["success"]);
 // ===== STORE INSTANCES =====
 const usersStore = useUsersStore();
 // ===== COMPOSABLES =====
@@ -80,7 +80,7 @@ const changeUserStatus = async () => {
     const response = await usersStore.deleteRecord(user.value?.id);
     if (response.isDeleted) {
       closeModal();
-      emit("onSuccess");
+      emit("success");
     }
   } else {
     const response = await usersStore.updateRecord(user.value?.id, {
@@ -88,7 +88,7 @@ const changeUserStatus = async () => {
     });
     if (response.isUpdated) {
       closeModal();
-      emit("onSuccess");
+      emit("success");
     }
   }
 };

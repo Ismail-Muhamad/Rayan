@@ -24,7 +24,7 @@ export default [
     roles: ["admin"],
   },
   {
-    icon: "solar:buildings-3-outline",
+    icon: "mdi:sprout",
     key: "farms",
     label: "farms.title",
     path: "/farms",

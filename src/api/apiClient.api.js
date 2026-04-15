@@ -27,7 +27,7 @@ class APIClient {
     const handledResource = baseResource
       ? `/${baseResource}`
       : `/${this.resource}`;
-    return `${BASE_URL}/${handledResource}`;
+    return `${BASE_URL}${handledResource}`;
   }
 
   // Methods:

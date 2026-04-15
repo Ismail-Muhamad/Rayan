@@ -2,7 +2,7 @@
   <BasePageWrapper
     titleKey="farms.show.title"
     subtitleKey="farms.show.subtitle"
-    iconName="solar:buildings-3-outline"
+    iconName="tabler:trees"
   >
     <div class="farm">
       <BaseLoader
@@ -24,7 +24,7 @@
                 {{ farmRecord?.location || '--' }}
               </span>
               <span class="farm__hero-chip farm__hero-chip--emerald">
-                <BaseIcon name="solar:leaf-outline" :width="16" :height="16" />
+                <BaseIcon name="tabler:trees"  :width="16" :height="16" />
                 {{ totalPalmTypes }} {{ t('farms.table.headers.palm_types') }}
               </span>
             </div>
@@ -372,13 +372,13 @@ const overviewStats = computed(() => [
     key: 'palm_types',
     label: t('farms.show.stats.palm_types'),
     value: totalPalmTypes.value,
-    icon: 'solar:leaf-outline',
+    icon: 'tabler:trees',
   },
   {
     key: 'trees',
     label: t('farms.show.stats.total_trees'),
     value: totalTrees.value,
-    icon: 'solar:trees-outline',
+    icon: 'tabler:trees',
   },
   {
     key: 'reports',

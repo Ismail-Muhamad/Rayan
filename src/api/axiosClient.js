@@ -95,7 +95,7 @@ axiosClient.interceptors.response.use(
     const errorMessage = serverErrorHandler(error);
     // if user not activated and try to access login page
     if (
-      error.response.status === 403 &&
+      error?.response?.status === 403 &&
       router.currentRoute.value.name === "login"
     ) {
       toast.warning(i18n.global.t("auth.login.messages.pending"));

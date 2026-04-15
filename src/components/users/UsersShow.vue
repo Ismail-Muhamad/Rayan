@@ -3,84 +3,146 @@
     <BaseLoader
       v-if="usersUiFlags.isFetchingItem || farmsUiFlags.isFetchingList"
     />
+
     <div v-else class="user__content">
-      <!-- User Info -->
-      <div class="user__info">
-        <h2 class="user__title">{{ t("users.table.headers.user_info") }}</h2>
-        <div class="user__grid">
-          <BaseCard
-            v-for="info in userInfo"
-            :key="info.key"
-            :title="info.title"
-            :value="info.value"
-          />
-        </div>
-      </div>
-      <!-- Farm Info -->
-      <div class="user__info">
-        <h2 class="user__title user__title--lg">
-          {{ t("users.table.headers.farms_info") }}
-        </h2>
-        <div
-          v-for="(item, index) in farmsInfo"
-          :key="item.id"
-          class="user__farm"
-        >
-          <h3 class="user__title user__title--sm">
-            {{ t("users.table.headers.farm_info", { number: index + 1 }) }}
-          </h3>
-          <div class="user__grid">
-            <BaseCard
-              v-for="info in item.farm"
-              :key="info.key"
-              :title="info.title"
-              :value="info.value"
-            />
+      <section class="user__hero">
+        <div class="user__hero-main">
+          <div class="user__avatar">
+            {{ getInitials(userRecord?.name) }}
           </div>
-          <!-- Palm Types Info -->
-          <div class="user__palm">
-            <h2 class="user__title user__title--sm">
-              {{ t("farms.table.headers.palm_types") }}
-            </h2>
-            <div class="user__table">
-              <BaseTable
-                :headers="PALM_TYPES_HEADERS"
-                :items="item.palm_types"
-                :showToolbar="false"
-              />
+
+          <div class="user__hero-text">
+            <p class="user__eyebrow">
+              {{ t("users.table.headers.user_info") }}
+            </p>
+
+            <h1 class="user__hero-title">
+              {{ userRecord?.name || "-" }}
+            </h1>
+
+            <div class="user__hero-meta">
+              <span class="user__meta-chip">
+                {{ t(`users.status.${userRecord?.status}`) }}
+              </span>
+
+              <span class="user__meta-chip user__meta-chip--light">
+                {{ formatDate(userRecord?.created_at) }}
+              </span>
             </div>
           </div>
         </div>
-      </div>
+
+        <div class="user__hero-side">
+          <div class="user__stat-card">
+            <span class="user__stat-label">
+              {{ t("users.table.headers.farms_info") }}
+            </span>
+            <strong class="user__stat-value">
+              {{ farmsInfo.length }}
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="user__section">
+        <div class="user__section-head">
+          <h2 class="user__section-title">
+            {{ t("users.table.headers.user_info") }}
+          </h2>
+        </div>
+
+        <div class="user__grid">
+          <div
+            v-for="info in userInfo"
+            :key="info.key"
+            class="user__info-card"
+          >
+            <span class="user__info-label">{{ info.title }}</span>
+            <strong class="user__info-value">{{ info.value || "-" }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="user__section">
+        <div class="user__section-head">
+          <h2 class="user__section-title">
+            {{ t("users.table.headers.farms_info") }}
+          </h2>
+        </div>
+
+        <div v-if="farmsInfo.length" class="user__farms">
+          <div
+            v-for="(item, index) in farmsInfo"
+            :key="item.id"
+            class="user__farm-card"
+          >
+            <div class="user__farm-head">
+              <div>
+                <p class="user__farm-label">
+                  {{ t("users.table.headers.farm_info", { number: index + 1 }) }}
+                </p>
+                <h3 class="user__farm-title">
+                  {{ item.farmName || "-" }}
+                </h3>
+              </div>
+
+              <span class="user__farm-count">
+                {{ item.palm_types.length }}
+                {{ t("farms.table.headers.palm_types") }}
+              </span>
+            </div>
+
+            <div class="user__grid">
+              <div
+                v-for="info in item.farm"
+                :key="info.key"
+                class="user__info-card user__info-card--soft"
+              >
+                <span class="user__info-label">{{ info.title }}</span>
+                <strong class="user__info-value">{{ info.value || "-" }}</strong>
+              </div>
+            </div>
+
+            <div class="user__palm">
+              <h4 class="user__sub-title">
+                {{ t("farms.table.headers.palm_types") }}
+              </h4>
+
+              <div class="user__table-shell">
+                <BaseTable
+                  :headers="PALM_TYPES_HEADERS"
+                  :items="item.palm_types"
+                  :showToolbar="false"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="user__empty">
+          لا توجد مزارع مرتبطة بهذا المستخدم حالياً
+        </div>
+      </section>
     </div>
   </div>
 </template>
+
 <script setup>
-// ===== IMPORTS =====
-// Vue and Libraries
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
-import { useVuelidate } from "@vuelidate/core";
-import { useRouter, useRoute } from "vue-router";
+import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
-import moment from "moment";
-// Stores
+
 import { useUsersStore } from "@/stores/users.store";
 import { useFarmsStore } from "@/stores/farms.store";
-// Composables
-// Components
-// Constants
-// Helpers
-// ===== PROPS & EMITS =====
-// ===== STORE INSTANCES =====
+
 const usersStore = useUsersStore();
 const farmsStore = useFarmsStore();
-// ===== COMPOSABLES =====
-const router = useRouter();
+
 const route = useRoute();
 const { t, locale } = useI18n();
-// ===== CONSTANTS =====
-const PALM_TYPES_HEADERS = [
+
+const PALM_TYPES_HEADERS = computed(() => [
   {
     text: t("farms.table.headers.palm_type"),
     value: "palm_type",
@@ -93,61 +155,10 @@ const PALM_TYPES_HEADERS = [
     text: t("farms.table.headers.palm_age"),
     value: "palm_age",
   },
-];
-const REPORT_HEADERS = [
-  {
-    text: t("farms.table.headers.day"),
-    value: "day",
-  },
-  {
-    text: t("farms.table.headers.date"),
-    value: "date",
-  },
-  {
-    text: t("farms.table.headers.type_of_fertilization"),
-    value: "type_of_fertilization",
-  },
-  {
-    text: t("farms.table.headers.fertilizer_quantity_per_palm_tree"),
-    value: "fertilizer_quantity_per_palm_tree",
-  },
-  {
-    text: t("farms.table.headers.fertilization_total"),
-    value: "fertilization_total",
-  },
-  {
-    text: t("farms.table.headers.irrigation_amount_per_palm_tree"),
-    value: "irrigation_amount_per_palm_tree",
-  },
-  {
-    text: t("farms.table.headers.duration_of_irrigation_per_palm_tree"),
-    value: "duration_of_irrigation_per_palm_tree",
-  },
-  {
-    text: t("farms.table.headers.total_amount_of_irrigation"),
-    value: "total_amount_of_irrigation",
-  },
-  {
-    text: t("farms.table.headers.total_duration_of_irrigation"),
-    value: "total_duration_of_irrigation",
-  },
-  {
-    text: t("farms.table.headers.spraying"),
-    value: "spraying",
-  },
-  {
-    text: t("farms.table.headers.spraying_per_tree"),
-    value: "spraying_per_tree",
-  },
-  {
-    text: t("farms.table.headers.amount_of_spray"),
-    value: "amount_of_spray",
-  },
-];
-// ===== REACTIVE STATE & TEMPLATE REFS =====
-// ===== VALIDATION RULES =====
-// ===== COMPUTED PROPERTIES =====
+]);
+
 const currentRouteId = computed(() => route.params.id);
+
 const { record: userRecord, uiFlags: usersUiFlags } = storeToRefs(usersStore);
 const { records: farmsList, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
 
@@ -171,7 +182,7 @@ const userInfo = computed(() => {
     {
       key: "created_at",
       title: t("users.table.headers.created_at"),
-      value: new Date(userRecord.value?.created_at).toLocaleDateString(),
+      value: formatDate(userRecord.value?.created_at),
     },
     {
       key: "status_text",
@@ -180,10 +191,12 @@ const userInfo = computed(() => {
     },
   ];
 });
+
 const farmsInfo = computed(() => {
-  return farmsList.value.map((farm) => {
+  return (farmsList.value || []).map((farm) => {
     return {
       id: farm.id,
+      farmName: farm.name,
       farm: [
         {
           key: "farm_name",
@@ -196,7 +209,7 @@ const farmsInfo = computed(() => {
           value: farm.location,
         },
       ],
-      palm_types: farm.palm_types.map((palmType) => {
+      palm_types: (farm.palm_types || []).map((palmType) => {
         return {
           palm_type: palmType.name,
           palm_count: palmType.number_of_trees,
@@ -206,56 +219,344 @@ const farmsInfo = computed(() => {
     };
   });
 });
-// ===== LIFECYCLE HOOKS =====
+
 onMounted(async () => {
   await usersStore.fetchRecord(currentRouteId.value);
   await farmsStore.fetchRecords({
     owner_id: currentRouteId.value,
   });
 });
-// ===== METHODS =====
-// ===== WATCHERS =====
-// ===== EXPOSE PUBLIC METHODS =====
+
+const formatDate = (date) => {
+  if (!date) return "-";
+
+  return new Intl.DateTimeFormat(
+    locale.value === "ar" ? "ar-EG" : "en-US",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  ).format(new Date(date));
+};
+
+const getInitials = (name) => {
+  if (!name) return "?";
+
+  const parts = name.trim().split(" ").filter(Boolean);
+
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase();
+  }
+
+  return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+};
 </script>
+
 <style lang="scss" scoped>
 .user {
-  &__title {
-    font-size: 1.8rem;
-    font-weight: 600;
-    color: var(--gray-900);
-    margin-block-end: 12px;
-    &--lg {
-      font-size: 2rem;
-    }
-    &--sm {
-      font-size: 1.4rem;
-    }
-  }
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 24px;
-  }
-  &__cell-stack {
+  min-height: 100%;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #f4f8ff 100%);
+
+  &__content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 18px;
   }
-  &__cell-text {
-    white-space: nowrap;
-  }
-  &__farm,
-  &__info {
-    &:not(:last-child) {
-      border-block-end: 1px dashed var(--gray-300);
-      padding-block-end: 24px;
-      margin-block-end: 24px;
+
+  &__hero {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 24px;
+    border-radius: 24px;
+    border: 1px solid rgba(59, 130, 246, 0.14);
+    background: linear-gradient(135deg, var(--blue-700) 0%, var(--blue-500) 100%);
+    box-shadow: 0 18px 40px rgba(37, 99, 235, 0.16);
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: -70px;
+      right: -70px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      bottom: -80px;
+      left: -50px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
     }
   }
+
+  &__hero-main,
+  &__hero-side {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__hero-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__avatar {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--white);
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  &__eyebrow {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  &__hero-title {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 2.6vw, 3rem);
+    line-height: 1.25;
+    font-weight: 800;
+    color: var(--white);
+  }
+
+  &__hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__meta-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+
+    &--light {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  &__stat-card {
+    min-width: 180px;
+    padding: 18px 20px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(10px);
+  }
+
+  &__stat-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  &__stat-value {
+    display: block;
+    font-size: 2.3rem;
+    font-weight: 800;
+    color: var(--white);
+  }
+
+  &__section {
+    padding: 18px;
+    border-radius: 24px;
+    border: 1px solid var(--blue-100);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  }
+
+  &__section-head {
+    margin-bottom: 16px;
+  }
+
+  &__section-title {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--blue-800);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  &__info-card {
+    padding: 18px;
+    border-radius: 20px;
+    border: 1px solid var(--blue-100);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+
+    &--soft {
+      background: #fbfdff;
+    }
+  }
+
+  &__info-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--blue-600);
+  }
+
+  &__info-value {
+    display: block;
+    font-size: 1.45rem;
+    line-height: 1.7;
+    color: var(--slate-900);
+    word-break: break-word;
+  }
+
+  &__farms {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  &__farm-card {
+    padding: 18px;
+    border-radius: 22px;
+    border: 1px solid #e7f0ff;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  }
+
+  &__farm-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  &__farm-label {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--blue-500);
+  }
+
+  &__farm-title {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--slate-900);
+  }
+
+  &__farm-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--blue-700);
+    background: #eff6ff;
+    border: 1px solid var(--blue-100);
+    white-space: nowrap;
+  }
+
   &__palm {
-    margin-block-start: 24px;
+    margin-top: 18px;
+  }
+
+  &__sub-title {
+    margin: 0 0 12px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--blue-700);
+  }
+
+  &__table-shell {
+    padding: 10px;
+    border-radius: 18px;
+    border: 1px solid var(--blue-100);
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  &__empty {
+    padding: 28px 18px;
+    border-radius: 18px;
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--blue-700);
+    background: #f8fbff;
+    border: 1px dashed var(--blue-200);
   }
 }
+
+:deep(.base-table),
+:deep(.table-wrapper),
+:deep(table) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+:deep(thead tr th) {
+  padding-top: 15px !important;
+  padding-bottom: 15px !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: var(--blue-800) !important;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%) !important;
+  border-bottom: 1px solid var(--blue-100) !important;
+}
+
+:deep(tbody td) {
+  padding-top: 15px !important;
+  padding-bottom: 15px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #edf3ff !important;
+}
+
+:deep(tbody tr:hover) {
+  background: rgba(59, 130, 246, 0.04) !important;
+}
+
 :deep(ul) {
   display: block;
   list-style-type: disc;
@@ -264,6 +565,7 @@ onMounted(async () => {
   padding-inline-start: 40px;
   unicode-bidi: isolate;
 }
+
 :deep(ol) {
   display: block;
   list-style-type: decimal;
@@ -271,5 +573,51 @@ onMounted(async () => {
   margin-block-end: 1em;
   padding-inline-start: 40px;
   unicode-bidi: isolate;
+}
+
+@media (max-width: 992px) {
+  .user {
+    &__hero {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__hero-main {
+      align-items: flex-start;
+    }
+
+    &__farm-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .user {
+    &__hero,
+    &__section {
+      padding: 16px;
+      border-radius: 20px;
+    }
+
+    &__avatar {
+      width: 60px;
+      height: 60px;
+      font-size: 1.6rem;
+    }
+
+    &__hero-title {
+      font-size: 1.8rem;
+    }
+
+    &__section-title {
+      font-size: 1.5rem;
+    }
+
+    &__farm-title {
+      font-size: 1.45rem;
+    }
+  }
 }
 </style>

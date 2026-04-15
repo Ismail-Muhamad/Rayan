@@ -31,8 +31,11 @@ const { t } = useI18n();
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+
   &__view {
     flex: 1;
+    min-height: 0;
     padding: 16px;
     overflow-y: auto;
   }

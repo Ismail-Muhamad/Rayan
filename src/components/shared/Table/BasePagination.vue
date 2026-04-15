@@ -10,37 +10,24 @@
       {{ $t("GLOBAL.TABLE.PAGINATION.INFO.ENTRIES") }}
     </div>
     <div class="pagination__controls">
-      <button
-        :class="[
-          'pagination__control pagination__control--prev',
-          {
-            'pagination__control--disabled': currentPage === 1,
-          },
-        ]"
-        :disabled="currentPage === 1"
-        @click="prevPage"
-      >
+      <button :class="[
+        'pagination__control pagination__control--prev',
+        {
+          'pagination__control--disabled': currentPage === 1,
+        },
+      ]" :disabled="currentPage === 1" @click="prevPage">
         {{ $t("GLOBAL.TABLE.PAGINATION.CONTROLS.PREVIOUS") }}
       </button>
-      <button
-        v-for="page in pages"
-        :key="page"
-        :class="[
-          'pagination__control pagination__control--page',
-          { 'pagination__control--active': currentPage === page },
-        ]"
-        @click="goToPage(page)"
-      >
+      <button v-for="page in pages" :key="page" :class="[
+        'pagination__control pagination__control--page',
+        { 'pagination__control--active': currentPage === page },
+      ]" @click="goToPage(page)">
         {{ page }}
       </button>
-      <button
-        :class="[
-          'pagination__control pagination__control--next',
-          { 'pagination__control--disabled': currentPage === pagesCount },
-        ]"
-        :disabled="currentPage === pagesCount"
-        @click="nextPage"
-      >
+      <button :class="[
+        'pagination__control pagination__control--next',
+        { 'pagination__control--disabled': currentPage === pagesCount },
+      ]" :disabled="currentPage === pagesCount" @click="nextPage">
         {{ $t("GLOBAL.TABLE.PAGINATION.CONTROLS.NEXT") }}
       </button>
     </div>
@@ -72,9 +59,11 @@ export default {
     },
 
     startEntry() {
+      if (!this.meta?.total || !this.meta?.perPage) return 0;
       return (this.currentPage - 1) * this.meta.perPage + 1;
     },
     endEntry() {
+      if (!this.meta?.total || !this.meta?.perPage) return 0;
       return Math.min(this.currentPage * this.meta.perPage, this.meta.total);
     },
     pages() {

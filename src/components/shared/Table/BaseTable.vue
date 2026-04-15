@@ -245,7 +245,7 @@ export default {
     },
     meta: {
       type: Object,
-      default: () => {},
+      default: () => ({}),
     },
     isLoading: {
       type: Boolean,
