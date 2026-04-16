@@ -12,6 +12,8 @@
             <p class="auth-card__message">{{ t("auth.login.message") }}</p>
           </div>
 
+
+          
           <form class="auth-card__form" @submit.prevent="handleSubmit">
             <div class="auth-card__control">
               <BaseInput
