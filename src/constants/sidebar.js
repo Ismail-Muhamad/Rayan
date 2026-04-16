@@ -31,4 +31,12 @@ export default [
     routeName: "farms",
     roles: ["farm_owner"],
   },
+  {
+    icon: "solar:chart-outline",
+    key: "farm_consumptions",
+    label: "الاستهلاكات",
+    path: "/farms/consumptions",
+    routeName: "farm_consumptions",
+    roles: ["farm_owner"],
+  },
 ];
