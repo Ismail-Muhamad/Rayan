@@ -12,11 +12,6 @@
             <p class="auth-card__message">{{ t("auth.login.message") }}</p>
           </div>
 
-
-
-
-
-          
           <form class="auth-card__form" @submit.prevent="handleSubmit">
             <div class="auth-card__control">
               <BaseInput
@@ -76,8 +71,7 @@
             <img :src="logoImage" alt="Rayan Logo" />
           </div>
 
-          <p class="auth-shell__subtitle">
-          </p>
+          <p class="auth-shell__subtitle"></p>
         </div>
       </div>
     </div>
@@ -94,7 +88,7 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth.store";
 import { useValidation } from "@/composables/useValidation";
 import authBg from "@/assets/auth-bg.png";
-import logoImage from "@/assets/22.png";
+import logoImage from "@/assets/لوجو مفرغ_.png";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -196,7 +190,7 @@ const navigateToRegister = () => {
     position: relative;
     z-index: 2;
     width: 100%;
-    max-width: 520px;
+    max-width: 980px;
     padding: 36px;
     text-align: center;
     color: #fff;
@@ -204,8 +198,8 @@ const navigateToRegister = () => {
 
   &__hero-logo {
     width: 100%;
-    max-width: 340px;
-    margin: 0 auto 18px;
+    max-width: 600px;
+    margin: 0 auto 24px;
 
     img {
       width: 100%;
@@ -213,8 +207,9 @@ const navigateToRegister = () => {
       display: block;
       object-fit: contain;
       filter:
-        drop-shadow(0 20px 40px rgba(0, 0, 0, 0.418))
-        drop-shadow(0 10px 22px rgba(0, 0, 0, 0.308));
+        drop-shadow(0 32px 64px rgba(0, 0, 0, 0.52))
+        drop-shadow(0 16px 34px rgba(0, 0, 0, 0.40))
+        drop-shadow(0 6px 14px rgba(255, 255, 255, 0.18));
     }
   }
 
@@ -231,27 +226,30 @@ const navigateToRegister = () => {
   max-width: 520px;
 
   &__logo {
-    width: 96px;
-    height: 96px;
-    margin: 0 auto 18px;
-    border-radius: 24px;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 22px;
+    padding: 0;
+    border-radius: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(180deg, #ffffff, #eef4ff);
+    overflow: hidden;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     box-shadow:
-      0 20px 40px rgba(15, 23, 42, 0.12),
-      0 10px 24px rgba(37, 99, 235, 0.12),
-      inset 0 0 0 1px rgba(37, 99, 235, 0.08);
+      0 30px 60px rgba(37, 99, 235, 0.34),
+      0 16px 34px rgba(15, 23, 42, 0.22),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 
     img {
-      width: 72px;
-      height: 72px;
-      object-fit: contain;
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
       display: block;
       filter:
-        drop-shadow(0 10px 20px rgba(0, 0, 0, 0.18))
-        drop-shadow(0 4px 10px rgba(37, 99, 235, 0.14));
+        drop-shadow(0 18px 34px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 6px 16px rgba(255, 255, 255, 0.18));
+      transform: scale(1.08);
     }
   }
 
@@ -409,19 +407,23 @@ const navigateToRegister = () => {
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
 
     &__logo {
-      width: 84px;
-      height: 84px;
-      background: rgba(255, 255, 255, 0.16);
+      width: 104px;
+      height: 104px;
+      padding: 0;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(29, 78, 216, 0.92));
       box-shadow:
-        0 18px 30px rgba(0, 0, 0, 0.22),
-        0 8px 18px rgba(37, 99, 235, 0.16),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        0 20px 34px rgba(0, 0, 0, 0.24),
+        0 10px 22px rgba(37, 99, 235, 0.20),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.16);
     }
 
     &__logo img {
+      width: 104px;
+      height: 104px;
+      transform: scale(1.06);
       filter:
-        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.24))
-        drop-shadow(0 4px 10px rgba(37, 99, 235, 0.12));
+        drop-shadow(0 12px 22px rgba(0, 0, 0, 0.30))
+        drop-shadow(0 4px 10px rgba(255, 255, 255, 0.16));
     }
 
     &__title,

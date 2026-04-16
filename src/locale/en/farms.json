@@ -28,7 +28,7 @@
       "actions": "Actions",
       "review": "Technical review",
       "recommendations": "Technical recommendations",
-      "reports": "Reports",
+      "reports": "Tasks",
       "fertilization_section": "Fertilization",
       "irrigation_section": "Irrigation",
       "spraying_section": "Spraying"
@@ -36,7 +36,7 @@
   },
   "form": {
     "no_quantity": "None",
-    "builder_text": "Organize farm details and palm types clearly so everything is ready for reports and follow-up.",
+    "builder_text": "Organize farm details and palm types clearly so everything is ready for follow-up.",
     "sections": {
       "basic_info": "Basic information",
       "basic_info_text": "Enter the farm name and location clearly so it is easy to access later.",
@@ -48,7 +48,8 @@
         "1": "Week 1",
         "2": "Week 2",
         "3": "Week 3",
-        "4": "Week 4"
+        "4": "Week 4",
+        "5": "Week 5"
       },
       "units": {
         "minute": "minute",
@@ -70,7 +71,7 @@
     "table_title": "Farms list",
     "search_placeholder": "Search by farm name or location",
     "empty_title": "No farms yet",
-    "empty_message": "Start by adding your first farm to organize data and reports easily.",
+    "empty_message": "Start by adding your first farm to organize data and follow-up easily.",
     "stats": {
       "farms_count": "Total farms",
       "palm_types_count": "Palm types",
@@ -87,21 +88,33 @@
   },
   "show": {
     "title": "Farm details",
-    "subtitle": "View farm details and follow its reports",
-    "hero_text": "A quick executive view of the farm, palm types, and monthly reports.",
+    "subtitle": "View farm details and follow its tasks",
+    "hero_text": "A clean and clear view of the farm and all weekly tasks in one place.",
     "summary_text": "All key farm information in one clean place.",
     "palm_types_text": "Quick cards that show each palm type, tree count, and age.",
-    "reports_text": "Follow monthly reports, review technical notes, and download the report directly from the same page.",
+    "tasks_text": "Each month appears as its own section, and inside it you will find week cards. Click any week to open a separate page for its recorded days.",
     "unknown_month": "Unknown",
     "week_without_days": "No recorded days for this week",
     "week_count": "Weeks",
-    "no_reports_title": "No reports are linked to this farm yet",
-    "no_reports_message": "Once monthly reports are added, they will appear here with full technical details and download options.",
+    "days_count": "days",
+    "task_month": "Task month",
+    "open_week": "Click to open this week",
+    "monthly_tasks": "Monthly tasks",
+    "no_review": "No technical review has been added yet.",
+    "no_recommendations": "No technical recommendations have been added yet.",
+    "no_reports_title": "No tasks are linked to this farm yet",
+    "no_reports_message": "Once monthly tasks are added, they will appear here in an organized way, and each week will have its own page for the recorded days.",
+    "week_page_title": "Week details",
+    "week_page_subtitle": "Follow the recorded days inside this week",
+    "week_days_title": "Week days",
+    "week_days_text": "Each card here represents one recorded day inside this week, with all fertilization, irrigation, and spraying details.",
+    "no_days_title": "No days inside this week",
+    "no_days_message": "When days are recorded for this week, they will appear here automatically as clear and simple cards.",
     "stats": {
       "palm_types": "Palm types",
       "total_trees": "Total trees",
-      "reports_count": "Reports",
-      "last_report": "Latest report"
+      "reports_count": "Tasks count",
+      "last_report": "Latest task"
     }
   },
   "actions": {
@@ -110,6 +123,7 @@
     "cancel": "Cancel",
     "back": "Back",
     "submit": "Save changes",
-    "download_report": "Download report"
+    "download_report": "Open task",
+    "tasks": "Tasks"
   }
 }

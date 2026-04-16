@@ -55,13 +55,15 @@
                 <BaseIcon name="mdi:palm-tree" />
               </div>
               <div class="farm-row__content">
-                <router-link class="farm-row__name" :to="{ name: 'show_farm', params: { id: item.id } }">
+                <span class="farm-row__name">
                   {{ item.farm_name }}
-                </router-link>
+                </span>
+
                 <p class="farm-row__meta">
                   <BaseIcon name="solar:map-point-outline" :width="14" :height="14" />
                   <span>{{ item.location || '--' }}</span>
                 </p>
+
                 <div class="farm-row__chips">
                   <span class="farm-chip farm-chip--emerald">
                     {{ item.palm_types_count }} {{ t('farms.table.headers.palm_types') }}
@@ -95,11 +97,13 @@
               <BaseButton
                 variant="soft"
                 color="blue"
-                size="icon-sm"
+                size="sm"
                 @click="router.push({ name: 'show_farm', params: { id: item.id } })"
               >
-                <BaseIcon name="solar:eye-outline" />
+                <BaseIcon name="solar:clipboard-list-outline" />
+                {{ t('farms.actions.tasks') }}
               </BaseButton>
+
               <BaseButton
                 dropdown
                 variant="soft"
@@ -176,7 +180,7 @@ const TABLE_HEADERS = computed(() => [
     text: t('farms.table.headers.actions'),
     value: 'actions',
     alignment: 'center',
-    width: 120,
+    width: 220,
   },
 ]);
 
@@ -386,6 +390,7 @@ const triggerShowModal = (action, item) => {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    flex-wrap: wrap;
   }
 
   &__empty-state {
@@ -451,14 +456,11 @@ const triggerShowModal = (action, item) => {
   }
 
   &__name {
-    color: var(--blue-700);
+    color: var(--gray-950);
     font-size: 1.65rem;
     font-weight: 800;
     text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
+    cursor: default;
   }
 
   &__meta {
@@ -516,21 +518,6 @@ const triggerShowModal = (action, item) => {
   &--amber {
     background-color: var(--amber-100);
     color: var(--amber-800);
-  }
-}
-
-@media (max-width: 768px) {
-  .farms {
-    &__hero {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 20px;
-    }
-
-    &__hero-actions {
-      width: 100%;
-      justify-content: stretch;
-    }
   }
 }
 </style>

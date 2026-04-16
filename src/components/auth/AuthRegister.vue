@@ -16,97 +16,147 @@
 
           <form class="register-card__form" @submit.prevent="handleSubmit">
             <div class="register-card__control">
-              <BaseInput v-model="registerForm.name" :label="t('auth.register.form.labels.full_name')"
+              <BaseInput
+                v-model="registerForm.name"
+                :label="t('auth.register.form.labels.full_name')"
                 :placeholder="t('auth.register.form.placeholders.full_name')"
-                :error="isFieldHasError(v$.registerForm.name)" :error-text="getFieldErrorMessage(v$.registerForm.name)"
-                required />
+                :error="isFieldHasError(v$.registerForm.name)"
+                :error-text="getFieldErrorMessage(v$.registerForm.name)"
+                required
+              />
             </div>
 
             <div class="register-card__grid">
               <div class="register-card__control">
-                <BaseInput v-model="registerForm.email" :label="t('auth.register.form.labels.email')"
+                <BaseInput
+                  v-model="registerForm.email"
+                  :label="t('auth.register.form.labels.email')"
                   :placeholder="t('auth.register.form.placeholders.email')"
                   :error="isFieldHasError(v$.registerForm.email)"
-                  :error-text="getFieldErrorMessage(v$.registerForm.email)" required />
+                  :error-text="getFieldErrorMessage(v$.registerForm.email)"
+                  required
+                />
               </div>
 
               <div class="register-card__control">
-                <BaseInput v-model="registerForm.whatsapp_number"
+                <BaseInput
+                  v-model="registerForm.whatsapp_number"
                   :label="t('auth.register.form.labels.whatsapp_number')"
                   :placeholder="t('auth.register.form.placeholders.whatsapp_number')"
                   :error="isFieldHasError(v$.registerForm.whatsapp_number)"
-                  :error-text="getFieldErrorMessage(v$.registerForm.whatsapp_number)" required type="number" />
+                  :error-text="getFieldErrorMessage(v$.registerForm.whatsapp_number)"
+                  required
+                  type="number"
+                />
               </div>
             </div>
 
             <div class="register-card__control">
-              <BaseInput v-model="registerForm.password" :label="t('auth.register.form.labels.password')"
+              <BaseInput
+                v-model="registerForm.password"
+                :label="t('auth.register.form.labels.password')"
                 :placeholder="t('auth.register.form.placeholders.password')"
                 :error="isFieldHasError(v$.registerForm.password)"
-                :error-text="getFieldErrorMessage(v$.registerForm.password)" required type="password" />
+                :error-text="getFieldErrorMessage(v$.registerForm.password)"
+                required
+                type="password"
+              />
             </div>
 
             <div class="register-card__section">
               <BaseStyledSection :label="t('auth.register.form.labels.farms')">
-                <ValidateEach v-for="(farm, farmIndex) in registerForm.farms" :key="farmIndex" :state="farm"
-                  :rules="farmRules">
+                <ValidateEach
+                  v-for="(farm, farmIndex) in registerForm.farms"
+                  :key="farmIndex"
+                  :state="farm"
+                  :rules="farmRules"
+                >
                   <template #default="{ v: farmV }">
                     <div class="register-card__farm">
                       <BaseAccordion variant="splitted">
                         <BaseAccordionItem
-                          :title="`${t('auth.register.form.labels.farm_info', { number: farmIndex + 1 })}`">
+                          :title="`${t('auth.register.form.labels.farm_info', { number: farmIndex + 1 })}`"
+                        >
                           <div class="register-card__control">
-                            <BaseInput v-model="farmV.name.$model" :label="t('auth.register.form.labels.farm_name')"
+                            <BaseInput
+                              v-model="farmV.name.$model"
+                              :label="t('auth.register.form.labels.farm_name')"
                               :placeholder="t('auth.register.form.placeholders.farm_name')"
-                              :error="isFieldHasError(farmV.name)" :error-text="getFieldErrorMessage(farmV.name)"
-                              required />
+                              :error="isFieldHasError(farmV.name)"
+                              :error-text="getFieldErrorMessage(farmV.name)"
+                              required
+                            />
                           </div>
 
                           <div class="register-card__control">
-                            <BaseInput v-model="farmV.location.$model"
+                            <BaseInput
+                              v-model="farmV.location.$model"
                               :label="t('auth.register.form.labels.farm_location')"
                               :placeholder="t('auth.register.form.placeholders.farm_location')"
                               :error="isFieldHasError(farmV.location)"
-                              :error-text="getFieldErrorMessage(farmV.location)" required />
+                              :error-text="getFieldErrorMessage(farmV.location)"
+                              required
+                            />
                           </div>
 
                           <div class="register-card__palms">
-                            <ValidateEach v-for="(palm, palmIndex) in farm.palm_types" :key="palmIndex" :state="palm"
-                              :rules="palmTypeRules">
+                            <ValidateEach
+                              v-for="(palm, palmIndex) in farm.palm_types"
+                              :key="palmIndex"
+                              :state="palm"
+                              :rules="palmTypeRules"
+                            >
                               <template #default="{ v: palmV }">
                                 <BaseAccordion variant="splitted">
                                   <BaseAccordionItem
-                                    :title="`${t('auth.register.form.labels.palm_type_info', { number: palmIndex + 1 })}`">
+                                    :title="`${t('auth.register.form.labels.palm_type_info', { number: palmIndex + 1 })}`"
+                                  >
                                     <div class="register-card__control">
-                                      <BaseInput v-model="palmV.name.$model"
+                                      <BaseInput
+                                        v-model="palmV.name.$model"
                                         :label="t('auth.register.form.labels.palm_type_name')"
                                         :placeholder="t('auth.register.form.placeholders.palm_type_name')"
                                         :error="isFieldHasError(palmV.name)"
-                                        :error-text="getFieldErrorMessage(palmV.name)" required />
+                                        :error-text="getFieldErrorMessage(palmV.name)"
+                                        required
+                                      />
                                     </div>
 
                                     <div class="register-card__grid">
                                       <div class="register-card__control">
-                                        <BaseInput v-model="palmV.number_of_trees.$model"
+                                        <BaseInput
+                                          v-model="palmV.number_of_trees.$model"
                                           :label="t('auth.register.form.labels.palm_type_number_of_trees')"
                                           :placeholder="t('auth.register.form.placeholders.palm_type_number_of_trees')"
                                           :error="isFieldHasError(palmV.number_of_trees)"
-                                          :error-text="getFieldErrorMessage(palmV.number_of_trees)" required />
+                                          :error-text="getFieldErrorMessage(palmV.number_of_trees)"
+                                          required
+                                        />
                                       </div>
 
                                       <div class="register-card__control">
-                                        <BaseInput v-model="palmV.palm_age.$model"
+                                        <BaseInput
+                                          v-model="palmV.palm_age.$model"
                                           :label="t('auth.register.form.labels.palm_age')"
                                           :placeholder="t('auth.register.form.placeholders.palm_age')"
                                           :error="isFieldHasError(palmV.palm_age)"
-                                          :error-text="getFieldErrorMessage(palmV.palm_age)" required />
+                                          :error-text="getFieldErrorMessage(palmV.palm_age)"
+                                          required
+                                        />
                                       </div>
                                     </div>
 
-                                    <div v-if="registerForm.farms[farmIndex].palm_types.length > 1"
-                                      class="register-card__btns">
-                                      <BaseButton class="register-card__danger" color="red" variant="outline" size="sm"
-                                        @click="removePalmType(farmIndex, palmIndex)">
+                                    <div
+                                      v-if="registerForm.farms[farmIndex].palm_types.length > 1"
+                                      class="register-card__btns"
+                                    >
+                                      <BaseButton
+                                        class="register-card__danger"
+                                        color="red"
+                                        variant="outline"
+                                        size="sm"
+                                        @click="removePalmType(farmIndex, palmIndex)"
+                                      >
                                         <BaseIcon name="mdi:minus" :width="16" :height="16" />
                                         {{ t("auth.register.actions.remove_palm_type") }}
                                       </BaseButton>
@@ -118,14 +168,24 @@
                           </div>
 
                           <div class="register-card__btns">
-                            <BaseButton class="register-card__ghost" variant="outline" size="sm"
-                              @click="addPalmType(farmIndex)">
+                            <BaseButton
+                              class="register-card__ghost"
+                              variant="outline"
+                              size="sm"
+                              @click="addPalmType(farmIndex)"
+                            >
                               <BaseIcon name="mdi:plus" :width="16" :height="16" />
                               {{ t("auth.register.actions.add_palm_type") }}
                             </BaseButton>
 
-                            <BaseButton v-if="registerForm.farms.length > 1" class="register-card__danger" color="red"
-                              variant="outline" size="sm" @click="removeFarm(farmIndex)">
+                            <BaseButton
+                              v-if="registerForm.farms.length > 1"
+                              class="register-card__danger"
+                              color="red"
+                              variant="outline"
+                              size="sm"
+                              @click="removeFarm(farmIndex)"
+                            >
                               <BaseIcon name="mdi:minus" :width="16" :height="16" />
                               {{ t("auth.register.actions.remove_farm") }}
                             </BaseButton>
@@ -137,7 +197,12 @@
                 </ValidateEach>
 
                 <div class="register-card__btns">
-                  <BaseButton class="register-card__ghost" variant="outline" size="sm" @click="addFarm">
+                  <BaseButton
+                    class="register-card__ghost"
+                    variant="outline"
+                    size="sm"
+                    @click="addFarm"
+                  >
                     <BaseIcon name="mdi:plus" :width="16" :height="16" />
                     {{ t("auth.register.actions.add_farm") }}
                   </BaseButton>
@@ -146,13 +211,25 @@
             </div>
 
             <div class="register-card__actions">
-              <BaseButton class="register-card__submit" :loading="uiFlags.isCreating" size="md"
-                :disabled="uiFlags.isCreating" full-width @click="handleSubmit">
+              <BaseButton
+                class="register-card__submit"
+                :loading="uiFlags.isCreating"
+                size="md"
+                :disabled="uiFlags.isCreating"
+                full-width
+                @click="handleSubmit"
+              >
                 {{ t("auth.register.actions.submit") }}
               </BaseButton>
 
-              <BaseButton class="register-card__secondary" color="gray" variant="outline" size="md" full-width
-                @click="handleNavigateToLogin">
+              <BaseButton
+                class="register-card__secondary"
+                color="gray"
+                variant="outline"
+                size="md"
+                full-width
+                @click="handleNavigateToLogin"
+              >
                 {{ t("auth.register.actions.already_have_an_account") }}
               </BaseButton>
             </div>
@@ -167,7 +244,6 @@
           <div class="register-shell__hero-logo">
             <img :src="logoImage" alt="Rayan Logo" />
           </div>
-
         </div>
       </div>
     </div>
@@ -194,7 +270,7 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth.store";
 import { useValidation } from "@/composables/useValidation";
 import authBg from "@/assets/auth-bg.png";
-import logoImage from "@/assets/22.png";
+import logoImage from "@/assets/لوجو مفرغ_.png";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -373,7 +449,7 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
     position: relative;
     z-index: 2;
     width: 100%;
-    max-width: 520px;
+    max-width: 980px;
     padding: 36px;
     text-align: center;
     color: #fff;
@@ -381,8 +457,8 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
 
   &__hero-logo {
     width: 100%;
-    max-width: 340px;
-    margin: 0 auto 18px;
+    max-width: 600px;
+    margin: 0 auto 24px;
 
     img {
       width: 100%;
@@ -390,7 +466,9 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
       display: block;
       object-fit: contain;
       filter:
-        drop-shadow(0 20px 40px rgba(0, 0, 0, 0.34)) drop-shadow(0 10px 22px rgba(37, 99, 235, 0.18));
+        drop-shadow(0 32px 64px rgba(0, 0, 0, 0.52))
+        drop-shadow(0 16px 34px rgba(0, 0, 0, 0.40))
+        drop-shadow(0 6px 14px rgba(255, 255, 255, 0.18));
     }
   }
 
@@ -421,26 +499,30 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
   }
 
   &__logo {
-    width: 96px;
-    height: 96px;
+    width: 128px;
+    height: 128px;
     margin: 0 auto 24px;
-    border-radius: 24px;
+    padding: 0;
+    border-radius: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(180deg, #ffffff, #eef4ff);
+    overflow: hidden;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     box-shadow:
-      0 20px 40px rgba(15, 23, 42, 0.12),
-      0 10px 24px rgba(37, 99, 235, 0.12),
-      inset 0 0 0 1px rgba(37, 99, 235, 0.08);
+      0 30px 60px rgba(37, 99, 235, 0.34),
+      0 16px 34px rgba(15, 23, 42, 0.22),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 
     img {
-      width: 72px;
-      height: 72px;
-      object-fit: contain;
+      width: 128px;
+      height: 128px;
+      object-fit: cover;
       display: block;
       filter:
-        drop-shadow(0 10px 20px rgba(0, 0, 0, 0.18)) drop-shadow(0 4px 10px rgba(37, 99, 235, 0.14));
+        drop-shadow(0 18px 34px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 6px 16px rgba(255, 255, 255, 0.18));
+      transform: scale(1.08);
     }
   }
 
@@ -540,10 +622,12 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg,
-      transparent 20%,
-      rgba(255, 255, 255, 0.32) 50%,
-      transparent 80%);
+  background: linear-gradient(
+    120deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 80%
+  );
   transform: translateX(-140%);
   transition: transform 420ms ease;
 }
@@ -625,19 +709,24 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
 
     &__logo {
-      width: 84px;
-      height: 84px;
+      width: 104px;
+      height: 104px;
       margin-bottom: 22px;
-      background: rgba(255, 255, 255, 0.16);
+      padding: 0;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(29, 78, 216, 0.92));
       box-shadow:
-        0 18px 30px rgba(0, 0, 0, 0.22),
-        0 8px 18px rgba(37, 99, 235, 0.16),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        0 20px 34px rgba(0, 0, 0, 0.24),
+        0 10px 22px rgba(37, 99, 235, 0.20),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.16);
     }
 
     &__logo img {
+      width: 104px;
+      height: 104px;
+      transform: scale(1.06);
       filter:
-        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.24)) drop-shadow(0 4px 10px rgba(37, 99, 235, 0.12));
+        drop-shadow(0 12px 22px rgba(0, 0, 0, 0.30))
+        drop-shadow(0 4px 10px rgba(255, 255, 255, 0.16));
     }
 
     &__head {

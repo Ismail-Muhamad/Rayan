@@ -18,9 +18,7 @@
       </div>
 
       <div v-show="sidebarExpanded" class="primary__brand-wrap">
-        <span class="primary__brand">
-        
-        </span>
+        <span class="primary__brand"></span>
         <span class="primary__brand-sub">
           شريكك الحقيقي في إدارة مزرعتك
         </span>
@@ -55,7 +53,7 @@ import PrimarySidebarItem from "./PrimarySidebarItem.vue";
 import i18n from "@/plugins/i18n";
 import { useAuthStore } from "@/stores/auth.store";
 import router from "@/router";
-import logoImage from "@/assets/22.png";
+import logoImage from "@/assets/لوجو مفرغ_.png";
 
 export default {
   name: "PrimarySidebar",
@@ -74,7 +72,7 @@ export default {
   data() {
     return {
       logoImage,
-      isExpandedDesktop: false,
+      isExpandedDesktop: true,
     };
   },
   computed: {
@@ -116,7 +114,7 @@ export default {
       return this.$route.meta?.sidebar?.primary?.hide ?? false;
     },
     sidebarExpanded() {
-      return this.isMobile ? this.mobileOpen : this.isExpandedDesktop;
+      return this.isMobile ? this.mobileOpen : true;
     },
   },
   methods: {
@@ -124,14 +122,10 @@ export default {
       return this.currentPath.startsWith(path);
     },
     handleMouseEnter() {
-      if (!this.isMobile) {
-        this.isExpandedDesktop = true;
-      }
+      if (!this.isMobile) return;
     },
     handleMouseLeave() {
-      if (!this.isMobile) {
-        this.isExpandedDesktop = false;
-      }
+      if (!this.isMobile) return;
     },
     handleNavigate() {
       if (this.isMobile) {
@@ -159,7 +153,7 @@ export default {
   flex-direction: column;
   height: 100%;
   width: 78px;
-  padding: 16px 12px;
+  padding: 4px 12px 16px;
   border-radius: 0.75rem;
   background: linear-gradient(180deg, #2f6df6 0%, #1f56d8 100%);
   overflow: hidden;
@@ -179,28 +173,29 @@ export default {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 96px;
-    padding: 10px 4px 18px;
-    margin-bottom: 14px;
+    justify-content: flex-start;
+    min-height: 220px;
+    padding: 0 4px 14px;
+    margin-bottom: 8px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.28);
     text-align: center;
     transition: min-height 260ms ease, padding 260ms ease;
   }
 
   &__logo-image-wrap {
-    width: 48px;
-    height: 48px;
+    width: 220px;
+    height: 220px;
     flex-shrink: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     transition:
       width 260ms ease,
       height 260ms ease,
       transform 260ms ease,
       margin-bottom 260ms ease;
-    margin-bottom: 0;
+    margin-bottom: 8px;
+    margin-top: -6px;
   }
 
   &__logo-image {
@@ -211,7 +206,10 @@ export default {
     transition:
       transform 260ms ease,
       filter 260ms ease;
-    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.18));
+    transform: scale(1.08);
+    filter:
+      drop-shadow(0 18px 36px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
   }
 
   &__brand-wrap {
@@ -282,15 +280,16 @@ export default {
 }
 
 .primary--expanded .primary__logo {
-  min-height: 300px;
-  padding: 24px 10px 26px;
+  min-height: 220px;
+  padding: 0 10px 18px;
 }
 
 .primary--expanded .primary__logo-image-wrap {
-  width: 220px;
-  height: 220px;
-  margin-bottom: 18px;
-  transform: scale(1.08);
+  width: 333px;
+  height: 333px;
+  margin-bottom: 10px;
+  margin-top: -50px;
+  transform: scale(1.05);
 }
 
 .primary--expanded .primary__logo-image {
@@ -332,19 +331,20 @@ export default {
   }
 
   .primary__logo {
-    min-height: 320px;
-    padding: 24px 10px 28px;
-    margin-bottom: 16px;
+    min-height: 280px;
+    padding: 4px 10px 20px;
+    margin-bottom: 12px;
   }
 
   .primary__logo-image-wrap {
-    width: 230px;
-    height: 230px;
-    margin-bottom: 18px;
+    width: 240px;
+    height: 240px;
+    margin-bottom: 12px;
+    margin-top: -4px;
   }
 
   .primary__logo-image {
-    transform: scale(1.05);
+    transform: scale(1.06);
     filter:
       drop-shadow(0 20px 38px rgba(0, 0, 0, 0.28))
       drop-shadow(0 10px 22px rgba(0, 0, 0, 0.22));

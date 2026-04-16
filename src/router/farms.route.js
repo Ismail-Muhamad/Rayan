@@ -27,5 +27,10 @@ export default {
       name: "show_farm",
       component: () => import("@/components/farms/FarmsShow.vue"),
     },
+  {
+  path: "show/:id/report/:reportId/week/:weekId",
+  name: "show_farm_week",
+  component: () => import("@/components/farms/FarmWeekShow.vue"),
+},
   ],
 };
