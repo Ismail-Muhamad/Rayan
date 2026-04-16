@@ -28,7 +28,12 @@
               <BaseButton
                 color="blue"
                 size="sm"
-                @click="router.push({ name: 'edit_farm', params: { id: currentRouteId } })"
+                @click="
+                  router.push({
+                    name: 'edit_farm',
+                    params: { id: currentRouteId },
+                  })
+                "
               >
                 <BaseIcon name="solar:pen-2-outline" />
                 {{ t('farms.actions.edit') }}
@@ -43,7 +48,11 @@
 
             <div class="farm__hero-meta">
               <span class="farm__hero-chip farm__hero-chip--location">
-                <BaseIcon name="solar:map-point-outline" :width="16" :height="16" />
+                <BaseIcon
+                  name="solar:map-point-outline"
+                  :width="16"
+                  :height="16"
+                />
                 {{ farmRecord?.location || '--' }}
               </span>
 
@@ -53,7 +62,11 @@
               </span>
 
               <span class="farm__hero-chip farm__hero-chip--slate">
-                <BaseIcon name="solar:calendar-outline" :width="16" :height="16" />
+                <BaseIcon
+                  name="solar:calendar-outline"
+                  :width="16"
+                  :height="16"
+                />
                 {{ latestTaskLabel }}
               </span>
             </div>
@@ -110,7 +123,9 @@
               >
                 <div class="farm__palm-card-top">
                   <div>
-                    <p class="farm__palm-label">{{ t('farms.table.headers.palm_type') }}</p>
+                    <p class="farm__palm-label">
+                      {{ t('farms.table.headers.palm_type') }}
+                    </p>
                     <h3 class="farm__palm-name">{{ palmType.palm_type }}</h3>
                   </div>
 
@@ -148,7 +163,9 @@
               >
                 <div class="farm__month-head">
                   <div>
-                    <p class="farm__month-label">{{ t('farms.show.task_month') }}</p>
+                    <p class="farm__month-label">
+                      {{ t('farms.show.task_month') }}
+                    </p>
                     <h3 class="farm__month-title">{{ taskGroup.monthLabel }}</h3>
                   </div>
 
@@ -161,6 +178,18 @@
                       {{ t('farms.show.week_count') }}:
                       {{ taskGroup.weeks.length }}
                     </span>
+
+                    <BaseButton
+                      color="blue"
+                      size="sm"
+                      :isLoading="exportingReportId === taskGroup.id"
+                      @click.stop="handleDownloadReport(taskGroup.report)"
+                    >
+                      <BaseIcon
+                        name="solar:download-minimalistic-outline"
+                      />
+                      {{ t('reports.actions.download') }}
+                    </BaseButton>
                   </div>
                 </div>
 
@@ -199,7 +228,11 @@
                     <div class="farm__week-copy">
                       <div class="farm__week-top">
                         <h4 class="farm__week-title">
-                          {{ t(`farms.form.options.week_number.${week.week_number}`) }}
+                          {{
+                            t(
+                              `farms.form.options.week_number.${week.week_number}`,
+                            )
+                          }}
                         </h4>
 
                         <span class="farm__pill farm__pill--blue-soft">
@@ -208,7 +241,9 @@
                         </span>
                       </div>
 
-                      <p class="farm__week-range">{{ getWeekRangeLabel(week) }}</p>
+                      <p class="farm__week-range">
+                        {{ getWeekRangeLabel(week) }}
+                      </p>
 
                       <p class="farm__week-hint">
                         {{ t('farms.show.open_week') }}
@@ -229,7 +264,9 @@
               <BaseIcon name="solar:calendar-mark-outline" />
             </div>
 
-            <h3 class="farm__empty-title">{{ t('farms.show.no_reports_title') }}</h3>
+            <h3 class="farm__empty-title">
+              {{ t('farms.show.no_reports_title') }}
+            </h3>
 
             <p class="farm__empty-text">
               {{ t('farms.show.no_reports_message') }}
@@ -242,12 +279,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useFarmsStore } from '@/stores/farms.store';
 import { useReportsStore } from '@/stores/reports.store';
+import { exportReportToPDF } from '@/utils/exporters/reportPdfExporter.utils';
 
 const farmsStore = useFarmsStore();
 const reportsStore = useReportsStore();
@@ -255,9 +293,182 @@ const router = useRouter();
 const route = useRoute();
 const { t, locale } = useI18n();
 
+const exportingReportId = ref(null);
+
 const currentRouteId = computed(() => route.params.id);
 const { record: farmRecord, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
-const { records: reportsList, uiFlags: reportsUiFlags } = storeToRefs(reportsStore);
+const { records: reportsList, uiFlags: reportsUiFlags } =
+  storeToRefs(reportsStore);
+
+const stripHtml = (value) => {
+  if (!value) return '';
+  return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
+const parseLocalDate = (dateStr) => {
+  const [year, month, day] = String(dateStr).split('-');
+  return new Date(year, month - 1, day);
+};
+
+const getDayNameFromDate = (dateStr, tFn) => {
+  const [year, month, day] = String(dateStr).split('-');
+  const date = new Date(year, month - 1, day);
+  const dayIndex = date.getDay();
+  return tFn(`reports.form.options.days.${dayIndex}`);
+};
+
+const formatDuration = (totalMinutes) => {
+  const hours = Math.floor(Number(totalMinutes || 0) / 60);
+  const minutes = Number(totalMinutes || 0) % 60;
+
+  if (hours && minutes) {
+    return `${hours} ${t('farms.form.options.units.hour')} ${minutes} ${t('farms.form.options.units.minute')}`;
+  }
+
+  if (hours) {
+    return `${hours} ${t('farms.form.options.units.hour')}`;
+  }
+
+  return `${minutes} ${t('farms.form.options.units.minute')}`;
+};
+
+const numberOfTreesFor = (report) => {
+  return report?.palm_type?.number_of_trees || 0;
+};
+
+const mapWeeksReport = (report) => {
+  const weeks = (report?.report_weeks || [])
+    .map((week) => {
+      const validDays = (week.days || []).filter((day) => {
+        const hasFertilization = (day.fertilizations || []).some(
+          (f) =>
+            (f.type_of_fertilization &&
+              String(f.type_of_fertilization) !== '0') ||
+            (f.fertilizer_quantity_per_palm_tree &&
+              String(f.fertilizer_quantity_per_palm_tree) !== '0'),
+        );
+
+        const hasIrrigation =
+          (day.irrigation_amount_per_palm_tree &&
+            String(day.irrigation_amount_per_palm_tree) !== '0') ||
+          (day.duration_of_irrigation_per_palm_tree &&
+            String(day.duration_of_irrigation_per_palm_tree) !== '0');
+
+        const hasSpraying =
+          (day.spraying && String(day.spraying) !== '0') ||
+          (day.amount_of_spray && String(day.amount_of_spray) !== '0');
+
+        return hasFertilization || hasIrrigation || hasSpraying;
+      });
+
+      return {
+        ...week,
+        days: validDays.map((day) => ({
+          ...day,
+          day: getDayNameFromDate(day.date, t),
+          fertilizations: (day.fertilizations || []).map((f) => ({
+            ...f,
+            type_of_fertilization:
+              f.type_of_fertilization &&
+              String(f.type_of_fertilization) !== '0'
+                ? f.type_of_fertilization
+                : t('farms.form.no_quantity'),
+            fertilization_total:
+              f.fertilizer_quantity_per_palm_tree &&
+              String(f.fertilizer_quantity_per_palm_tree) !== '0'
+                ? `${(f.fertilizer_quantity_per_palm_tree * numberOfTreesFor(report)) / 1000} ${t('farms.form.options.units.kg')}`
+                : t('farms.form.no_quantity'),
+            fertilizer_quantity_per_palm_tree:
+              f.fertilizer_quantity_per_palm_tree &&
+              String(f.fertilizer_quantity_per_palm_tree) !== '0'
+                ? `${f.fertilizer_quantity_per_palm_tree} ${t('farms.form.options.units.gram')}`
+                : t('farms.form.no_quantity'),
+          })),
+          irrigation_amount_per_palm_tree:
+            !day.irrigation_amount_per_palm_tree ||
+            String(day.irrigation_amount_per_palm_tree) === '0'
+              ? t('farms.form.no_quantity')
+              : `${day.irrigation_amount_per_palm_tree} ${t('farms.form.options.units.liter')}`,
+          duration_of_irrigation_per_palm_tree:
+            !day.duration_of_irrigation_per_palm_tree ||
+            String(day.duration_of_irrigation_per_palm_tree) === '0'
+              ? t('farms.form.no_quantity')
+              : `${day.duration_of_irrigation_per_palm_tree} ${t('farms.form.options.units.minute')}`,
+          total_amount_of_irrigation:
+            !day.irrigation_amount_per_palm_tree ||
+            String(day.irrigation_amount_per_palm_tree) === '0'
+              ? t('farms.form.no_quantity')
+              : `${day.irrigation_amount_per_palm_tree * numberOfTreesFor(report)} ${t('farms.form.options.units.liter')}`,
+          total_duration_of_irrigation:
+            !day.duration_of_irrigation_per_palm_tree ||
+            String(day.duration_of_irrigation_per_palm_tree) === '0'
+              ? t('farms.form.no_quantity')
+              : formatDuration(
+                  day.duration_of_irrigation_per_palm_tree *
+                    numberOfTreesFor(report),
+                ),
+          spraying:
+            !day.spraying || String(day.spraying) === '0'
+              ? t('farms.form.no_quantity')
+              : day.spraying,
+          spraying_per_tree:
+            !day.amount_of_spray || String(day.amount_of_spray) === '0'
+              ? t('farms.form.no_quantity')
+              : `${day.amount_of_spray} ${t('farms.form.options.units.gram')}`,
+          amount_of_spray:
+            !day.amount_of_spray || String(day.amount_of_spray) === '0'
+              ? t('farms.form.no_quantity')
+              : `${(day.amount_of_spray * numberOfTreesFor(report)) / 1000} ${t('farms.form.options.units.kg')}`,
+        })),
+      };
+    })
+    .filter((week) => week.days.length > 0);
+
+  return weeks;
+};
+
+const formatReportMonth = (report) => {
+  const date = report?.report_weeks?.[0]?.date;
+
+  if (!date) {
+    return t('farms.show.unknown_month');
+  }
+
+  return new Intl.DateTimeFormat(locale.value || 'ar', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(date));
+};
+
+const formatReportTitle = (report) => {
+  const firstWeek = report?.report_weeks?.[0];
+  const date = firstWeek ? parseLocalDate(firstWeek.date) : new Date();
+
+  const month = new Intl.DateTimeFormat(locale.value || 'ar', {
+    month: 'long',
+  }).format(date);
+
+  return `${report?.farm?.name || farmRecord.value?.name || '--'} - ${report?.palm_type?.name || '--'} - ${t('farms.table.headers.month')} ${month}`;
+};
+
+const handleDownloadReport = async (report) => {
+  try {
+    exportingReportId.value = report.id;
+
+    await exportReportToPDF({
+      report,
+      farmRecord: farmRecord.value,
+      t,
+      mapWeeksReport,
+      numberOfTreesFor,
+      formatReportTitle,
+    });
+  } catch (error) {
+    console.error('Failed to export report PDF:', error);
+  } finally {
+    exportingReportId.value = null;
+  }
+};
 
 const farmInfo = computed(() => [
   {
@@ -338,6 +549,7 @@ const overviewStats = computed(() => [
 const taskGroups = computed(() => {
   return (reportsList.value || []).map((report) => ({
     id: report.id,
+    report,
     monthLabel: formatReportMonth(report),
     palmTypeName: report?.palm_type?.name || '--',
     reviewPreview: stripHtml(report?.review) || t('farms.show.no_review'),
@@ -353,24 +565,6 @@ onMounted(async () => {
     farm_id: currentRouteId.value,
   });
 });
-
-const stripHtml = (value) => {
-  if (!value) return '';
-  return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-};
-
-const formatReportMonth = (report) => {
-  const date = report?.report_weeks?.[0]?.date;
-
-  if (!date) {
-    return t('farms.show.unknown_month');
-  }
-
-  return new Intl.DateTimeFormat(locale.value || 'ar', {
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(date));
-};
 
 const getWeekRangeLabel = (week) => {
   const days = week?.days || [];
@@ -418,9 +612,21 @@ const goToWeek = (reportId, weekId) => {
     border-radius: 30px;
     border: 1px solid rgba(59, 130, 246, 0.12);
     background:
-      radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 28%),
-      radial-gradient(circle at top left, rgba(125, 211, 252, 0.22), transparent 34%),
-      linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(238, 246, 255, 0.92));
+      radial-gradient(
+        circle at top right,
+        rgba(59, 130, 246, 0.12),
+        transparent 28%
+      ),
+      radial-gradient(
+        circle at top left,
+        rgba(125, 211, 252, 0.22),
+        transparent 34%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(248, 251, 255, 0.98),
+        rgba(238, 246, 255, 0.92)
+      );
     box-shadow: 0 24px 50px rgba(30, 64, 175, 0.08);
     padding: 24px 24px 30px;
   }
@@ -429,8 +635,12 @@ const goToWeek = (reportId, weekId) => {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background:
-      linear-gradient(90deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.82));
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.82),
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.82)
+    );
   }
 
   &__hero-top,
@@ -638,14 +848,18 @@ const goToWeek = (reportId, weekId) => {
   &__month-badges {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
   }
 
   &__month-card {
     border-radius: 24px;
     padding: 20px;
-    background:
-      linear-gradient(180deg, rgba(248, 251, 255, 0.92), rgba(255, 255, 255, 1));
+    background: linear-gradient(
+      180deg,
+      rgba(248, 251, 255, 0.92),
+      rgba(255, 255, 255, 1)
+    );
   }
 
   &__month-head {
@@ -696,8 +910,11 @@ const goToWeek = (reportId, weekId) => {
       transform 0.2s ease,
       box-shadow 0.2s ease,
       border-color 0.2s ease;
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(243, 248, 255, 0.92));
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 1),
+      rgba(243, 248, 255, 0.92)
+    );
 
     &:hover {
       transform: translateY(-3px);
