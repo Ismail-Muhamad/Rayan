@@ -53,18 +53,7 @@
 
           <div class="types-page__editor">
             <div class="types-page__editor-top">
-              <h4 class="types-page__editor-title">
-                {{ fertilizerForm.id ? "تعديل نوع تسميد" : "إضافة نوع تسميد" }}
-              </h4>
-
-              <button
-                v-if="fertilizerForm.id"
-                type="button"
-                class="types-page__tiny-btn"
-                @click="resetFertilizerForm"
-              >
-                إلغاء
-              </button>
+              <h4 class="types-page__editor-title">إضافة نوع تسميد</h4>
             </div>
 
             <div class="types-page__input-shell">
@@ -86,20 +75,10 @@
               >
                 <BaseIcon
                   v-if="!fertilizerSaving"
-                  :name="
-                    fertilizerForm.id
-                      ? 'solar:diskette-outline'
-                      : 'solar:add-circle-outline'
-                  "
+                  name="solar:add-circle-outline"
                 />
                 <span>
-                  {{
-                    fertilizerSaving
-                      ? "جارٍ الحفظ..."
-                      : fertilizerForm.id
-                        ? "حفظ التعديل"
-                        : "إضافة النوع"
-                  }}
+                  {{ fertilizerSaving ? "جارٍ الحفظ..." : "إضافة النوع" }}
                 </span>
               </button>
             </div>
@@ -119,17 +98,14 @@
               <button
                 type="button"
                 class="types-page__btn types-page__btn--soft"
-                @click="editFertilizerType(item)"
+                @click="openFertilizerEditDialog(item)"
               >
                 <BaseIcon name="solar:pen-2-outline" />
                 <span>تعديل</span>
               </button>
             </div>
 
-            <div
-              v-if="!fertilizerTypes.length"
-              class="types-page__empty"
-            >
+            <div v-if="!fertilizerTypes.length" class="types-page__empty">
               لا توجد أنواع تسميد حتى الآن
             </div>
           </div>
@@ -149,18 +125,7 @@
 
           <div class="types-page__editor">
             <div class="types-page__editor-top">
-              <h4 class="types-page__editor-title">
-                {{ pesticideForm.id ? "تعديل نوع مبيد" : "إضافة نوع مبيد" }}
-              </h4>
-
-              <button
-                v-if="pesticideForm.id"
-                type="button"
-                class="types-page__tiny-btn"
-                @click="resetPesticideForm"
-              >
-                إلغاء
-              </button>
+              <h4 class="types-page__editor-title">إضافة نوع مبيد</h4>
             </div>
 
             <div class="types-page__input-shell">
@@ -182,20 +147,10 @@
               >
                 <BaseIcon
                   v-if="!pesticideSaving"
-                  :name="
-                    pesticideForm.id
-                      ? 'solar:diskette-outline'
-                      : 'solar:add-circle-outline'
-                  "
+                  name="solar:add-circle-outline"
                 />
                 <span>
-                  {{
-                    pesticideSaving
-                      ? "جارٍ الحفظ..."
-                      : pesticideForm.id
-                        ? "حفظ التعديل"
-                        : "إضافة النوع"
-                  }}
+                  {{ pesticideSaving ? "جارٍ الحفظ..." : "إضافة النوع" }}
                 </span>
               </button>
             </div>
@@ -215,28 +170,145 @@
               <button
                 type="button"
                 class="types-page__btn types-page__btn--soft"
-                @click="editPesticideType(item)"
+                @click="openPesticideEditDialog(item)"
               >
                 <BaseIcon name="solar:pen-2-outline" />
                 <span>تعديل</span>
               </button>
             </div>
 
-            <div
-              v-if="!pesticideTypes.length"
-              class="types-page__empty"
-            >
+            <div v-if="!pesticideTypes.length" class="types-page__empty">
               لا توجد أنواع مبيدات حتى الآن
             </div>
           </div>
         </section>
       </div>
+
+      <!-- Fertilizer Edit Dialog -->
+      <transition name="types-fade">
+        <div
+          v-if="fertilizerEditDialog"
+          class="types-page__modal-overlay"
+          @click.self="closeFertilizerDialog"
+        >
+          <div class="types-page__modal-card">
+            <div class="types-page__modal-head">
+              <div>
+                <p class="types-page__modal-kicker">تعديل</p>
+                <h3 class="types-page__modal-title">تعديل نوع التسميد</h3>
+              </div>
+
+              <button
+                type="button"
+                class="types-page__modal-close"
+                @click="closeFertilizerDialog"
+              >
+                ×
+              </button>
+            </div>
+
+            <div class="types-page__modal-body">
+              <div class="types-page__input-shell">
+                <input
+                  ref="fertilizerEditInput"
+                  v-model="fertilizerEditForm.name"
+                  class="types-page__input"
+                  type="text"
+                  placeholder="اكتب الاسم الجديد"
+                  @keydown.enter.prevent="saveFertilizerEdit"
+                />
+              </div>
+            </div>
+
+            <div class="types-page__modal-actions">
+              <button
+                type="button"
+                class="types-page__btn types-page__btn--ghost"
+                @click="closeFertilizerDialog"
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                class="types-page__btn types-page__btn--primary"
+                :disabled="fertilizerSaving"
+                @click="saveFertilizerEdit"
+              >
+                <span>
+                  {{ fertilizerSaving ? "جارٍ الحفظ..." : "حفظ التعديل" }}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Pesticide Edit Dialog -->
+      <transition name="types-fade">
+        <div
+          v-if="pesticideEditDialog"
+          class="types-page__modal-overlay"
+          @click.self="closePesticideDialog"
+        >
+          <div class="types-page__modal-card">
+            <div class="types-page__modal-head">
+              <div>
+                <p class="types-page__modal-kicker">تعديل</p>
+                <h3 class="types-page__modal-title">تعديل نوع المبيد</h3>
+              </div>
+
+              <button
+                type="button"
+                class="types-page__modal-close"
+                @click="closePesticideDialog"
+              >
+                ×
+              </button>
+            </div>
+
+            <div class="types-page__modal-body">
+              <div class="types-page__input-shell">
+                <input
+                  ref="pesticideEditInput"
+                  v-model="pesticideEditForm.name"
+                  class="types-page__input"
+                  type="text"
+                  placeholder="اكتب الاسم الجديد"
+                  @keydown.enter.prevent="savePesticideEdit"
+                />
+              </div>
+            </div>
+
+            <div class="types-page__modal-actions">
+              <button
+                type="button"
+                class="types-page__btn types-page__btn--ghost"
+                @click="closePesticideDialog"
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                class="types-page__btn types-page__btn--primary"
+                :disabled="pesticideSaving"
+                @click="savePesticideEdit"
+              >
+                <span>
+                  {{ pesticideSaving ? "جارٍ الحفظ..." : "حفظ التعديل" }}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
     </div>
   </BasePageWrapper>
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import FertilizerTypesServices from "@/services/fertilizerTypes.services";
 import PesticideTypesServices from "@/services/pesticideTypes.services";
 
@@ -246,17 +318,31 @@ const pesticideTypes = ref([]);
 const fertilizerSaving = ref(false);
 const pesticideSaving = ref(false);
 
+const fertilizerEditDialog = ref(false);
+const pesticideEditDialog = ref(false);
+
+const fertilizerEditInput = ref(null);
+const pesticideEditInput = ref(null);
+
 const feedback = ref({
   type: "",
   message: "",
 });
 
 const fertilizerForm = ref({
-  id: null,
   name: "",
 });
 
 const pesticideForm = ref({
+  name: "",
+});
+
+const fertilizerEditForm = ref({
+  id: null,
+  name: "",
+});
+
+const pesticideEditForm = ref({
   id: null,
   name: "",
 });
@@ -285,30 +371,52 @@ const fetchAll = async () => {
 
 const resetFertilizerForm = () => {
   fertilizerForm.value = {
-    id: null,
     name: "",
   };
 };
 
 const resetPesticideForm = () => {
   pesticideForm.value = {
+    name: "",
+  };
+};
+
+const closeFertilizerDialog = () => {
+  fertilizerEditDialog.value = false;
+  fertilizerEditForm.value = {
     id: null,
     name: "",
   };
 };
 
-const editFertilizerType = (item) => {
-  fertilizerForm.value = {
-    id: item.id,
-    name: item.name,
+const closePesticideDialog = () => {
+  pesticideEditDialog.value = false;
+  pesticideEditForm.value = {
+    id: null,
+    name: "",
   };
 };
 
-const editPesticideType = (item) => {
-  pesticideForm.value = {
+const openFertilizerEditDialog = async (item) => {
+  fertilizerEditForm.value = {
     id: item.id,
     name: item.name,
   };
+  fertilizerEditDialog.value = true;
+
+  await nextTick();
+  fertilizerEditInput.value?.focus?.();
+};
+
+const openPesticideEditDialog = async (item) => {
+  pesticideEditForm.value = {
+    id: item.id,
+    name: item.name,
+  };
+  pesticideEditDialog.value = true;
+
+  await nextTick();
+  pesticideEditInput.value?.focus?.();
 };
 
 const saveFertilizerType = async () => {
@@ -319,15 +427,8 @@ const saveFertilizerType = async () => {
   feedback.value = { type: "", message: "" };
 
   try {
-    const payload = { name };
-
-    if (fertilizerForm.value.id) {
-      await FertilizerTypesServices.replace(fertilizerForm.value.id, payload);
-      setFeedback("success", "تم تعديل نوع التسميد بنجاح");
-    } else {
-      await FertilizerTypesServices.create(payload);
-      setFeedback("success", "تم إضافة نوع التسميد بنجاح");
-    }
+    await FertilizerTypesServices.create({ name });
+    setFeedback("success", "تم إضافة نوع التسميد بنجاح");
 
     resetFertilizerForm();
     await fetchAll();
@@ -350,15 +451,8 @@ const savePesticideType = async () => {
   feedback.value = { type: "", message: "" };
 
   try {
-    const payload = { name };
-
-    if (pesticideForm.value.id) {
-      await PesticideTypesServices.replace(pesticideForm.value.id, payload);
-      setFeedback("success", "تم تعديل نوع المبيد بنجاح");
-    } else {
-      await PesticideTypesServices.create(payload);
-      setFeedback("success", "تم إضافة نوع المبيد بنجاح");
-    }
+    await PesticideTypesServices.create({ name });
+    setFeedback("success", "تم إضافة نوع المبيد بنجاح");
 
     resetPesticideForm();
     await fetchAll();
@@ -373,7 +467,79 @@ const savePesticideType = async () => {
   }
 };
 
+const saveFertilizerEdit = async () => {
+  const name = normalizeText(fertilizerEditForm.value.name);
+  if (!name || fertilizerSaving.value || !fertilizerEditForm.value.id) return;
+
+  fertilizerSaving.value = true;
+  feedback.value = { type: "", message: "" };
+
+  try {
+    await FertilizerTypesServices.replace(fertilizerEditForm.value.id, { name });
+    setFeedback("success", "تم تعديل نوع التسميد بنجاح");
+
+    closeFertilizerDialog();
+    await fetchAll();
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "حصل خطأ أثناء تعديل نوع التسميد";
+    setFeedback("error", message);
+  } finally {
+    fertilizerSaving.value = false;
+  }
+};
+
+const savePesticideEdit = async () => {
+  const name = normalizeText(pesticideEditForm.value.name);
+  if (!name || pesticideSaving.value || !pesticideEditForm.value.id) return;
+
+  pesticideSaving.value = true;
+  feedback.value = { type: "", message: "" };
+
+  try {
+    await PesticideTypesServices.replace(pesticideEditForm.value.id, { name });
+    setFeedback("success", "تم تعديل نوع المبيد بنجاح");
+
+    closePesticideDialog();
+    await fetchAll();
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "حصل خطأ أثناء تعديل نوع المبيد";
+    setFeedback("error", message);
+  } finally {
+    pesticideSaving.value = false;
+  }
+};
+
+const handleEscape = (event) => {
+  if (event.key !== "Escape") return;
+
+  if (fertilizerEditDialog.value) {
+    closeFertilizerDialog();
+  }
+
+  if (pesticideEditDialog.value) {
+    closePesticideDialog();
+  }
+};
+
+watch(fertilizerEditDialog, (value) => {
+  document.body.style.overflow =
+    value || pesticideEditDialog.value ? "hidden" : "";
+});
+
+watch(pesticideEditDialog, (value) => {
+  document.body.style.overflow =
+    value || fertilizerEditDialog.value ? "hidden" : "";
+});
+
 onMounted(async () => {
+  window.addEventListener("keydown", handleEscape);
+
   try {
     await fetchAll();
   } catch (error) {
@@ -383,6 +549,11 @@ onMounted(async () => {
       "حصل خطأ أثناء تحميل الأنواع";
     setFeedback("error", message);
   }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleEscape);
+  document.body.style.overflow = "";
 });
 </script>
 
@@ -560,22 +731,13 @@ onMounted(async () => {
     color: #0f172a;
   }
 
-  &__tiny-btn {
-    border: none;
-    background: transparent;
-    color: #2563eb;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
   &__input-shell {
     margin-bottom: 14px;
   }
 
   &__input {
     width: 100%;
-    min-height: 52px;
+    min-height: 54px;
     padding: 0 16px;
     border-radius: 16px;
     border: 1px solid #dbe3ef;
@@ -629,6 +791,15 @@ onMounted(async () => {
       background: #eff6ff;
       color: #1d4ed8;
       padding: 10px 14px;
+      width: auto;
+      box-shadow: none;
+    }
+
+    &--ghost {
+      background: #eef2ff;
+      color: #1e3a8a;
+      width: auto;
+      box-shadow: none;
     }
   }
 
@@ -674,6 +845,97 @@ onMounted(async () => {
     font-size: 14px;
     font-weight: 700;
   }
+
+  &__modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  &__modal-card {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 28px;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+    border: 1px solid rgba(219, 227, 239, 0.95);
+    box-shadow: 0 30px 70px rgba(15, 23, 42, 0.2);
+    overflow: hidden;
+    animation: types-modal-pop 0.18s ease;
+  }
+
+  &__modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 22px 22px 14px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  }
+
+  &__modal-kicker {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2563eb;
+  }
+
+  &__modal-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  &__modal-close {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  &__modal-body {
+    padding: 18px 22px 8px;
+  }
+
+  &__modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 22px 22px;
+  }
+}
+
+.types-fade-enter-active,
+.types-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.types-fade-enter-from,
+.types-fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes types-modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (max-width: 960px) {
@@ -705,6 +967,20 @@ onMounted(async () => {
     }
 
     &__btn--soft {
+      width: 100%;
+    }
+
+    &__modal-card {
+      max-width: 100%;
+      border-radius: 22px;
+    }
+
+    &__modal-actions {
+      flex-direction: column;
+    }
+
+    &__btn--ghost,
+    &__btn--primary {
       width: 100%;
     }
   }
