@@ -232,6 +232,8 @@ import { useFarmsStore } from "@/stores/farms.store";
 import { useReportsStore } from "@/stores/reports.store";
 import ReportsDeleteModal from "./Modals/ReportsDeleteModal.vue";
 import { exportReportToPDF } from "@/utils/exporters/reportPdfExporter.utils";
+import FertilizerTypesServices from "@/services/fertilizerTypes.services";
+import PesticideTypesServices from "@/services/pesticideTypes.services";
 
 const farmsStore = useFarmsStore();
 const reportsStore = useReportsStore();
@@ -329,6 +331,8 @@ const REPORT_ACTIONS = computed(() => [
 
 const exportingReportId = ref(null);
 const deleteReportModalRef = ref(null);
+const fertilizerTypesRecords = ref([]);
+const pesticideTypesRecords = ref([]);
 
 const currentRouteId = computed(() => route.params.id);
 
@@ -377,9 +381,39 @@ const mappedReportsList = computed(() => {
   });
 });
 
+const getFertilizerTypeName = (fertilization) => {
+  const matched = (fertilizerTypesRecords.value || []).find(
+    (item) => item.id === fertilization?.fertilizer_type_id,
+  );
+
+  return (
+    matched?.name ||
+    fertilization?.type_of_fertilization ||
+    t("farms.form.no_quantity")
+  );
+};
+
+const getPesticideTypeName = (day) => {
+  const matched = (pesticideTypesRecords.value || []).find(
+    (item) => item.id === day?.pesticide_type_id,
+  );
+
+  return matched?.name || day?.spraying || t("farms.form.no_quantity");
+};
+
 onMounted(async () => {
-  await fetchReportAndFarmInfo();
+  await Promise.all([fetchReportAndFarmInfo(), fetchTypesLookups()]);
 });
+
+const fetchTypesLookups = async () => {
+  const [fertilizerTypesResponse, pesticideTypesResponse] = await Promise.all([
+    FertilizerTypesServices.get(),
+    PesticideTypesServices.get(),
+  ]);
+
+  fertilizerTypesRecords.value = fertilizerTypesResponse?.data || [];
+  pesticideTypesRecords.value = pesticideTypesResponse?.data || [];
+};
 
 const fetchReportAndFarmInfo = async () => {
   await farmsStore.fetchRecord(currentRouteId.value);
@@ -416,10 +450,8 @@ const mapWeeksReport = (report) => {
       const validDays = (week.days || []).filter((day) => {
         const hasFertilization = (day.fertilizations || []).some(
           (f) =>
-            (f.type_of_fertilization &&
-              String(f.type_of_fertilization) !== "0") ||
-            (f.fertilizer_quantity_per_palm_tree &&
-              String(f.fertilizer_quantity_per_palm_tree) !== "0"),
+            (f.fertilizer_type_id || f.type_of_fertilization) &&
+            String(f.type_of_fertilization) !== "0",
         );
 
         const hasIrrigation =
@@ -429,6 +461,7 @@ const mapWeeksReport = (report) => {
             String(day.duration_of_irrigation_per_palm_tree) !== "0");
 
         const hasSpraying =
+          day.pesticide_type_id ||
           (day.spraying && String(day.spraying) !== "0") ||
           (day.amount_of_spray && String(day.amount_of_spray) !== "0");
 
@@ -445,9 +478,8 @@ const mapWeeksReport = (report) => {
               return {
                 ...f,
                 type_of_fertilization:
-                  f.type_of_fertilization &&
-                  String(f.type_of_fertilization) !== "0"
-                    ? f.type_of_fertilization
+                  f.fertilizer_type_id || f.type_of_fertilization
+                    ? getFertilizerTypeName(f)
                     : t("farms.form.no_quantity"),
                 fertilization_total:
                   f.fertilizer_quantity_per_palm_tree &&
@@ -489,9 +521,10 @@ const mapWeeksReport = (report) => {
                       numberOfTreesFor(report),
                   ),
             spraying:
-              !day.spraying || String(day.spraying) === "0"
+              !day.pesticide_type_id &&
+              (!day.spraying || String(day.spraying) === "0")
                 ? t("farms.form.no_quantity")
-                : day.spraying,
+                : getPesticideTypeName(day),
             spraying_per_tree:
               !day.amount_of_spray || String(day.amount_of_spray) === "0"
                 ? t("farms.form.no_quantity")
@@ -558,6 +591,8 @@ const handleReportAction = (report, action) => {
       break;
     case "delete":
       deleteReportModalRef.value.openModal(report);
+      break;
+    default:
       break;
   }
 };

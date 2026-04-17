@@ -22,7 +22,7 @@
         <div class="report-edit__hero-side">
           <div class="report-edit__stat-card">
             <span class="report-edit__stat-label">
-             عدد الأسابيع خلال الشهر
+              عدد الأسابيع خلال الشهر
             </span>
             <strong class="report-edit__stat-value">
               {{ report.report_weeks.length || 0 }}
@@ -180,7 +180,7 @@
                               <template #default="{ v }">
                                 <div class="report-edit__fertilization-row">
                                   <div class="report-edit__field-card">
-                                    <BaseInput
+                                    <BaseSelect
                                       :label="
                                         t(
                                           'reports.form.labels.type_of_fertilization',
@@ -191,6 +191,7 @@
                                           'reports.form.placeholders.type_of_fertilization',
                                         )
                                       "
+                                      :options="mappedFertilizerTypesRecords"
                                       v-model="item.type_of_fertilization"
                                     />
                                   </div>
@@ -312,11 +313,12 @@
 
                             <div class="report-edit__grid">
                               <div class="report-edit__field-card">
-                                <BaseInput
+                                <BaseSelect
                                   :label="t('reports.form.labels.spraying')"
                                   :placeholder="
                                     t('reports.form.placeholders.spraying')
                                   "
+                                  :options="mappedPesticideTypesRecords"
                                   v-model="row.spraying"
                                 />
                               </div>
@@ -385,7 +387,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
 import { useVuelidate } from "@vuelidate/core";
 import { ValidateEach } from "@vuelidate/components";
@@ -403,6 +405,8 @@ import { useI18n } from "vue-i18n";
 import { useUsersStore } from "@/stores/users.store";
 import { useFarmsStore } from "@/stores/farms.store";
 import { useReportsStore } from "@/stores/reports.store";
+import FertilizerTypesServices from "@/services/fertilizerTypes.services";
+import PesticideTypesServices from "@/services/pesticideTypes.services";
 
 import { useValidation } from "@/composables/useValidation";
 
@@ -424,6 +428,9 @@ const report = ref({
   recommendations: null,
   report_weeks: [],
 });
+
+const fertilizerTypesRecords = ref([]);
+const pesticideTypesRecords = ref([]);
 
 const fertilizationRules = {
   fertilizer_quantity_per_palm_tree: {
@@ -521,6 +528,20 @@ const mappedPalmTypesRecords = computed(() => {
   }));
 });
 
+const mappedFertilizerTypesRecords = computed(() => {
+  return (fertilizerTypesRecords.value || []).map((item) => ({
+    label: item.name,
+    id: item.name,
+  }));
+});
+
+const mappedPesticideTypesRecords = computed(() => {
+  return (pesticideTypesRecords.value || []).map((item) => ({
+    label: item.name,
+    id: item.name,
+  }));
+});
+
 const fetchOwnerFarms = async (ownerId) => {
   if (!ownerId) {
     farmsStore.$patch({ records: [] });
@@ -532,21 +553,35 @@ const fetchOwnerFarms = async (ownerId) => {
     per_page: 1000,
   });
 };
+const isInitializingForm = ref(true);
 
 onMounted(async () => {
+  isInitializingForm.value = true;
+
   await reportsStore.fetchRecord(reportId.value);
   await usersStore.fetchRecords({
     role: "farm_owner",
     per_page: 1000,
   });
 
+  const [fertilizerTypesResponse, pesticideTypesResponse] = await Promise.all([
+    FertilizerTypesServices.get(),
+    PesticideTypesServices.get(),
+  ]);
+
+  fertilizerTypesRecords.value = fertilizerTypesResponse?.data || [];
+  pesticideTypesRecords.value = pesticideTypesResponse?.data || [];
+
   const ownerId = reportsRecord.value?.farm?.owner_id;
   await fetchOwnerFarms(ownerId);
 
   report.value = {
     owner: ownerId,
-    farm_id: reportsRecord.value?.farm?.id,
-    palm_type_id: reportsRecord.value?.palm_type_id,
+    farm_id: reportsRecord.value?.farm?.id ?? null,
+    palm_type_id:
+      reportsRecord.value?.palm_type_id ??
+      reportsRecord.value?.palm_type?.id ??
+      null,
     month: (() => {
       const dateStr = reportsRecord.value?.report_weeks?.[0]?.days?.[0]?.date;
       if (!dateStr) return null;
@@ -557,11 +592,18 @@ onMounted(async () => {
     recommendations: reportsRecord.value?.recommendations,
     report_weeks: reportsRecord.value?.report_weeks || [],
   };
+
+  await nextTick();
+  isInitializingForm.value = false;
 });
 
 watch(
   () => report.value.owner,
   async (newOwner, oldOwner) => {
+    if (isInitializingForm.value) {
+      return;
+    }
+
     if (!newOwner) {
       report.value.farm_id = null;
       report.value.palm_type_id = null;
@@ -580,8 +622,14 @@ watch(
 
 watch(
   () => report.value.farm_id,
-  () => {
-    report.value.palm_type_id = null;
+  (newFarmId, oldFarmId) => {
+    if (isInitializingForm.value) {
+      return;
+    }
+
+    if (newFarmId !== oldFarmId) {
+      report.value.palm_type_id = null;
+    }
   },
 );
 

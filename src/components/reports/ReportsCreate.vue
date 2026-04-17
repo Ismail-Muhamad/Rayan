@@ -173,7 +173,7 @@
                             <template #default="{ v }">
                               <div class="report-create__fertilization-row">
                                 <div class="report-create__field-card">
-                                  <BaseInput
+                                  <BaseSelect
                                     :label="
                                       t(
                                         'reports.form.labels.type_of_fertilization',
@@ -184,6 +184,7 @@
                                         'reports.form.placeholders.type_of_fertilization',
                                       )
                                     "
+                                    :options="mappedFertilizerTypesRecords"
                                     v-model="item.type_of_fertilization"
                                   />
                                 </div>
@@ -305,11 +306,12 @@
 
                           <div class="report-create__grid">
                             <div class="report-create__field-card">
-                              <BaseInput
+                              <BaseSelect
                                 :label="t('reports.form.labels.spraying')"
                                 :placeholder="
                                   t('reports.form.placeholders.spraying')
                                 "
+                                :options="mappedPesticideTypesRecords"
                                 v-model="row.spraying"
                               />
                             </div>
@@ -397,6 +399,8 @@ import { useI18n } from "vue-i18n";
 import { useUsersStore } from "@/stores/users.store";
 import { useFarmsStore } from "@/stores/farms.store";
 import { useReportsStore } from "@/stores/reports.store";
+import FertilizerTypesServices from "@/services/fertilizerTypes.services";
+import PesticideTypesServices from "@/services/pesticideTypes.services";
 
 // ===== COMPOSABLES =====
 import { useValidation } from "@/composables/useValidation";
@@ -421,6 +425,9 @@ const report = ref({
   recommendations: null,
   report_weeks: [],
 });
+
+const fertilizerTypesRecords = ref([]);
+const pesticideTypesRecords = ref([]);
 
 // ===== VALIDATION RULES =====
 const fertilizationRules = {
@@ -516,6 +523,20 @@ const mappedPalmTypesRecords = computed(() => {
   }));
 });
 
+const mappedFertilizerTypesRecords = computed(() => {
+  return (fertilizerTypesRecords.value || []).map((item) => ({
+    label: item.name,
+    id: item.name,
+  }));
+});
+
+const mappedPesticideTypesRecords = computed(() => {
+  return (pesticideTypesRecords.value || []).map((item) => ({
+    label: item.name,
+    id: item.name,
+  }));
+});
+
 const fetchOwnerFarms = async (ownerId) => {
   if (!ownerId) {
     farmsStore.$patch({ records: [] });
@@ -534,11 +555,26 @@ onMounted(async () => {
     role: "farm_owner",
     per_page: 1000,
   });
+
+  const [fertilizerTypesResponse, pesticideTypesResponse] = await Promise.all([
+    FertilizerTypesServices.get(),
+    PesticideTypesServices.get(),
+  ]);
+
+  fertilizerTypesRecords.value = fertilizerTypesResponse?.data || [];
+  pesticideTypesRecords.value = pesticideTypesResponse?.data || [];
 });
 
 watch(
   () => report.value.owner,
   async (newOwner, oldOwner) => {
+    if (!newOwner) {
+      report.value.farm_id = null;
+      report.value.palm_type_id = null;
+      farmsStore.$patch({ records: [] });
+      return;
+    }
+
     if (newOwner !== oldOwner) {
       report.value.farm_id = null;
       report.value.palm_type_id = null;
@@ -550,8 +586,10 @@ watch(
 
 watch(
   () => report.value.farm_id,
-  () => {
-    report.value.palm_type_id = null;
+  (newFarmId, oldFarmId) => {
+    if (newFarmId !== oldFarmId) {
+      report.value.palm_type_id = null;
+    }
   },
 );
 
@@ -897,63 +935,5 @@ const removeFertilization = (row, index) => {
 :deep(.ql-container),
 :deep(.ql-toolbar) {
   border-radius: 14px !important;
-}
-
-:deep(ul) {
-  display: block;
-  list-style-type: disc;
-  margin-block-start: 1em;
-  margin-block-end: 1em;
-  padding-inline-start: 40px;
-  unicode-bidi: isolate;
-}
-
-:deep(ol) {
-  display: block;
-  list-style-type: decimal;
-  margin-block-start: 1em;
-  margin-block-end: 1em;
-  padding-inline-start: 40px;
-  unicode-bidi: isolate;
-}
-
-@media (max-width: 992px) {
-  .report-create {
-    &__hero {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    &__fertilization-row {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
-@media (max-width: 576px) {
-  .report-create {
-    &__hero,
-    &__section,
-    &__actions-shell {
-      padding: 16px;
-      border-radius: 20px;
-    }
-
-    &__hero-title {
-      font-size: 1.8rem;
-    }
-
-    &__section-title {
-      font-size: 1.5rem;
-    }
-
-    &__actions {
-      justify-content: stretch;
-    }
-
-    &__action {
-      width: 100%;
-    }
-  }
 }
 </style>

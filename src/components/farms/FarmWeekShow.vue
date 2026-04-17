@@ -133,7 +133,6 @@
                             </span>
                             <strong class="week-page__metric-value">
                               {{ fertilization.fertilizer_quantity_per_palm_tree }}
-                              {{ t('farms.form.options.units.gram') }}
                             </strong>
                           </div>
 
@@ -143,7 +142,6 @@
                             </span>
                             <strong class="week-page__metric-value">
                               {{ fertilization.total }}
-                              {{ t('farms.form.options.units.kg') }}
                             </strong>
                           </div>
                         </div>
@@ -262,19 +260,24 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import moment from 'moment';
 import { useFarmsStore } from '@/stores/farms.store';
 import { useReportsStore } from '@/stores/reports.store';
+import FertilizerTypesServices from '@/services/fertilizerTypes.services';
+import PesticideTypesServices from '@/services/pesticideTypes.services';
 
 const farmsStore = useFarmsStore();
 const reportsStore = useReportsStore();
 const route = useRoute();
 const router = useRouter();
 const { t, locale } = useI18n();
+
+const fertilizerTypesRecords = ref([]);
+const pesticideTypesRecords = ref([]);
 
 const currentRouteId = computed(() => route.params.id);
 const currentReportId = computed(() => String(route.params.reportId));
@@ -284,11 +287,24 @@ const { record: farmRecord, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
 const { records: reportsList, uiFlags: reportsUiFlags } = storeToRefs(reportsStore);
 
 onMounted(async () => {
-  await farmsStore.fetchRecord(currentRouteId.value);
-  await reportsStore.fetchRecords({
-    farm_id: currentRouteId.value,
-  });
+  await Promise.all([
+    farmsStore.fetchRecord(currentRouteId.value),
+    reportsStore.fetchRecords({
+      farm_id: currentRouteId.value,
+    }),
+    fetchTypesLookups(),
+  ]);
 });
+
+const fetchTypesLookups = async () => {
+  const [fertilizerTypesResponse, pesticideTypesResponse] = await Promise.all([
+    FertilizerTypesServices.get(),
+    PesticideTypesServices.get(),
+  ]);
+
+  fertilizerTypesRecords.value = fertilizerTypesResponse?.data || [];
+  pesticideTypesRecords.value = pesticideTypesResponse?.data || [];
+};
 
 const selectedReport = computed(() => {
   return (reportsList.value || []).find(
@@ -304,6 +320,26 @@ const selectedWeek = computed(() => {
 
 const numberOfTreesFor = (report) => {
   return Number(report?.palm_type?.number_of_trees || 0);
+};
+
+const getFertilizerTypeName = (fertilization) => {
+  const matched = (fertilizerTypesRecords.value || []).find(
+    (item) => item.id === fertilization?.fertilizer_type_id,
+  );
+
+  return (
+    matched?.name ||
+    fertilization?.type_of_fertilization ||
+    t('farms.form.no_quantity')
+  );
+};
+
+const getPesticideTypeName = (day) => {
+  const matched = (pesticideTypesRecords.value || []).find(
+    (item) => item.id === day?.pesticide_type_id,
+  );
+
+  return matched?.name || day?.spraying || t('farms.form.no_quantity');
 };
 
 const formatDuration = (totalMinutes) => {
@@ -361,13 +397,21 @@ const selectedWeekRange = computed(() => {
 
 const hasRealTaskForDay = (day) => {
   const hasFertilization =
-    Array.isArray(day?.fertilizations) && day.fertilizations.length > 0;
+    Array.isArray(day?.fertilizations) &&
+    day.fertilizations.some(
+      (fertilization) =>
+        fertilization?.fertilizer_type_id ||
+        (fertilization?.type_of_fertilization &&
+          String(fertilization.type_of_fertilization) !== '0'),
+    );
 
   const irrigationPerTree = Number(day?.irrigation_amount_per_palm_tree || 0);
   const irrigationDuration = Number(day?.duration_of_irrigation_per_palm_tree || 0);
 
   const sprayAmount = Number(day?.amount_of_spray || 0);
-  const hasSprayingName = String(day?.spraying || '').trim() !== '';
+  const hasSprayingName =
+    !!day?.pesticide_type_id ||
+    String(day?.spraying || '').trim() !== '';
 
   const hasIrrigation = irrigationPerTree > 0 || irrigationDuration > 0;
   const hasSpraying = hasSprayingName || sprayAmount > 0;
@@ -375,15 +419,6 @@ const hasRealTaskForDay = (day) => {
   return hasFertilization || hasIrrigation || hasSpraying;
 };
 
-const weekdayOrder = {
-  6: 0, // السبت
-  0: 1, // الأحد
-  1: 2, // الاثنين
-  2: 3, // الثلاثاء
-  3: 4, // الأربعاء
-  4: 5, // الخميس
-  5: 6, // الجمعة
-};
 
 const mappedDays = computed(() => {
   const report = selectedReport.value;
@@ -394,9 +429,7 @@ const mappedDays = computed(() => {
   return [...(week.days || [])]
     .filter((day) => hasRealTaskForDay(day))
     .sort((a, b) => {
-      const aOrder = weekdayOrder[new Date(a.date).getDay()] ?? 999;
-      const bOrder = weekdayOrder[new Date(b.date).getDay()] ?? 999;
-      return aOrder - bOrder;
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
     })
     .map((day) => {
       const dayDate = new Date(day.date);
@@ -414,22 +447,55 @@ const mappedDays = computed(() => {
         }).format(dayDate),
         fertilizations: (day.fertilizations || []).map((fertilization) => ({
           ...fertilization,
+          type_of_fertilization: getFertilizerTypeName(fertilization),
           total:
-            (Number(fertilization.fertilizer_quantity_per_palm_tree || 0) *
-              numberOfTreesFor(report)) /
-            1000,
+            Number(fertilization.fertilizer_quantity_per_palm_tree || 0) > 0
+              ? `${(
+                  (Number(fertilization.fertilizer_quantity_per_palm_tree || 0) *
+                    numberOfTreesFor(report)) /
+                  1000
+                )} ${t('farms.form.options.units.kg')}`
+              : t('farms.form.no_quantity'),
+          fertilizer_quantity_per_palm_tree:
+            Number(fertilization.fertilizer_quantity_per_palm_tree || 0) > 0
+              ? `${fertilization.fertilizer_quantity_per_palm_tree} ${t('farms.form.options.units.gram')}`
+              : t('farms.form.no_quantity'),
         })),
-        irrigation_amount_per_palm_tree: `${day.irrigation_amount_per_palm_tree} ${t('farms.form.options.units.liter')}`,
-        duration_of_irrigation_per_palm_tree: `${day.duration_of_irrigation_per_palm_tree} ${t('farms.form.options.units.minute')}`,
-        total_amount_of_irrigation: `${day.irrigation_amount_per_palm_tree * numberOfTreesFor(report)} ${t('farms.form.options.units.liter')}`,
-        total_duration_of_irrigation: formatDuration(
-          day.duration_of_irrigation_per_palm_tree * numberOfTreesFor(report),
-        ),
-        spraying_per_tree: `${day.amount_of_spray} ${t('farms.form.options.units.gram')}`,
-        amount_of_spray: `${(day.amount_of_spray * numberOfTreesFor(report)) / 1000} ${t('farms.form.options.units.kg')}`,
+        irrigation_amount_per_palm_tree:
+          Number(day.irrigation_amount_per_palm_tree || 0) > 0
+            ? `${day.irrigation_amount_per_palm_tree} ${t('farms.form.options.units.liter')}`
+            : t('farms.form.no_quantity'),
+        duration_of_irrigation_per_palm_tree:
+          Number(day.duration_of_irrigation_per_palm_tree || 0) > 0
+            ? `${day.duration_of_irrigation_per_palm_tree} ${t('farms.form.options.units.minute')}`
+            : t('farms.form.no_quantity'),
+        total_amount_of_irrigation:
+          Number(day.irrigation_amount_per_palm_tree || 0) > 0
+            ? `${day.irrigation_amount_per_palm_tree * numberOfTreesFor(report)} ${t('farms.form.options.units.liter')}`
+            : t('farms.form.no_quantity'),
+        total_duration_of_irrigation:
+          Number(day.duration_of_irrigation_per_palm_tree || 0) > 0
+            ? formatDuration(
+                day.duration_of_irrigation_per_palm_tree * numberOfTreesFor(report),
+              )
+            : t('farms.form.no_quantity'),
+        spraying:
+          !day.pesticide_type_id &&
+          (!day.spraying || String(day.spraying) === '0')
+            ? t('farms.form.no_quantity')
+            : getPesticideTypeName(day),
+        spraying_per_tree:
+          Number(day.amount_of_spray || 0) > 0
+            ? `${day.amount_of_spray} ${t('farms.form.options.units.gram')}`
+            : t('farms.form.no_quantity'),
+        amount_of_spray:
+          Number(day.amount_of_spray || 0) > 0
+            ? `${(day.amount_of_spray * numberOfTreesFor(report)) / 1000} ${t('farms.form.options.units.kg')}`
+            : t('farms.form.no_quantity'),
       };
     });
 });
+
 </script>
 
 <style lang="scss" scoped>

@@ -103,36 +103,6 @@
 
             <article
               class="consumptions-page__stat-card consumptions-page__stat-card--clickable"
-              @click="toggleExpandedCard('irrigationProducts')"
-            >
-              <div class="consumptions-page__stat-icon">
-                <BaseIcon name="solar:test-tube-outline" />
-              </div>
-              <div class="consumptions-page__stat-copy">
-                <p class="consumptions-page__stat-label">
-                  إجمالي إضافات الري / الأحماض
-                </p>
-                <h3 class="consumptions-page__stat-value">
-                  {{ yearlyTotals.irrigationProductsKg.toLocaleString() }}
-                  <span>كجم</span>
-                </h3>
-                <p class="consumptions-page__stat-hint">
-                  اضغط لعرض المنتجات المستخدمة
-                </p>
-              </div>
-              <div class="consumptions-page__stat-arrow">
-                <BaseIcon
-                  :name="
-                    expandedCard === 'irrigationProducts'
-                      ? 'solar:alt-arrow-up-outline'
-                      : 'solar:alt-arrow-down-outline'
-                  "
-                />
-              </div>
-            </article>
-
-            <article
-              class="consumptions-page__stat-card consumptions-page__stat-card--clickable"
               @click="toggleExpandedCard('fertilization')"
             >
               <div class="consumptions-page__stat-icon">
@@ -262,43 +232,6 @@
             </div>
           </section>
 
-          <section
-            v-if="expandedCard === 'irrigationProducts'"
-            class="consumptions-page__details-box"
-          >
-            <div class="consumptions-page__details-head">
-              <h3 class="consumptions-page__section-title">
-                تفاصيل إضافات الري / الأحماض المستخدمة
-              </h3>
-              <p class="consumptions-page__section-subtitle">
-                إجمالي كل صنف تم استخدامه خلال سنة {{ selectedYear }}
-              </p>
-            </div>
-
-            <div
-              v-if="irrigationProducts.length"
-              class="consumptions-page__details-list"
-            >
-              <div
-                v-for="item in irrigationProducts"
-                :key="`irr-${item.name}`"
-                class="consumptions-page__details-item"
-              >
-                <div class="consumptions-page__details-item-copy">
-                  <strong>{{ item.name }}</strong>
-                  <span>إجمالي الاستخدام خلال السنة</span>
-                </div>
-                <div class="consumptions-page__details-item-value">
-                  {{ item.total.toLocaleString() }} كجم
-                </div>
-              </div>
-            </div>
-
-            <div v-else class="consumptions-page__details-empty">
-              لا توجد إضافات ري مسجلة في السنة دي
-            </div>
-          </section>
-
           <section class="consumptions-page__months">
             <div class="consumptions-page__months-head">
               <h3 class="consumptions-page__section-title">
@@ -331,22 +264,6 @@
                       {{ month.irrigationLiters.toLocaleString() }} لتر
                     </strong>
                   </div>
-
-                  <button
-                    type="button"
-                    class="consumptions-page__metric consumptions-page__metric--clickable"
-                    @click="toggleMonthExpanded(month.monthKey, 'irrigationProducts')"
-                  >
-                    <span class="consumptions-page__metric-label">
-                      إضافات الري / الأحماض
-                    </span>
-                    <strong class="consumptions-page__metric-value">
-                      {{ month.irrigationProductsKg.toLocaleString() }} كجم
-                    </strong>
-                    <small class="consumptions-page__metric-hint">
-                      اضغط لعرض التفاصيل
-                    </small>
-                  </button>
 
                   <button
                     type="button"
@@ -440,38 +357,6 @@
                     لا توجد أصناف رش في الشهر ده
                   </div>
                 </div>
-
-                <div
-                  v-if="monthExpandedMap[month.monthKey] === 'irrigationProducts'"
-                  class="consumptions-page__month-details"
-                >
-                  <h5 class="consumptions-page__month-details-title">
-                    تفاصيل إضافات الري / الأحماض في {{ month.monthLabel }}
-                  </h5>
-
-                  <div
-                    v-if="month.irrigationProducts.length"
-                    class="consumptions-page__details-list"
-                  >
-                    <div
-                      v-for="item in month.irrigationProducts"
-                      :key="`${month.monthKey}-irr-${item.name}`"
-                      class="consumptions-page__details-item"
-                    >
-                      <div class="consumptions-page__details-item-copy">
-                        <strong>{{ item.name }}</strong>
-                        <span>إجمالي الاستخدام خلال الشهر</span>
-                      </div>
-                      <div class="consumptions-page__details-item-value">
-                        {{ item.total.toLocaleString() }} كجم
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-else class="consumptions-page__details-empty">
-                    لا توجد إضافات ري أو أحماض في الشهر ده
-                  </div>
-                </div>
               </article>
             </div>
           </section>
@@ -487,6 +372,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useFarmsStore } from "@/stores/farms.store";
 import { useReportsStore } from "@/stores/reports.store";
+import FertilizerTypesServices from "@/services/fertilizerTypes.services";
+import PesticideTypesServices from "@/services/pesticideTypes.services";
 
 const { locale } = useI18n();
 
@@ -501,6 +388,8 @@ const selectedFarmId = ref("");
 const selectedYear = ref("");
 const expandedCard = ref("");
 const monthExpandedMap = ref({});
+const fertilizerTypesRecords = ref([]);
+const pesticideTypesRecords = ref([]);
 
 const isPageLoading = computed(() => {
   return (
@@ -558,37 +447,62 @@ const mapToSortedArray = (map) => {
     .sort((a, b) => b.total - a.total);
 };
 
-const extractIrrigationProducts = (day) => {
-  return [
-    ...(Array.isArray(day?.irrigation_materials) ? day.irrigation_materials : []),
-    ...(Array.isArray(day?.irrigation_products) ? day.irrigation_products : []),
-    ...(Array.isArray(day?.irrigation_fertilizations)
-      ? day.irrigation_fertilizations
-      : []),
-    ...(Array.isArray(day?.water_additives) ? day.water_additives : []),
-  ];
+const getFertilizerTypeName = (fertilization) => {
+  const matched = (fertilizerTypesRecords.value || []).find(
+    (item) => item.id === fertilization?.fertilizer_type_id
+  );
+
+  return normalizeProductName(
+    matched?.name ||
+      fertilization?.type_of_fertilization ||
+      fertilization?.name ||
+      fertilization?.fertilizer_name ||
+      fertilization?.fertilization_name ||
+      fertilization?.product_name ||
+      fertilization?.title ||
+      fertilization?.fertilizer?.name ||
+      fertilization?.material?.name ||
+      ""
+  );
 };
 
-const extractIrrigationAcids = (day) => {
-  return [
-    ...(Array.isArray(day?.irrigation_acids) ? day.irrigation_acids : []),
-    ...(Array.isArray(day?.acids) ? day.acids : []),
-  ];
+const getPesticideTypeName = (day, item = null) => {
+  const pesticideTypeId = item?.pesticide_type_id || day?.pesticide_type_id;
+
+  const matched = (pesticideTypesRecords.value || []).find(
+    (record) => record.id === pesticideTypeId
+  );
+
+  return normalizeProductName(
+    matched?.name ||
+      item?.name ||
+      item?.spray_name ||
+      item?.product_name ||
+      item?.title ||
+      day?.spraying ||
+      day?.spray_name ||
+      day?.spraying_name ||
+      day?.product_name ||
+      day?.spray_product_name ||
+      ""
+  );
+};
+
+const fetchTypesLookups = async () => {
+  const [fertilizerTypesResponse, pesticideTypesResponse] = await Promise.all([
+    FertilizerTypesServices.get(),
+    PesticideTypesServices.get(),
+  ]);
+
+  fertilizerTypesRecords.value = fertilizerTypesResponse?.data || [];
+  pesticideTypesRecords.value = pesticideTypesResponse?.data || [];
 };
 
 const extractFertilizationEntries = (day, treesCount) => {
   const result = [];
 
   for (const item of day?.fertilizations || []) {
-    const name =
-      item?.name ||
-      item?.fertilizer_name ||
-      item?.fertilization_name ||
-      item?.product_name ||
-      item?.title ||
-      item?.fertilizer?.name ||
-      item?.material?.name ||
-      "";
+    const name = getFertilizerTypeName(item);
 
     const quantityPerPalm =
       Number(item?.fertilizer_quantity_per_palm_tree || 0) ||
@@ -597,9 +511,9 @@ const extractFertilizationEntries = (day, treesCount) => {
 
     const totalKg = (quantityPerPalm * treesCount) / 1000;
 
-    if (normalizeProductName(name) && totalKg > 0) {
+    if (name && totalKg > 0) {
       result.push({
-        name: normalizeProductName(name),
+        name,
         totalKg,
       });
     }
@@ -611,20 +525,14 @@ const extractFertilizationEntries = (day, treesCount) => {
 const extractSprayingEntries = (day, treesCount) => {
   const result = [];
 
-  const name =
-    day?.spraying ||
-    day?.spray_name ||
-    day?.spraying_name ||
-    day?.product_name ||
-    day?.spray_product_name ||
-    "";
+  const name = getPesticideTypeName(day);
 
   const totalKg =
     (Number(day?.amount_of_spray || 0) * Number(treesCount || 0)) / 1000;
 
-  if (normalizeProductName(name) && totalKg > 0) {
+  if (name && totalKg > 0) {
     result.push({
-      name: normalizeProductName(name),
+      name,
       totalKg,
     });
   }
@@ -634,12 +542,7 @@ const extractSprayingEntries = (day, treesCount) => {
     : [];
 
   for (const item of sprayingItems) {
-    const itemName =
-      item?.name ||
-      item?.spray_name ||
-      item?.product_name ||
-      item?.title ||
-      "";
+    const itemName = getPesticideTypeName(day, item);
 
     const quantityPerPalm =
       Number(item?.quantity_per_palm_tree || 0) ||
@@ -648,47 +551,10 @@ const extractSprayingEntries = (day, treesCount) => {
 
     const itemTotalKg = (quantityPerPalm * treesCount) / 1000;
 
-    if (normalizeProductName(itemName) && itemTotalKg > 0) {
+    if (itemName && itemTotalKg > 0) {
       result.push({
-        name: normalizeProductName(itemName),
+        name: itemName,
         totalKg: itemTotalKg,
-      });
-    }
-  }
-
-  return result;
-};
-
-const extractIrrigationEntries = (day, treesCount) => {
-  const result = [];
-  const allEntries = [
-    ...extractIrrigationProducts(day),
-    ...extractIrrigationAcids(day),
-  ];
-
-  for (const item of allEntries) {
-    const name =
-      item?.name ||
-      item?.acid_name ||
-      item?.material_name ||
-      item?.product_name ||
-      item?.title ||
-      item?.irrigation_material?.name ||
-      item?.acid?.name ||
-      "";
-
-    const quantityPerPalm =
-      Number(item?.quantity_per_palm_tree || 0) ||
-      Number(item?.amount_per_palm_tree || 0) ||
-      Number(item?.quantity || 0) ||
-      Number(item?.amount || 0);
-
-    const totalKg = (quantityPerPalm * treesCount) / 1000;
-
-    if (normalizeProductName(name) && totalKg > 0) {
-      result.push({
-        name: normalizeProductName(name),
-        totalKg,
       });
     }
   }
@@ -698,23 +564,23 @@ const extractIrrigationEntries = (day, treesCount) => {
 
 const hasRealTaskForDay = (day) => {
   const hasFertilization =
-    Array.isArray(day?.fertilizations) && day.fertilizations.length > 0;
+    Array.isArray(day?.fertilizations) &&
+    day.fertilizations.some(
+      (fertilization) =>
+        !!fertilization?.fertilizer_type_id ||
+        (
+          String(fertilization?.type_of_fertilization || "").trim() !== "" &&
+          String(fertilization?.type_of_fertilization || "") !== "0"
+        ) ||
+        Number(fertilization?.fertilizer_quantity_per_palm_tree || 0) > 0
+    );
 
   const irrigationPerTree = Number(day?.irrigation_amount_per_palm_tree || 0);
   const sprayAmount = Number(day?.amount_of_spray || 0);
-  const hasSprayingName = String(day?.spraying || "").trim() !== "";
+  const hasSprayingName =
+    !!day?.pesticide_type_id || String(day?.spraying || "").trim() !== "";
 
-  const irrigationProducts =
-    extractIrrigationProducts(day)?.length > 0 ||
-    extractIrrigationAcids(day)?.length > 0;
-
-  return (
-    hasFertilization ||
-    irrigationPerTree > 0 ||
-    sprayAmount > 0 ||
-    hasSprayingName ||
-    irrigationProducts
-  );
+  return hasFertilization || irrigationPerTree > 0 || sprayAmount > 0 || hasSprayingName;
 };
 
 const availableYears = computed(() => {
@@ -762,12 +628,10 @@ const monthlyBreakdown = computed(() => {
         }).format(dateObject),
         weeksCount: 0,
         irrigationLiters: 0,
-        irrigationProductsKg: 0,
         fertilizationKg: 0,
         sprayingKg: 0,
         fertilizationProductsMap: {},
         sprayingProductsMap: {},
-        irrigationProductsMap: {},
       };
     }
 
@@ -801,16 +665,6 @@ const monthlyBreakdown = computed(() => {
             item.totalKg
           );
         }
-
-        const irrigationEntries = extractIrrigationEntries(day, treesCount);
-        for (const item of irrigationEntries) {
-          grouped[monthKey].irrigationProductsKg += item.totalKg;
-          addToMap(
-            grouped[monthKey].irrigationProductsMap,
-            item.name,
-            item.totalKg
-          );
-        }
       }
     }
   }
@@ -819,12 +673,10 @@ const monthlyBreakdown = computed(() => {
     .map((item) => ({
       ...item,
       irrigationLiters: roundNumber(item.irrigationLiters),
-      irrigationProductsKg: roundNumber(item.irrigationProductsKg),
       fertilizationKg: roundNumber(item.fertilizationKg),
       sprayingKg: roundNumber(item.sprayingKg),
       fertilizationProducts: mapToSortedArray(item.fertilizationProductsMap),
       sprayingProducts: mapToSortedArray(item.sprayingProductsMap),
-      irrigationProducts: mapToSortedArray(item.irrigationProductsMap),
     }))
     .sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
@@ -836,14 +688,12 @@ const yearlyTotals = computed(() => {
   return monthlyBreakdown.value.reduce(
     (sum, month) => {
       sum.irrigationLiters += Number(month.irrigationLiters || 0);
-      sum.irrigationProductsKg += Number(month.irrigationProductsKg || 0);
       sum.fertilizationKg += Number(month.fertilizationKg || 0);
       sum.sprayingKg += Number(month.sprayingKg || 0);
       return sum;
     },
     {
       irrigationLiters: 0,
-      irrigationProductsKg: 0,
       fertilizationKg: 0,
       sprayingKg: 0,
     }
@@ -867,18 +717,6 @@ const sprayingProducts = computed(() => {
 
   for (const month of monthlyBreakdown.value) {
     for (const item of month.sprayingProducts) {
-      addToMap(map, item.name, item.total);
-    }
-  }
-
-  return mapToSortedArray(map);
-});
-
-const irrigationProducts = computed(() => {
-  const map = {};
-
-  for (const month of monthlyBreakdown.value) {
-    for (const item of month.irrigationProducts) {
       addToMap(map, item.name, item.total);
     }
   }
@@ -932,7 +770,7 @@ watch(selectedYear, () => {
 });
 
 onMounted(async () => {
-  await fetchFarms();
+  await Promise.all([fetchFarms(), fetchTypesLookups()]);
 });
 </script>
 
@@ -1070,7 +908,7 @@ onMounted(async () => {
 
   &__stats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
   }
 
