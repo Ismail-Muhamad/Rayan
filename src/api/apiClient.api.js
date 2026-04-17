@@ -71,6 +71,18 @@ class APIClient {
       },
     );
   }
+  replace(id, data, params = {}, resource = "") {
+  const handledId = id && `/${id}`;
+  const handledResource = resource && `/${resource}`;
+
+  return axiosClient.put(
+    `${this.url}${handledResource}${handledId}`,
+    data,
+    {
+      params,
+    },
+  );
+}
 
   // Method for sending DELETE requests to delete resource items
   delete(id, params = {}, resource = "") {

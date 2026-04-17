@@ -24,6 +24,14 @@ export default [
     roles: ["admin"],
   },
   {
+    icon: "solar:settings-outline",
+    key: "types_management",
+    label: "إدارة الأنواع",
+    path: "/settings/types-management",
+    routeName: "types_management",
+    roles: ["admin"],
+  },
+  {
     icon: "mdi:sprout",
     key: "farms",
     label: "farms.title",

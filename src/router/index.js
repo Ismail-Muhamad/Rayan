@@ -5,13 +5,14 @@ import reportsRoutes from "./reports.route";
 import farmsRoutes from "./farms.route";
 import authRoutes from "./auth.route";
 import { authGuard } from "@/helpers/router.helper";
+import settingsRoutes from "./settings.route";
 const routes = [
   {
     path: "/",
     name: "root",
     component: () => import("@/layout/AppLayout.vue"),
     redirect: { name: "dashboard" },
-    children: [dashboardRoutes, usersRoutes, reportsRoutes, farmsRoutes],
+    children: [dashboardRoutes, usersRoutes, reportsRoutes, farmsRoutes, settingsRoutes],
   },
   {
     path: "/:pathMatch(.*)*",
