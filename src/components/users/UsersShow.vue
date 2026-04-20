@@ -1,8 +1,6 @@
 <template>
   <div class="user">
-    <BaseLoader
-      v-if="usersUiFlags.isFetchingItem || farmsUiFlags.isFetchingList"
-    />
+    <BaseLoader v-if="usersUiFlags.isFetchingItem || farmsUiFlags.isFetchingList" />
 
     <div v-else class="user__content">
       <section class="user__hero">
@@ -51,12 +49,12 @@
           </h2>
         </div>
 
+        <button class="user__reset-btn" @click="openResetPasswordDialog">
+          إعادة تعيين الرقم السري
+        </button>
+
         <div class="user__grid">
-          <div
-            v-for="info in userInfo"
-            :key="info.key"
-            class="user__info-card"
-          >
+          <div v-for="info in userInfo" :key="info.key" class="user__info-card">
             <span class="user__info-label">{{ info.title }}</span>
             <strong class="user__info-value">{{ info.value || "-" }}</strong>
           </div>
@@ -71,11 +69,7 @@
         </div>
 
         <div v-if="farmsInfo.length" class="user__farms">
-          <div
-            v-for="(item, index) in farmsInfo"
-            :key="item.id"
-            class="user__farm-card"
-          >
+          <div v-for="(item, index) in farmsInfo" :key="item.id" class="user__farm-card">
             <div class="user__farm-head">
               <div>
                 <p class="user__farm-label">
@@ -93,11 +87,7 @@
             </div>
 
             <div class="user__grid">
-              <div
-                v-for="info in item.farm"
-                :key="info.key"
-                class="user__info-card user__info-card--soft"
-              >
+              <div v-for="info in item.farm" :key="info.key" class="user__info-card user__info-card--soft">
                 <span class="user__info-label">{{ info.title }}</span>
                 <strong class="user__info-value">{{ info.value || "-" }}</strong>
               </div>
@@ -109,11 +99,7 @@
               </h4>
 
               <div class="user__table-shell">
-                <BaseTable
-                  :headers="PALM_TYPES_HEADERS"
-                  :items="item.palm_types"
-                  :showToolbar="false"
-                />
+                <BaseTable :headers="PALM_TYPES_HEADERS" :items="item.palm_types" :showToolbar="false" />
               </div>
             </div>
           </div>
@@ -123,12 +109,37 @@
           لا توجد مزارع مرتبطة بهذا المستخدم حالياً
         </div>
       </section>
+
+      <div v-if="isResetPasswordDialogOpen" class="user__dialog-backdrop" @click.self="closeResetPasswordDialog">
+        <div class="user__dialog">
+          <h3 class="user__dialog-title">تغيير الرقم السري</h3>
+
+          <p class="user__dialog-text">
+            اكتب الرقم السري الجديد للعميل
+          </p>
+
+          <input v-model="newPassword" type="text" class="user__dialog-input" placeholder="اكتب الرقم السري الجديد"
+            @keyup.enter="submitResetPassword" />
+
+          <div class="user__dialog-actions">
+            <button type="button" class="user__dialog-btn user__dialog-btn--cancel" @click="closeResetPasswordDialog">
+              إلغاء
+            </button>
+
+            <button type="button" class="user__dialog-btn user__dialog-btn--submit"
+              :disabled="isSubmittingResetPassword" @click="submitResetPassword">
+              {{ isSubmittingResetPassword ? "جاري الحفظ..." : "حفظ" }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import UsersServices from "@/services/users.services";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -141,6 +152,10 @@ const farmsStore = useFarmsStore();
 
 const route = useRoute();
 const { t, locale } = useI18n();
+
+const isResetPasswordDialogOpen = ref(false);
+const newPassword = ref("");
+const isSubmittingResetPassword = ref(false);
 
 const PALM_TYPES_HEADERS = computed(() => [
   {
@@ -222,10 +237,62 @@ const farmsInfo = computed(() => {
 
 onMounted(async () => {
   await usersStore.fetchRecord(currentRouteId.value);
+
   await farmsStore.fetchRecords({
     owner_id: currentRouteId.value,
   });
 });
+
+const openResetPasswordDialog = () => {
+  newPassword.value = "";
+  isResetPasswordDialogOpen.value = true;
+};
+
+const closeResetPasswordDialog = () => {
+  newPassword.value = "";
+  isResetPasswordDialogOpen.value = false;
+};
+
+const submitResetPassword = async () => {
+  const password = newPassword.value?.trim();
+
+  if (!password || password.length < 4) {
+    window.alert("من فضلك اكتب رقم سري جديد لا يقل عن 4 حروف أو أرقام");
+    return;
+  }
+
+  try {
+    isSubmittingResetPassword.value = true;
+
+    const response = await UsersServices.resetPassword(currentRouteId.value, {
+      password,
+      password_confirmation: password,
+    });
+
+    console.log("reset password success =>", response);
+    window.alert("تم تغيير الرقم السري بنجاح");
+    closeResetPasswordDialog();
+  } catch (error) {
+    console.error("reset password error =>", error);
+    console.error("reset password response =>", error?.response);
+    console.error("reset password response data =>", error?.response?.data);
+    console.error("reset password status =>", error?.response?.status);
+
+    window.alert(
+      JSON.stringify(
+        {
+          status: error?.response?.status,
+          data: error?.response?.data,
+          message: error?.message,
+        },
+        null,
+        2
+      )
+    );
+  } finally {
+    isSubmittingResetPassword.value = false;
+  }
+};
 
 const formatDate = (date) => {
   if (!date) return "-";
@@ -327,7 +394,9 @@ const getInitials = (name) => {
     color: var(--white);
     font-size: 2rem;
     font-weight: 800;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.1) 100%);
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.1) 100%);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
@@ -412,6 +481,19 @@ const getInitials = (name) => {
     font-size: 1.8rem;
     font-weight: 800;
     color: var(--blue-800);
+  }
+
+  &__reset-btn {
+    margin-bottom: 16px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--white);
+    background: linear-gradient(135deg, var(--blue-700) 0%, var(--blue-500) 100%);
+    cursor: pointer;
   }
 
   &__grid {
@@ -527,6 +609,81 @@ const getInitials = (name) => {
     background: #f8fbff;
     border: 1px dashed var(--blue-200);
   }
+
+  &__dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.45);
+  }
+
+  &__dialog {
+    width: 100%;
+    max-width: 460px;
+    padding: 22px;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  }
+
+  &__dialog-title {
+    margin: 0 0 10px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--slate-900);
+  }
+
+  &__dialog-text {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    color: var(--slate-700);
+  }
+
+  &__dialog-input {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1px solid var(--blue-100);
+    border-radius: 14px;
+    font-size: 1rem;
+    outline: none;
+  }
+
+  &__dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  &__dialog-btn {
+    min-height: 42px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    cursor: pointer;
+
+    &--cancel {
+      color: var(--slate-700);
+      background: #e2e8f0;
+    }
+
+    &--submit {
+      color: var(--white);
+      background: linear-gradient(135deg, var(--blue-700) 0%, var(--blue-500) 100%);
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  }
 }
 
 :deep(.base-table),
@@ -595,6 +752,7 @@ const getInitials = (name) => {
 
 @media (max-width: 576px) {
   .user {
+
     &__hero,
     &__section {
       padding: 16px;
