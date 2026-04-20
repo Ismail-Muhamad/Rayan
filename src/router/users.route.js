@@ -17,5 +17,10 @@ export default {
       name: "users_show",
       component: () => import("@/components/users/UsersShow.vue"),
     },
+    {
+      path: "consumptions",
+      name: "users_consumptions",
+      component: () => import("@/components/users/ConsumptionsPage.vue"),
+    },
   ],
 };

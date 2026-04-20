@@ -1,6 +1,8 @@
 {
   "title": "المستخدمين",
   "subtitle": "قائمة المستخدمين",
+  "consumptionsTitle": "الاستهلاكات",
+  "consumptionsSubtitle": "متابعة استهلاك مزارع المستخدمين",
   "table": {
     "headers": {
       "user_name": "اسم المستخدم",

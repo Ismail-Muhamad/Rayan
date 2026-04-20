@@ -16,6 +16,14 @@ export default [
     roles: ["admin"],
   },
   {
+    icon: "solar:chart-outline",
+    key: "admin_consumptions",
+    label: "الاستهلاكات",
+    path: "/users/consumptions",
+    routeName: "users_consumptions",
+    roles: ["admin"],
+  },
+  {
     icon: "solar:clipboard-list-outline",
     key: "reports",
     label: "reports.title",

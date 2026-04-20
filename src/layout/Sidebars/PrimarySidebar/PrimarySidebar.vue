@@ -119,8 +119,13 @@ export default {
   },
   methods: {
     isActiveRoute(path) {
-      return this.currentPath.startsWith(path);
-    },
+  if (path === "/users") {
+    return this.currentPath === "/users" || this.currentPath.startsWith("/users/list") || this.currentPath.startsWith("/users/show");
+  }
+
+  return this.currentPath === path || this.currentPath.startsWith(`${path}/`);
+},
+
     handleMouseEnter() {
       if (!this.isMobile) return;
     },
