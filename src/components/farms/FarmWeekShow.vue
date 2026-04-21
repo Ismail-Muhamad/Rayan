@@ -1,24 +1,15 @@
 <template>
-  <BasePageWrapper
-    titleKey="farms.show.week_page_title"
-    subtitleKey="farms.show.week_page_subtitle"
-    iconName="solar:calendar-mark-outline"
-  >
+  <BasePageWrapper titleKey="farms.show.week_page_title" subtitleKey="farms.show.week_page_subtitle"
+    iconName="solar:calendar-mark-outline">
     <div class="week-page">
-      <BaseLoader
-        v-if="farmsUiFlags.isFetchingItem || reportsUiFlags.isFetchingList"
-      />
+      <BaseLoader v-if="farmsUiFlags.isFetchingItem || reportsUiFlags.isFetchingList" />
 
       <div v-else class="week-page__content">
         <section class="week-page__hero">
           <div class="week-page__hero-top">
             <div class="week-page__hero-actions">
-              <BaseButton
-                color="blue"
-                variant="outline"
-                size="sm"
-                @click="router.push({ name: 'show_farm', params: { id: currentRouteId } })"
-              >
+              <BaseButton color="blue" variant="outline" size="sm"
+                @click="router.push({ name: 'show_farm', params: { id: currentRouteId } })">
                 <BaseIcon name="solar:arrow-left-outline" />
                 {{ t('farms.actions.back') }}
               </BaseButton>
@@ -82,17 +73,10 @@
           </div>
         </section>
 
-        <BaseStyledSection
-          :label="t('farms.show.week_days_title')"
-          :description="selectedWeekRange"
-        >
+        <BaseStyledSection :label="t('farms.show.week_days_title')" :description="selectedWeekRange">
           <template v-if="mappedDays.length">
             <div class="week-page__days-grid">
-              <article
-                v-for="(day, index) in mappedDays"
-                :key="`${day.raw_date}-${index}`"
-                class="week-page__day-card"
-              >
+              <article v-for="(day, index) in mappedDays" :key="`${day.raw_date}-${index}`" class="week-page__day-card">
                 <div class="week-page__day-head">
                   <div>
                     <p class="week-page__day-label">
@@ -110,18 +94,18 @@
                 </div>
 
                 <div class="week-page__sections">
-                  <section class="week-page__section-box">
+                  <section class="week-page__section-box" :class="{
+                    'week-page__section-box--focused':
+                      focusedSection === 'fertilization' && focusedDay === day.raw_date,
+                  }" :data-day="day.raw_date" data-section="fertilization">
                     <div class="week-page__section-title">
                       <BaseIcon name="solar:leaf-outline" />
                       {{ t('farms.table.headers.fertilization_section') }}
                     </div>
 
                     <template v-if="day.fertilizations.length">
-                      <div
-                        v-for="(fertilization, fertIndex) in day.fertilizations"
-                        :key="fertIndex"
-                        class="week-page__mini-card"
-                      >
+                      <div v-for="(fertilization, fertIndex) in day.fertilizations" :key="fertIndex"
+                        class="week-page__mini-card">
                         <p class="week-page__mini-title">
                           {{ fertilization.type_of_fertilization || '--' }}
                         </p>
@@ -151,7 +135,10 @@
                     <p v-else class="week-page__empty-line">--</p>
                   </section>
 
-                  <section class="week-page__section-box">
+                  <section class="week-page__section-box" :class="{
+                    'week-page__section-box--focused':
+                      focusedSection === 'irrigation' && focusedDay === day.raw_date,
+                  }" :data-day="day.raw_date" data-section="irrigation">
                     <div class="week-page__section-title">
                       <BaseIcon name="solar:dropper-outline" />
                       {{ t('farms.table.headers.irrigation_section') }}
@@ -198,7 +185,10 @@
                     </div>
                   </section>
 
-                  <section class="week-page__section-box">
+                  <section class="week-page__section-box" :class="{
+                    'week-page__section-box--focused':
+                      focusedSection === 'spraying' && focusedDay === day.raw_date,
+                  }" :data-day="day.raw_date" data-section="spraying">
                     <div class="week-page__section-title">
                       <BaseIcon name="solar:magic-stick-3-outline" />
                       {{ t('farms.table.headers.spraying_section') }}
@@ -260,7 +250,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -283,6 +273,8 @@ const currentRouteId = computed(() => route.params.id);
 const currentReportId = computed(() => String(route.params.reportId));
 const currentWeekId = computed(() => String(route.params.weekId));
 
+const focusedSection = computed(() => String(route.query.focus || 'all'));
+const focusedDay = computed(() => String(route.query.day || ''));
 const { record: farmRecord, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
 const { records: reportsList, uiFlags: reportsUiFlags } = storeToRefs(reportsStore);
 
@@ -294,6 +286,23 @@ onMounted(async () => {
     }),
     fetchTypesLookups(),
   ]);
+
+  await nextTick();
+
+  const targetSelector =
+    focusedSection.value !== 'all'
+      ? `[data-day="${focusedDay.value}"][data-section="${focusedSection.value}"]`
+      : focusedDay.value
+        ? `[data-day="${focusedDay.value}"]`
+        : null;
+
+  if (targetSelector) {
+    const target = document.querySelector(targetSelector);
+    target?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }
 });
 
 const fetchTypesLookups = async () => {
@@ -451,10 +460,10 @@ const mappedDays = computed(() => {
           total:
             Number(fertilization.fertilizer_quantity_per_palm_tree || 0) > 0
               ? `${(
-                  (Number(fertilization.fertilizer_quantity_per_palm_tree || 0) *
-                    numberOfTreesFor(report)) /
-                  1000
-                )} ${t('farms.form.options.units.kg')}`
+                (Number(fertilization.fertilizer_quantity_per_palm_tree || 0) *
+                  numberOfTreesFor(report)) /
+                1000
+              )} ${t('farms.form.options.units.kg')}`
               : t('farms.form.no_quantity'),
           fertilizer_quantity_per_palm_tree:
             Number(fertilization.fertilizer_quantity_per_palm_tree || 0) > 0
@@ -476,12 +485,12 @@ const mappedDays = computed(() => {
         total_duration_of_irrigation:
           Number(day.duration_of_irrigation_per_palm_tree || 0) > 0
             ? formatDuration(
-                day.duration_of_irrigation_per_palm_tree * numberOfTreesFor(report),
-              )
+              day.duration_of_irrigation_per_palm_tree * numberOfTreesFor(report),
+            )
             : t('farms.form.no_quantity'),
         spraying:
           !day.pesticide_type_id &&
-          (!day.spraying || String(day.spraying) === '0')
+            (!day.spraying || String(day.spraying) === '0')
             ? t('farms.form.no_quantity')
             : getPesticideTypeName(day),
         spraying_per_tree:
@@ -720,10 +729,21 @@ const mappedDays = computed(() => {
     gap: 14px;
   }
 
-  &__section-box {
-    border-radius: 18px;
-    padding: 14px;
+&__section-box {
+  border-radius: 18px;
+  padding: 14px;
+  transition: all 0.25s ease;
+  scroll-margin-top: 120px;
+
+  &--focused {
+    border-color: rgba(59, 130, 246, 0.45);
+    background:
+      linear-gradient(180deg, rgba(239, 246, 255, 0.95), rgba(255, 255, 255, 1));
+    box-shadow:
+      0 0 0 3px rgba(59, 130, 246, 0.12),
+      0 16px 34px rgba(59, 130, 246, 0.12);
   }
+}
 
   &__section-title {
     display: inline-flex;
