@@ -394,6 +394,7 @@ import {
 import { useRouter } from "vue-router";
 import moment from "moment";
 import { useI18n } from "vue-i18n";
+import { toast } from "vue-sonner";
 
 // ===== STORES =====
 import { useUsersStore } from "@/stores/users.store";
@@ -401,6 +402,7 @@ import { useFarmsStore } from "@/stores/farms.store";
 import { useReportsStore } from "@/stores/reports.store";
 import FertilizerTypesServices from "@/services/fertilizerTypes.services";
 import PesticideTypesServices from "@/services/pesticideTypes.services";
+import WhatsAppTemplatesServices from "@/services/whatsappTemplates.services";
 
 // ===== COMPOSABLES =====
 import { useValidation } from "@/composables/useValidation";
@@ -505,7 +507,7 @@ const mappedUsersRecords = computed(() => {
 
 const mappedFarmsRecords = computed(() => {
   return (farmsRecords.value || [])
-    .filter((farm) => farm.owner_id === report.value.owner)
+    .filter((farm) => String(farm.owner_id) === String(report.value.owner))
     .map((farm) => ({
       label: farm.name,
       id: farm.id,
@@ -514,7 +516,7 @@ const mappedFarmsRecords = computed(() => {
 
 const mappedPalmTypesRecords = computed(() => {
   const farm = (farmsRecords.value || []).find(
-    (farm) => farm.id === report.value.farm_id,
+    (farm) => String(farm.id) === String(report.value.farm_id),
   );
 
   return (farm?.palm_types || []).map((treeType) => ({
@@ -594,11 +596,102 @@ watch(
 );
 
 // ===== METHODS =====
+const getCreatedReportId = (createResponse) => {
+  return (
+    createResponse?.data?.data?.id ||
+    createResponse?.data?.id ||
+    createResponse?.id ||
+    createResponse?.record?.id ||
+    null
+  );
+};
+
+const getSelectedOwner = () => {
+  return (usersRecords.value || []).find((user) => {
+    return String(user.id) === String(report.value.owner);
+  });
+};
+
+const getSelectedFarm = () => {
+  return (farmsRecords.value || []).find((farm) => {
+    return String(farm.id) === String(report.value.farm_id);
+  });
+};
+
+const getArabicMonthName = () => {
+  if (!report.value.month) return "";
+
+  const { year, month } = report.value.month;
+  const date = new Date(year, month, 1);
+
+  return new Intl.DateTimeFormat("ar-EG", {
+    month: "long",
+  }).format(date);
+};
+
+const getOwnerWhatsAppNumber = (owner) => {
+  return (
+    owner?.whatsapp_number ||
+    owner?.whatsapp ||
+    owner?.phone_number ||
+    owner?.phone ||
+    owner?.mobile ||
+    ""
+  );
+};
+
+const sendReportReadyWhatsAppMessage = async (createdReportId) => {
+  const owner = getSelectedOwner();
+  const farm = getSelectedFarm();
+
+  const whatsappNumber = getOwnerWhatsAppNumber(owner);
+
+  if (!whatsappNumber) {
+    toast.warning("تم حفظ التقرير، لكن العميل لا يوجد له رقم واتساب.");
+    return;
+  }
+
+  if (!createdReportId) {
+    toast.warning("تم حفظ التقرير، لكن لم يتم العثور على رقم التقرير لإرسال الرابط.");
+    return;
+  }
+
+  const customerName = owner?.name || "عميلنا العزيز";
+  const farmName = farm?.name || "المزرعة";
+  const monthName = getArabicMonthName();
+
+  await WhatsAppTemplatesServices.sendNextMonthReportReady({
+    to: whatsappNumber,
+    customer_name: customerName,
+    farm_name: farmName,
+    month_name: monthName,
+    farm_id: report.value.farm_id,
+    report_id: createdReportId,
+    button_path: `${report.value.farm_id}/report/${createdReportId}`,
+  });
+};
+
 const submitForm = async () => {
   v$.value.$validate();
   if (v$.value.$invalid) return;
 
-  await reportsStore.createRecord(report.value);
+  const createResponse = await reportsStore.createRecord(report.value);
+
+  if (!createResponse?.isCreated) return;
+
+  const createdReportId = getCreatedReportId(createResponse);
+
+  try {
+    await sendReportReadyWhatsAppMessage(createdReportId);
+
+    toast.success("تم حفظ التقرير وإرسال رسالة الواتساب للعميل.");
+  } catch (error) {
+    console.error("Failed to send report WhatsApp message:", error);
+
+    toast.warning(
+      "تم حفظ التقرير بنجاح، لكن فشل إرسال رسالة الواتساب للعميل.",
+    );
+  }
 };
 
 const resetForm = () => {

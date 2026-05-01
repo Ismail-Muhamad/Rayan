@@ -27,15 +27,20 @@ export default {
       name: "show_farm",
       component: () => import("@/components/farms/FarmsShow.vue"),
     },
-  {
-  path: "show/:id/report/:reportId/week/:weekId",
-  name: "show_farm_week",
-  component: () => import("@/components/farms/FarmWeekShow.vue"),
-},
-{
-  path: "consumptions",
-  name: "farm_consumptions",
-  component: () => import("@/components/farms/CustomerConsumptionsView.vue"),
-}
+    {
+      path: "show/:id/report/:reportId/week/:weekId",
+      name: "show_farm_week",
+      component: () => import("@/components/farms/FarmWeekShow.vue"),
+    },
+    {
+      path: "consumptions",
+      name: "farm_consumptions",
+      component: () => import("@/components/farms/CustomerConsumptionsView.vue"),
+    },
+    {
+      path: 'show/:id/report/:reportId',
+      name: 'show_farm_report',
+      component: () => import('@/components/farms/FarmReportShow.vue'),
+    },
   ],
 };
