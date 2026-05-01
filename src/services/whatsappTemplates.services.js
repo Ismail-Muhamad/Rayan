@@ -8,6 +8,10 @@ class WhatsAppTemplatesServices extends APIClient {
   sendNextMonthReportReady(data) {
     return this.create(data, {}, "next-month-report-ready");
   }
+
+  sendAccountApproved(data) {
+    return this.create(data, {}, "account-approved");
+  }
 }
 
 export default new WhatsAppTemplatesServices();

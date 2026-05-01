@@ -1,9 +1,5 @@
 <template>
-  <BasePageWrapper
-    titleKey="dashboard.title"
-    subtitleKey="dashboard.subtitle"
-    iconName="solar:clipboard-list-outline"
-  >
+  <BasePageWrapper titleKey="dashboard.title" subtitleKey="dashboard.subtitle" iconName="solar:clipboard-list-outline">
     <div class="dashboard">
       <section class="dashboard__hero">
         <div class="dashboard__hero-content">
@@ -39,16 +35,9 @@
           </span>
         </div>
 
-        <BaseTable
-          :headers="REQUESTS_TABLE_HEADERS"
-          :items="requestsList"
-          :meta="requestsMeta"
-          :isLoading="requestsUiFlags.isFetchingList"
-          pagination
-          @onPageChange="handleRequestsPageChange"
-          @on-search="handleRequestsSearch"
-          :search-placeholder="t('GLOBAL.TABLE.SEARCH')"
-        >
+        <BaseTable :headers="REQUESTS_TABLE_HEADERS" :items="requestsList" :meta="requestsMeta"
+          :isLoading="requestsUiFlags.isFetchingList" pagination @onPageChange="handleRequestsPageChange"
+          @on-search="handleRequestsSearch" :search-placeholder="t('GLOBAL.TABLE.SEARCH')">
           <template #user_name="{ item }">
             <div class="dashboard__user">
               <div class="dashboard__avatar">
@@ -64,12 +53,7 @@
           </template>
 
           <template #whatsapp_number="{ item }">
-            <a
-              class="dashboard__link"
-              :href="`https://wa.me/20${item.whatsapp_number}`"
-              target="_blank"
-              rel="noopener"
-            >
+            <a class="dashboard__link" :href="`https://wa.me/20${item.whatsapp_number}`" target="_blank" rel="noopener">
               {{ item.whatsapp_number || "-" }}
             </a>
           </template>
@@ -109,11 +93,7 @@
         </div>
 
         <div v-if="pendingUsersList.length" class="dashboard__cards">
-          <article
-            v-for="item in pendingUsersList"
-            :key="item.id"
-            class="dashboard__request-card"
-          >
+          <article v-for="item in pendingUsersList" :key="item.id" class="dashboard__request-card">
             <div class="dashboard__request-top">
               <div class="dashboard__user">
                 <div class="dashboard__avatar">
@@ -144,12 +124,8 @@
 
               <div class="dashboard__info-box">
                 <span class="dashboard__info-label">واتساب</span>
-                <a
-                  class="dashboard__link"
-                  :href="`https://wa.me/20${item.whatsapp_number}`"
-                  target="_blank"
-                  rel="noopener"
-                >
+                <a class="dashboard__link" :href="`https://wa.me/20${item.whatsapp_number}`" target="_blank"
+                  rel="noopener">
                   {{ item.whatsapp_number || "-" }}
                 </a>
               </div>
@@ -164,11 +140,7 @@
               </div>
 
               <div v-if="item.farms.length" class="dashboard__farms-list">
-                <div
-                  v-for="farm in item.farms"
-                  :key="farm.id"
-                  class="dashboard__farm-card"
-                >
+                <div v-for="farm in item.farms" :key="farm.id" class="dashboard__farm-card">
                   <div class="dashboard__farm-head">
                     <div>
                       <strong class="dashboard__farm-title">
@@ -184,15 +156,9 @@
                     </span>
                   </div>
 
-                  <div
-                    v-if="farm.palm_types && farm.palm_types.length"
-                    class="dashboard__palm-types"
-                  >
-                    <div
-                      v-for="(palm, index) in farm.palm_types"
-                      :key="`${farm.id}-${index}`"
-                      class="dashboard__palm-card"
-                    >
+                  <div v-if="farm.palm_types && farm.palm_types.length" class="dashboard__palm-types">
+                    <div v-for="(palm, index) in farm.palm_types" :key="`${farm.id}-${index}`"
+                      class="dashboard__palm-card">
                       <span class="dashboard__palm-name">
                         {{ palm.name || "-" }}
                       </span>
@@ -216,20 +182,11 @@
             </div>
 
             <div class="dashboard__card-actions">
-              <BaseButton
-                size="sm"
-                color="green"
-                @click="openStatusModal(item, 'active')"
-              >
+              <BaseButton size="sm" color="green" @click="openStatusModal(item, 'active')">
                 قبول الحساب
               </BaseButton>
 
-              <BaseButton
-                size="sm"
-                color="red"
-                variant="outline"
-                @click="openStatusModal(item, 'rejected')"
-              >
+              <BaseButton size="sm" color="red" variant="outline" @click="openStatusModal(item, 'rejected')">
                 رفض الحساب
               </BaseButton>
             </div>
@@ -241,10 +198,7 @@
         </div>
       </section>
 
-      <UsersChangeStatusModal
-        ref="changeStatusModalRef"
-        @success="refetchDashboardData"
-      />
+      <UsersChangeStatusModal ref="changeStatusModalRef" @success="handleStatusChanged" />
     </div>
   </BasePageWrapper>
 </template>
@@ -258,6 +212,11 @@ import { useUsersStore } from "@/stores/users.store";
 import { useRequestsStore } from "@/stores/requests.store";
 import { debounceHelper } from "@/helpers/debounceHelper";
 import UsersChangeStatusModal from "@/components/users/UsersChangeStatusModal.vue";
+
+
+import { toast } from "vue-sonner";
+import WhatsAppTemplatesServices from "@/services/whatsappTemplates.services";
+
 
 const usersStore = useUsersStore();
 const requestsStore = useRequestsStore();
@@ -414,7 +373,13 @@ const handleRequestsSearch = debounceHelper(async function (query) {
   await fetchRequests(1, query);
 }, 500);
 
+const selectedStatusUser = ref(null);
+const selectedStatusAction = ref(null);
+
 const openStatusModal = (user, action) => {
+  selectedStatusUser.value = user;
+  selectedStatusAction.value = action;
+
   changeStatusModalRef.value.openModal(user, action);
 };
 
@@ -441,6 +406,63 @@ const getInitials = (name) => {
   }
 
   return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+};
+
+const getRequestCustomerName = (request) => {
+  return (
+    request?.name ||
+    request?.customer_name ||
+    request?.user?.name ||
+    request?.farm_owner?.name ||
+    "عميلنا العزيز"
+  );
+};
+
+const getRequestWhatsAppNumber = (request) => {
+  return (
+    request?.whatsapp_number ||
+    request?.whatsapp ||
+    request?.phone_number ||
+    request?.phone ||
+    request?.mobile ||
+    request?.user?.whatsapp_number ||
+    request?.user?.phone ||
+    ""
+  );
+};
+
+const sendAccountApprovedWhatsAppMessage = async (request) => {
+  const whatsappNumber = getRequestWhatsAppNumber(request);
+
+  if (!whatsappNumber) {
+    toast.warning("تم قبول الحساب، لكن لا يوجد رقم واتساب للعميل.");
+    return;
+  }
+
+  await WhatsAppTemplatesServices.sendAccountApproved({
+    to: whatsappNumber,
+    customer_name: getRequestCustomerName(request),
+  });
+};
+
+const handleStatusChanged = async () => {
+  const user = selectedStatusUser.value;
+  const action = selectedStatusAction.value;
+
+  if (user && action === "active") {
+    try {
+      await sendAccountApprovedWhatsAppMessage(user);
+      toast.success("تم قبول الحساب وإرسال رسالة واتساب للعميل.");
+    } catch (error) {
+      console.error("Failed to send account approved WhatsApp message:", error);
+      toast.warning("تم قبول الحساب، لكن فشل إرسال رسالة الواتساب.");
+    }
+  }
+
+  selectedStatusUser.value = null;
+  selectedStatusAction.value = null;
+
+  await refetchDashboardData();
 };
 </script>
 
