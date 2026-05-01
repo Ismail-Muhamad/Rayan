@@ -546,17 +546,29 @@ const overviewStats = computed(() => [
   },
 ]);
 
+const getReportStartTime = (report) => {
+  const firstWeekDate = report?.report_weeks?.[0]?.date;
+
+  if (!firstWeekDate) return 0;
+
+  return parseLocalDate(firstWeekDate).getTime();
+};
+
 const taskGroups = computed(() => {
-  return (reportsList.value || []).map((report) => ({
-    id: report.id,
-    report,
-    monthLabel: formatReportMonth(report),
-    palmTypeName: report?.palm_type?.name || '--',
-    reviewPreview: stripHtml(report?.review) || t('farms.show.no_review'),
-    recommendationsPreview:
-      stripHtml(report?.recommendations) || t('farms.show.no_recommendations'),
-    weeks: report?.report_weeks || [],
-  }));
+  return [...(reportsList.value || [])]
+    .sort((current, next) => {
+      return getReportStartTime(next) - getReportStartTime(current);
+    })
+    .map((report) => ({
+      id: report.id,
+      report,
+      monthLabel: formatReportMonth(report),
+      palmTypeName: report?.palm_type?.name || '--',
+      reviewPreview: stripHtml(report?.review) || t('farms.show.no_review'),
+      recommendationsPreview:
+        stripHtml(report?.recommendations) || t('farms.show.no_recommendations'),
+      weeks: report?.report_weeks || [],
+    }));
 });
 
 onMounted(async () => {
