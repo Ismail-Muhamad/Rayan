@@ -48,7 +48,7 @@
             <div class="assistants-page__search">
                 <BaseIcon name="solar:magnifer-outline" />
                 <input v-model="searchTerm" type="search"
-                    placeholder="ابحث بالاسم أو اسم المستخدم أو رقم الواتساب..." />
+                    placeholder="ابحث بالاسم أو الايميل أو رقم الواتساب..." />
             </div>
 
             <div class="assistants-page__filter">
@@ -174,7 +174,7 @@
                         </div>
 
                         <div class="assistants-page__field">
-                            <BaseInput v-model="form.email" label="اسم المستخدم"
+                            <BaseInput v-model="form.email" label="ايميل المساعد"
                                 placeholder="مثال: followup1@rayaan.cloud" required />
                         </div>
 
@@ -365,7 +365,7 @@ const validateForm = () => {
     }
 
     if (!form.value.email.trim()) {
-        toast.warning("اكتب اسم المستخدم.");
+        toast.warning("أكتب ايميل المساعد.");
         return false;
     }
 
