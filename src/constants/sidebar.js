@@ -8,6 +8,14 @@ export default [
     roles: ["admin"],
   },
   {
+    icon: "solar:checklist-minimalistic-outline",
+    key: "tasks",
+    label: "مهام",
+    path: "/tasks",
+    routeName: "tasks",
+    roles: ["admin"],
+  },
+  {
     icon: "solar:users-group-rounded-outline",
     key: "users",
     label: "users.title",

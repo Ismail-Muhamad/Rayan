@@ -1,12 +1,17 @@
 <template>
-  <aside v-if="shouldRenderSidebar" :class="[
-    'primary',
-    {
-      'primary--expanded': sidebarExpanded,
-      'primary--mobile': isMobile,
-      'primary--mobile-open': mobileOpen,
-    },
-  ]" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+  <aside
+    v-if="shouldRenderSidebar"
+    :class="[
+      'primary',
+      {
+        'primary--expanded': sidebarExpanded,
+        'primary--mobile': isMobile,
+        'primary--mobile-open': mobileOpen,
+      },
+    ]"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
     <div class="primary__logo">
       <div class="primary__logo-image-wrap">
         <img :src="logoImage" alt="Rayan Logo" class="primary__logo-image" />
@@ -21,13 +26,24 @@
     </div>
 
     <div class="primary__items">
-      <PrimarySidebarItem v-for="item in primaryMenu" :key="item.id || item.key || item.routeName" :route="item"
-        :is-active="isActiveRoute(item.path)" :expanded="sidebarExpanded" @navigate="handleNavigate" />
+      <PrimarySidebarItem
+        v-for="item in primaryMenu"
+        :key="item.id || item.key || item.routeName"
+        :route="item"
+        :is-active="isActiveRoute(item.path)"
+        :expanded="sidebarExpanded"
+        @navigate="handleNavigate"
+      />
     </div>
 
     <div class="primary__footer">
-      <a v-if="isFarmOwner" class="primary__promo" href="https://tilvix-website.vercel.app/" target="_blank"
-        rel="noopener noreferrer">
+      <a
+        v-if="isFarmOwner"
+        class="primary__promo"
+        href="https://tilvix-website.vercel.app/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <div class="primary__promo-overlay"></div>
         <div class="primary__promo-shine"></div>
 
@@ -40,7 +56,11 @@
           </div>
 
           <div class="primary__promo-logo-wrap">
-            <img :src="promoLogoImage" alt="Tilvix Logo" class="primary__promo-logo" />
+            <img
+              :src="promoLogoImage"
+              alt="Tilvix Logo"
+              class="primary__promo-logo"
+            />
           </div>
         </div>
       </a>
@@ -63,6 +83,38 @@ import i18n from "@/plugins/i18n";
 import { useAuthStore } from "@/stores/auth.store";
 import router from "@/router";
 import logoImage from "@/assets/لوجو مفرغ_.png";
+import { followupUsers } from "@/constants/followupUsers";
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function getUserEmail(userData) {
+  return normalizeEmail(
+    userData?.email ||
+      userData?.user?.email ||
+      userData?.data?.email ||
+      ""
+  );
+}
+
+function isActiveFollowupUser(userData) {
+  const email = getUserEmail(userData);
+
+  if (!email) return false;
+
+  return followupUsers.some((user) => {
+    return normalizeEmail(user.email) === email && user.active === true;
+  });
+}
+
+function getEffectiveUserRole(userData) {
+  if (isActiveFollowupUser(userData)) {
+    return "followup";
+  }
+
+  return userData?.role;
+}
 
 export default {
   name: "PrimarySidebar",
@@ -92,20 +144,24 @@ export default {
       return true;
     },
 
-    isFarmOwner() {
+    currentUserRole() {
       const authStore = useAuthStore();
-      return authStore.userData?.role === "farm_owner";
+      return getEffectiveUserRole(authStore.userData);
+    },
+
+    isFarmOwner() {
+      return this.currentUserRole === "farm_owner";
     },
 
     primaryMenu() {
-      const authStore = useAuthStore();
-      const userRole = authStore.userData?.role;
+      const userRole = this.currentUserRole;
 
       return sideMenuConfig
         .filter((item) => {
           if (item.roles && item.roles.length > 0) {
             return userRole && item.roles.includes(userRole);
           }
+
           return true;
         })
         .map((item) => ({
@@ -123,12 +179,15 @@ export default {
           })),
         }));
     },
+
     currentPath() {
       return this.$route.fullPath;
     },
+
     hidePrimarySidebar() {
       return this.$route.meta?.sidebar?.primary?.hide ?? false;
     },
+
     sidebarExpanded() {
       return this.isMobile ? this.mobileOpen : true;
     },
@@ -149,14 +208,17 @@ export default {
     handleMouseEnter() {
       if (!this.isMobile) return;
     },
+
     handleMouseLeave() {
       if (!this.isMobile) return;
     },
+
     handleNavigate() {
       if (this.isMobile) {
         this.$emit("close-mobile");
       }
     },
+
     async handleLogout() {
       const authStore = useAuthStore();
       await authStore.logout();
@@ -233,7 +295,8 @@ export default {
       filter 260ms ease;
     transform: scale(1.08);
     filter:
-      drop-shadow(0 18px 36px rgba(0, 0, 0, 0.28)) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
+      drop-shadow(0 18px 36px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
   }
 
   &__brand-wrap {
@@ -340,12 +403,14 @@ export default {
     inset-inline-start: -65%;
     width: 48%;
     height: 100%;
-    background: linear-gradient(120deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.03) 20%,
-        rgba(255, 238, 181, 0.18) 48%,
-        rgba(255, 255, 255, 0.03) 76%,
-        transparent 100%);
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.03) 20%,
+      rgba(255, 238, 181, 0.18) 48%,
+      rgba(255, 255, 255, 0.03) 76%,
+      transparent 100%
+    );
     transform: skewX(-24deg);
     pointer-events: none;
     z-index: 1;
@@ -473,7 +538,8 @@ export default {
 .primary--expanded .primary__logo-image {
   transform: scale(1.08);
   filter:
-    drop-shadow(0 18px 36px rgba(0, 0, 0, 0.28)) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
+    drop-shadow(0 18px 36px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
 }
 
 @keyframes fadeInBrand {
@@ -545,7 +611,8 @@ export default {
   .primary__logo-image {
     transform: scale(1.06);
     filter:
-      drop-shadow(0 20px 38px rgba(0, 0, 0, 0.28)) drop-shadow(0 10px 22px rgba(0, 0, 0, 0.22));
+      drop-shadow(0 20px 38px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 10px 22px rgba(0, 0, 0, 0.22));
   }
 
   .primary__brand {

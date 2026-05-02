@@ -2,6 +2,11 @@
   "DASHBOARD": {
     "TEXT": "لوحة التحكم"
   },
+  "TASKS": {
+    "TEXT": "مهام",
+    "TITLE": "مهام",
+    "DESCRIPTION": "متابعة مهام العملاء والمزارع ليوم غدا"
+  },
   "CONVERSATIONS": {
     "TEXT": "المحادثات"
   },
