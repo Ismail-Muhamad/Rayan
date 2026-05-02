@@ -3,6 +3,6 @@ export default {
   name: "tasks",
   component: () => import("@/components/tasks/AdminTasksPage.vue"),
   meta: {
-    roles: ["admin"],
+    roles: ["admin", "admin_assistant"],
   },
 };

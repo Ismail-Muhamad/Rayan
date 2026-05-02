@@ -8,12 +8,20 @@ export default [
     roles: ["admin"],
   },
   {
+    icon: "solar:user-id-outline",
+    key: "admin_assistants",
+    label: "مساعدين الأدمن",
+    path: "/users/assistants",
+    routeName: "admin_assistants",
+    roles: ["admin"],
+  },
+  {
     icon: "solar:checklist-minimalistic-outline",
     key: "tasks",
     label: "مهام",
     path: "/tasks",
     routeName: "tasks",
-    roles: ["admin"],
+    roles: ["admin", "admin_assistant"],
   },
   {
     icon: "solar:users-group-rounded-outline",
@@ -37,7 +45,7 @@ export default [
     label: "reports.title",
     path: "/reports",
     routeName: "reports",
-    roles: ["admin"],
+    roles: ["admin", "admin_assistant"],
   },
   {
     icon: "solar:settings-outline",

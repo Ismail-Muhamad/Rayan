@@ -154,11 +154,19 @@
               </div>
 
               <div class="task-type-grid">
-                <div
+                <button
                   v-for="(task, taskIndex) in farm.tasks"
                   :key="`${farm.id}-${task.type}-${taskIndex}`"
+                  type="button"
                   class="task-type-card"
-                  :class="`task-type-card--${task.type}`"
+                  :class="[
+                    `task-type-card--${task.type}`,
+                    {
+                      'task-type-card--active':
+                        isTaskSelected(farm, task, taskIndex),
+                    },
+                  ]"
+                  @click="toggleTaskDetails(farm, task, taskIndex)"
                 >
                   <div class="task-type-card__icon">
                     {{ task.icon }}
@@ -168,14 +176,60 @@
                     <strong>{{ task.title }}</strong>
                     <span>{{ task.description }}</span>
                   </div>
-                </div>
+
+                  <div class="task-type-card__hint">
+                    اضغط لعرض التفاصيل
+                  </div>
+                </button>
               </div>
 
-              <div class="farm-task-card__footer">
-                <span>جاهز للمتابعة قبل التنفيذ</span>
-                <button type="button" @click="openWhatsapp(user, farm)">
-                  واتساب
-                </button>
+              <div
+                v-if="selectedTaskForFarm(farm)"
+                class="task-details-panel"
+                :class="`task-details-panel--${selectedTaskForFarm(farm).type}`"
+              >
+                <div class="task-details-panel__header">
+                  <div class="task-details-panel__title">
+                    <span>{{ selectedTaskForFarm(farm).icon }}</span>
+                    <div>
+                      <h4>تفاصيل {{ selectedTaskForFarm(farm).title }}</h4>
+                      <p>{{ selectedTaskForFarm(farm).description }}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="task-details-panel__close"
+                    @click="closeTaskDetails(farm)"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+
+                <div
+                  v-if="
+                    selectedTaskForFarm(farm).details &&
+                    selectedTaskForFarm(farm).details.length
+                  "
+                  class="task-details-list"
+                >
+                  <div
+                    v-for="(detail, detailIndex) in selectedTaskForFarm(farm).details"
+                    :key="detailIndex"
+                    class="task-detail-item"
+                  >
+                    <span class="task-detail-item__label">
+                      {{ detail.label }}
+                    </span>
+                    <strong class="task-detail-item__value">
+                      {{ detail.value }}
+                    </strong>
+                  </div>
+                </div>
+
+                <div v-else class="task-details-empty">
+                  المهمة مسجلة للتنفيذ بكرة، لكن لا توجد كميات واضحة محفوظة في بيانات التقرير.
+                </div>
               </div>
             </div>
           </div>
@@ -192,6 +246,7 @@ import axiosClient from "@/api/axiosClient";
 const loading = ref(false);
 const errorMessage = ref("");
 const search = ref("");
+const selectedTasks = ref({});
 
 const users = ref([]);
 const farms = ref([]);
@@ -335,7 +390,13 @@ const filteredUsers = computed(() => {
         ...user.farms.map((farm) => farm.location),
         ...user.farms.flatMap((farm) =>
           farm.tasks.map((task) => {
-            return [task.title, task.description].join(" ");
+            return [
+              task.title,
+              task.description,
+              ...(task.details || []).map(
+                (detail) => `${detail.label} ${detail.value}`
+              ),
+            ].join(" ");
           })
         ),
       ].join(" ")
@@ -365,6 +426,7 @@ onMounted(() => {
 async function loadData() {
   loading.value = true;
   errorMessage.value = "";
+  selectedTasks.value = {};
 
   try {
     const [usersData, farmsData, reportsData] = await Promise.all([
@@ -428,6 +490,58 @@ async function fetchAll(url) {
   } while (page <= Number(lastPage || 1));
 
   return all;
+}
+
+function toggleTaskDetails(farm, task, taskIndex) {
+  const key = getFarmSelectionKey(farm);
+  const taskKey = getTaskSelectionKey(task, taskIndex);
+
+  if (selectedTasks.value[key] === taskKey) {
+    selectedTasks.value = {
+      ...selectedTasks.value,
+      [key]: null,
+    };
+    return;
+  }
+
+  selectedTasks.value = {
+    ...selectedTasks.value,
+    [key]: taskKey,
+  };
+}
+
+function closeTaskDetails(farm) {
+  const key = getFarmSelectionKey(farm);
+
+  selectedTasks.value = {
+    ...selectedTasks.value,
+    [key]: null,
+  };
+}
+
+function selectedTaskForFarm(farm) {
+  const key = getFarmSelectionKey(farm);
+  const selectedKey = selectedTasks.value[key];
+
+  if (!selectedKey) return null;
+
+  return farm.tasks.find((task, index) => {
+    return getTaskSelectionKey(task, index) === selectedKey;
+  });
+}
+
+function isTaskSelected(farm, task, taskIndex) {
+  const key = getFarmSelectionKey(farm);
+
+  return selectedTasks.value[key] === getTaskSelectionKey(task, taskIndex);
+}
+
+function getFarmSelectionKey(farm) {
+  return String(farm?.id || farm?.name || "");
+}
+
+function getTaskSelectionKey(task, index) {
+  return `${task.type}-${task.title}-${index}`;
 }
 
 function normalizeUsers(value) {
@@ -580,246 +694,585 @@ function isTomorrowDayObject(obj) {
 function extractTasksFromDay(day) {
   const tasks = [];
 
-  const hasIrrigation = detectTaskType(day, [
-    "irrigation",
-    "irrigations",
-    "irrigation_data",
-    "irrigationData",
-    "irrigation_task",
-    "irrigationTask",
-    "water",
-    "watering",
-    "water_data",
-    "waterData",
-    "water_quantity",
-    "waterQuantity",
-    "water_per_palm",
-    "waterPerPalm",
-    "irrigation_quantity",
-    "irrigationQuantity",
-    "irrigation_per_palm",
-    "irrigationPerPalm",
-    "total_water",
-    "totalWater",
-    "total_irrigation",
-    "totalIrrigation",
-    "ري",
-    "الري",
-  ]);
+  const irrigationTask = buildIrrigationTask(day);
+  if (irrigationTask) tasks.push(irrigationTask);
 
-  const hasFertilizer = detectTaskType(day, [
-    "fertilization",
-    "fertilizations",
-    "fertilizer",
-    "fertilizers",
-    "fertilizer_tasks",
-    "fertilization_tasks",
-    "fertilizerTypes",
-    "fertilizer_types",
-    "fertilizing",
-    "acid",
-    "acids",
-    "تسميد",
-    "التسميد",
-    "سماد",
-    "اسمدة",
-    "أسمدة",
-    "احماض",
-    "أحماض",
-  ]);
+  const fertilizerTask = buildFertilizerTask(day);
+  if (fertilizerTask) tasks.push(fertilizerTask);
 
-  const hasSpray = detectTaskType(day, [
-    "spraying",
-    "sprays",
-    "spray",
-    "pesticide",
-    "pesticides",
-    "pesticide_tasks",
-    "spraying_tasks",
-    "pesticideTypes",
-    "pesticide_types",
-    "pesticideData",
-    "رش",
-    "الرش",
-    "مبيد",
-    "مبيدات",
-  ]);
+  const sprayTask = buildSprayTask(day);
+  if (sprayTask) tasks.push(sprayTask);
 
-  if (hasIrrigation) {
-    tasks.push({
-      type: "irrigation",
-      title: "ري",
-      icon: "💧",
-      description: "عنده مهمة ري بكرة",
-    });
-  }
-
-  if (hasFertilizer) {
-    tasks.push({
-      type: "fertilizer",
-      title: "تسميد",
-      icon: "🌿",
-      description: "عنده مهمة تسميد بكرة",
-    });
-  }
-
-  if (hasSpray) {
-    tasks.push({
-      type: "spray",
-      title: "رش",
-      icon: "🧪",
-      description: "عنده مهمة رش بكرة",
-    });
-  }
-
-  return tasks;
+  return dedupeTasks(tasks);
 }
 
-function detectTaskType(day, keys) {
-  if (!day || typeof day !== "object") return false;
+function buildIrrigationTask(day) {
+  const palmWater = getReportValue(day, {
+    exactKeys: [
+      "كمية الري لكل نخلة لتر",
+      "كمية الري لكل نخلة",
+      "irrigation_per_palm",
+      "irrigationPerPalm",
+      "water_per_palm",
+      "waterPerPalm",
+      "water_quantity_per_palm",
+      "waterQuantityPerPalm",
+    ],
+    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
+    fieldMarkers: ["quantity", "amount", "liter", "litre", "كمية"],
+    forbiddenMarkers: ["total", "اجمالي", "إجمالي", "duration", "time", "مدة", "hour", "ساعة"],
+  });
 
-  const sections = findTaskSections(day, keys);
+  const totalWater = getReportValue(day, {
+    exactKeys: [
+      "إجمالي كمية الري لتر",
+      "اجمالي كمية الري لتر",
+      "إجمالي كمية الري",
+      "اجمالي كمية الري",
+      "total_irrigation",
+      "totalIrrigation",
+      "total_water",
+      "totalWater",
+      "total_water_quantity",
+      "totalWaterQuantity",
+    ],
+    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
+    fieldMarkers: ["total", "اجمالي", "إجمالي"],
+    forbiddenMarkers: ["duration", "time", "مدة"],
+  });
 
-  return sections.some((section) => sectionHasRealTaskValue(section));
+  const palmDuration = getReportValue(day, {
+    exactKeys: [
+      "مدة الري لكل نخلة دقيقة",
+      "مدة الري لكل نخلة",
+      "irrigation_time_per_palm",
+      "irrigationTimePerPalm",
+      "duration_per_palm",
+      "durationPerPalm",
+      "minutes_per_palm",
+      "minutesPerPalm",
+    ],
+    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
+    fieldMarkers: ["duration", "time", "minute", "minutes", "مدة", "دقيقة"],
+    forbiddenMarkers: ["total", "اجمالي", "إجمالي", "hour", "ساعة"],
+  });
+
+  const totalDuration = getReportValue(day, {
+    exactKeys: [
+      "إجمالي مدة الري ساعة",
+      "اجمالي مدة الري ساعة",
+      "إجمالي مدة الري",
+      "اجمالي مدة الري",
+      "total_irrigation_time",
+      "totalIrrigationTime",
+      "total_duration",
+      "totalDuration",
+      "total_hours",
+      "totalHours",
+    ],
+    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
+    fieldMarkers: ["total", "duration", "time", "hour", "hours", "اجمالي", "إجمالي", "مدة", "ساعة"],
+    forbiddenMarkers: [],
+  });
+
+  const hasIrrigation =
+    hasRealValue(palmWater) ||
+    hasRealValue(totalWater) ||
+    hasRealValue(palmDuration) ||
+    hasRealValue(totalDuration);
+
+  if (!hasIrrigation) return null;
+
+  const details = [];
+
+  pushDetail(details, "كمية الري لكل نخلة", palmWater, "لتر");
+  pushDetail(details, "إجمالي كمية الري", totalWater, "لتر");
+  pushDetail(details, "مدة الري لكل نخلة", palmDuration, "دقيقة");
+  pushDetail(details, "إجمالي مدة الري", totalDuration);
+
+  return {
+    type: "irrigation",
+    title: "ري",
+    icon: "💧",
+    description: "عنده مهمة ري بكرة",
+    details,
+  };
 }
 
-function findTaskSections(root, keys) {
-  if (!root || typeof root !== "object") return [];
+function buildFertilizerTask(day) {
+  const material = getReportValue(day, {
+    exactKeys: [
+      "نوع التسميد",
+      "اسم السماد",
+      "اسم الحمض",
+      "fertilizer_type",
+      "fertilizerType",
+      "fertilization_type",
+      "fertilizationType",
+      "fertilizer_name",
+      "fertilizerName",
+      "acid_name",
+      "acidName",
+    ],
+    taskMarkers: [
+      "fertilization",
+      "fertilizer",
+      "fertilizers",
+      "acid",
+      "acids",
+      "تسميد",
+      "التسميد",
+      "سماد",
+      "اسمدة",
+      "أسمدة",
+      "احماض",
+      "أحماض",
+    ],
+    fieldMarkers: ["name", "title", "type", "product", "material", "نوع", "اسم"],
+    forbiddenMarkers: ["quantity", "amount", "total", "dose", "كمية", "اجمالي", "إجمالي"],
+    preferText: true,
+  });
 
-  const sections = [];
-  const normalizedKeys = keys.map((key) => normalizeKey(key));
-  const ignoredContainerKeys = [
-    "data",
-    "items",
-    "values",
-    "fields",
-    "details",
-    "days",
-    "weeks",
-    "reports",
-    "children",
-  ];
+  const palmQuantity = getReportValue(day, {
+    exactKeys: [
+      "كمية التسميد لكل نخلة جرام",
+      "كمية التسميد لكل نخلة",
+      "fertilizer_quantity_per_palm",
+      "fertilizerQuantityPerPalm",
+      "fertilizer_per_palm",
+      "fertilizerPerPalm",
+      "fertilizer_amount_per_palm",
+      "fertilizerAmountPerPalm",
+    ],
+    taskMarkers: [
+      "fertilization",
+      "fertilizer",
+      "fertilizers",
+      "acid",
+      "acids",
+      "تسميد",
+      "التسميد",
+      "سماد",
+      "اسمدة",
+      "أسمدة",
+      "احماض",
+      "أحماض",
+    ],
+    fieldMarkers: ["quantity", "amount", "dose", "كمية"],
+    forbiddenMarkers: ["total", "اجمالي", "إجمالي"],
+  });
 
+  const totalQuantity = getReportValue(day, {
+    exactKeys: [
+      "إجمالي التسميد كجم",
+      "اجمالي التسميد كجم",
+      "إجمالي التسميد",
+      "اجمالي التسميد",
+      "total_fertilizer",
+      "totalFertilizer",
+      "fertilizer_total",
+      "fertilizerTotal",
+      "total_fertilization",
+      "totalFertilization",
+    ],
+    taskMarkers: [
+      "fertilization",
+      "fertilizer",
+      "fertilizers",
+      "acid",
+      "acids",
+      "تسميد",
+      "التسميد",
+      "سماد",
+      "اسمدة",
+      "أسمدة",
+      "احماض",
+      "أحماض",
+    ],
+    fieldMarkers: ["total", "اجمالي", "إجمالي"],
+    forbiddenMarkers: [],
+  });
+
+  const hasFertilizer =
+    hasRealValue(material) ||
+    hasRealValue(palmQuantity) ||
+    hasRealValue(totalQuantity);
+
+  if (!hasFertilizer) return null;
+
+  const details = [];
+
+  pushDetail(details, "نوع التسميد", material);
+  pushDetail(details, "كمية التسميد لكل نخلة", palmQuantity, "جرام");
+  pushDetail(details, "إجمالي التسميد", totalQuantity, "كجم");
+
+  return {
+    type: "fertilizer",
+    title: "تسميد",
+    icon: "🌿",
+    description: "عنده مهمة تسميد بكرة",
+    details,
+  };
+}
+
+function buildSprayTask(day) {
+  const material = getReportValue(day, {
+    exactKeys: [
+      "نوع المبيد",
+      "اسم المبيد",
+      "pesticide_type",
+      "pesticideType",
+      "pesticide_name",
+      "pesticideName",
+      "spray_type",
+      "sprayType",
+      "spray_name",
+      "sprayName",
+    ],
+    taskMarkers: [
+      "spraying",
+      "sprays",
+      "spray",
+      "pesticide",
+      "pesticides",
+      "رش",
+      "الرش",
+      "مبيد",
+      "مبيدات",
+    ],
+    fieldMarkers: ["name", "title", "type", "product", "material", "نوع", "اسم"],
+    forbiddenMarkers: ["quantity", "amount", "total", "dose", "كمية", "اجمالي", "إجمالي"],
+    preferText: true,
+  });
+
+  const palmQuantity = getReportValue(day, {
+    exactKeys: [
+      "كمية المبيد لكل نخلة جرام",
+      "كمية المبيد لكل نخلة",
+      "pesticide_quantity_per_palm",
+      "pesticideQuantityPerPalm",
+      "pesticide_per_palm",
+      "pesticidePerPalm",
+      "pesticide_amount_per_palm",
+      "pesticideAmountPerPalm",
+      "spray_quantity_per_palm",
+      "sprayQuantityPerPalm",
+    ],
+    taskMarkers: [
+      "spraying",
+      "sprays",
+      "spray",
+      "pesticide",
+      "pesticides",
+      "رش",
+      "الرش",
+      "مبيد",
+      "مبيدات",
+    ],
+    fieldMarkers: ["quantity", "amount", "dose", "كمية"],
+    forbiddenMarkers: ["total", "اجمالي", "إجمالي"],
+  });
+
+  const totalQuantity = getReportValue(day, {
+    exactKeys: [
+      "إجمالي كمية المبيد كجم",
+      "اجمالي كمية المبيد كجم",
+      "إجمالي كمية المبيد",
+      "اجمالي كمية المبيد",
+      "total_pesticide",
+      "totalPesticide",
+      "pesticide_total",
+      "pesticideTotal",
+      "total_spray",
+      "totalSpray",
+      "spray_total",
+      "sprayTotal",
+    ],
+    taskMarkers: [
+      "spraying",
+      "sprays",
+      "spray",
+      "pesticide",
+      "pesticides",
+      "رش",
+      "الرش",
+      "مبيد",
+      "مبيدات",
+    ],
+    fieldMarkers: ["total", "اجمالي", "إجمالي"],
+    forbiddenMarkers: [],
+  });
+
+  const hasSpray =
+    hasRealValue(material) ||
+    hasRealValue(palmQuantity) ||
+    hasRealValue(totalQuantity);
+
+  if (!hasSpray) return null;
+
+  const details = [];
+
+  pushDetail(details, "نوع المبيد", material);
+  pushDetail(details, "كمية المبيد لكل نخلة", palmQuantity, "جرام");
+  pushDetail(details, "إجمالي كمية المبيد", totalQuantity, "كجم");
+
+  return {
+    type: "spray",
+    title: "رش",
+    icon: "🧪",
+    description: "عنده مهمة رش بكرة",
+    details,
+  };
+}
+
+function getReportValue(
+  root,
+  {
+    exactKeys = [],
+    taskMarkers = [],
+    fieldMarkers = [],
+    forbiddenMarkers = [],
+    preferText = false,
+  }
+) {
+  if (!root || typeof root !== "object") return "";
+
+  const entries = flattenReportEntries(root);
+
+  const normalizedExactKeys = exactKeys.map((key) => normalizeKey(key));
+  const normalizedTaskMarkers = taskMarkers.map((key) => normalizeKey(key));
+  const normalizedFieldMarkers = fieldMarkers.map((key) => normalizeKey(key));
+  const normalizedForbiddenMarkers = forbiddenMarkers.map((key) => normalizeKey(key));
+
+  const exactMatches = entries
+    .filter((entry) => {
+      return normalizedExactKeys.some((key) => {
+        return entry.key === key || entry.path.includes(key);
+      });
+    })
+    .filter((entry) => hasRealValue(entry.value))
+    .filter((entry) => !hasForbiddenMarker(entry.path, normalizedForbiddenMarkers))
+    .sort((a, b) => b.score - a.score);
+
+  if (exactMatches.length) {
+    return extractReportEntryValue(exactMatches[0]);
+  }
+
+  const scored = entries
+    .map((entry) => {
+      let score = 0;
+
+      const hasTaskMarker = normalizedTaskMarkers.some((marker) => {
+        return entry.path.includes(marker);
+      });
+
+      const hasFieldMarker = normalizedFieldMarkers.some((marker) => {
+        return entry.path.includes(marker);
+      });
+
+      const hasForbidden = hasForbiddenMarker(entry.path, normalizedForbiddenMarkers);
+
+      if (hasTaskMarker) score += 50;
+      if (hasFieldMarker) score += 40;
+      if (preferText && typeof entry.value === "string") score += 20;
+      if (!preferText && typeof entry.value === "number") score += 10;
+      if (hasForbidden) score -= 100;
+      if (!hasTaskMarker) score -= 60;
+      if (!hasFieldMarker) score -= 60;
+
+      return {
+        ...entry,
+        score,
+      };
+    })
+    .filter((entry) => entry.score > 0)
+    .filter((entry) => hasRealValue(entry.value))
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length) {
+    return extractReportEntryValue(scored[0]);
+  }
+
+  return "";
+}
+
+function flattenReportEntries(root) {
+  const entries = [];
   const visited = new WeakSet();
 
-  function walk(value) {
-    if (!value || typeof value !== "object") return;
+  function walk(value, pathParts = []) {
+    if (value === null || value === undefined || value === "") return;
+
+    if (typeof value !== "object") {
+      const rawKey = pathParts[pathParts.length - 1] || "";
+      const normalizedPath = normalizeKey(pathParts.join("_"));
+      const normalizedKey = normalizeKey(rawKey);
+
+      if (!isIgnoredEntryKey(normalizedPath)) {
+        entries.push({
+          key: normalizedKey,
+          path: normalizedPath,
+          value,
+          score: pathParts.length,
+        });
+      }
+
+      return;
+    }
 
     if (visited.has(value)) return;
     visited.add(value);
 
     if (Array.isArray(value)) {
-      value.forEach((item) => walk(item));
+      value.forEach((item, index) => {
+        walk(item, [...pathParts, `item${index + 1}`]);
+      });
       return;
     }
 
+    const objectName = extractNameFromObject(value);
+
+    if (hasRealValue(objectName)) {
+      const rawKey = pathParts[pathParts.length - 1] || "name";
+      const normalizedPath = normalizeKey([...pathParts, "name"].join("_"));
+
+      if (!isIgnoredEntryKey(normalizedPath)) {
+        entries.push({
+          key: normalizeKey(rawKey),
+          path: normalizedPath,
+          value: objectName,
+          score: pathParts.length + 4,
+        });
+      }
+    }
+
     Object.entries(value).forEach(([key, itemValue]) => {
-      const normalizedKey = normalizeKey(key);
-
-      const isIgnoredContainer = ignoredContainerKeys.includes(normalizedKey);
-
-      const keyIsTarget =
-        !isIgnoredContainer &&
-        normalizedKeys.some((targetKey) => normalizedKey.includes(targetKey));
-
-      if (keyIsTarget) {
-        sections.push(itemValue);
-        return;
-      }
-
-      if (itemValue && typeof itemValue === "object") {
-        walk(itemValue);
-      }
+      walk(itemValue, [...pathParts, key]);
     });
   }
 
   walk(root);
 
-  return sections;
+  return entries;
 }
 
-function sectionHasRealTaskValue(section) {
-  if (section === null || section === undefined || section === "") return false;
+function extractReportEntryValue(entry) {
+  if (!entry) return "";
 
-  if (typeof section === "number") return section > 0;
-
-  if (typeof section === "string") {
-    return isRealTaskString(section);
+  if (typeof entry.value === "object") {
+    const nameValue = extractNameFromObject(entry.value);
+    if (hasRealValue(nameValue)) return nameValue;
   }
 
-  if (Array.isArray(section)) {
-    return section.some((item) => sectionHasRealTaskValue(item));
-  }
-
-  if (typeof section === "object") {
-    return Object.entries(section).some(([key, value]) => {
-      const normalizedKey = normalizeKey(key);
-
-      const ignoredKey =
-        normalizedKey.includes("id") ||
-        normalizedKey.includes("createdat") ||
-        normalizedKey.includes("updatedat") ||
-        normalizedKey.includes("date") ||
-        normalizedKey.includes("day") ||
-        normalizedKey.includes("title") ||
-        normalizedKey.includes("label") ||
-        normalizedKey.includes("icon") ||
-        normalizedKey.includes("namear") ||
-        normalizedKey.includes("nameen");
-
-      if (ignoredKey) return false;
-
-      return sectionHasRealTaskValue(value);
-    });
-  }
-
-  return false;
+  return entry.value;
 }
 
-function isRealTaskString(value) {
-  const clean = normalizeSearch(value);
+function hasForbiddenMarker(path, forbiddenMarkers) {
+  if (!forbiddenMarkers.length) return false;
 
-  if (!clean) return false;
+  return forbiddenMarkers.some((marker) => {
+    return path.includes(marker);
+  });
+}
 
-  const emptyValues = [
-    "0",
-    "0.0",
-    "0.00",
-    "لا يوجد",
-    "لايوجد",
-    "غير موجود",
-    "none",
-    "null",
-    "undefined",
-    "false",
-    "-",
+function isIgnoredEntryKey(path) {
+  const ignored = [
+    "id",
+    "uuid",
+    "createdat",
+    "updatedat",
+    "deletedat",
+    "date",
+    "daydate",
+    "email",
+    "phone",
+    "whatsapp",
+    "pivot",
   ];
 
-  if (emptyValues.includes(clean)) return false;
+  return ignored.some((key) => path === key || path.endsWith(key));
+}
 
-  const labelOnlyValues = [
-    "ري",
-    "الري",
-    "تسميد",
-    "التسميد",
-    "رش",
-    "الرش",
-    "كمية الري لكل نخلة لتر",
-    "اجمالي كمية الري لتر",
-    "مدة الري لكل نخلة دقيقة",
-    "اجمالي مدة الري ساعة",
-    "نوع المبيد",
-    "كمية المبيد لكل نخلة جرام",
-    "اجمالي كمية المبيد كجم",
-    "كمية التسميد لكل نخلة جرام",
-    "اجمالي التسميد كجم",
-    "اليوم",
-    "مزرعة",
-  ];
+function pushDetail(details, label, value, unit = "") {
+  if (!hasRealValue(value)) return;
 
-  if (labelOnlyValues.includes(clean)) return false;
+  const cleanValue = toEnglishNumbers(formatValue(value));
+  const cleanUnit = String(unit || "").trim();
 
-  return true;
+  details.push({
+    label,
+    value: cleanUnit ? `${cleanValue} ${cleanUnit}` : cleanValue,
+  });
+}
+
+function extractNameFromObject(value) {
+  if (!value || typeof value !== "object") return "";
+
+  return (
+    value.name ||
+    value.title ||
+    value.type_name ||
+    value.typeName ||
+    value.material_name ||
+    value.materialName ||
+    value.product_name ||
+    value.productName ||
+    value.fertilizer_name ||
+    value.fertilizerName ||
+    value.pesticide_name ||
+    value.pesticideName ||
+    value.acid_name ||
+    value.acidName ||
+    value.name_ar ||
+    value.nameAr ||
+    value.name_en ||
+    value.nameEn ||
+    ""
+  );
+}
+
+function hasRealValue(value) {
+  if (value === null || value === undefined || value === "") return false;
+
+  if (typeof value === "number") return value > 0;
+
+  if (typeof value === "string") {
+    const clean = normalizeSearch(value);
+
+    if (!clean) return false;
+
+    const emptyValues = [
+      "0",
+      "0.0",
+      "0.00",
+      "لا يوجد",
+      "لايوجد",
+      "غير موجود",
+      "none",
+      "null",
+      "undefined",
+      "false",
+      "-",
+    ];
+
+    return !emptyValues.includes(clean);
+  }
+
+  if (Array.isArray(value)) return value.some((item) => hasRealValue(item));
+
+  if (typeof value === "object") {
+    return Object.values(value).some((item) => hasRealValue(item));
+  }
+
+  return Boolean(value);
+}
+
+function formatValue(value) {
+  if (typeof value === "number") {
+    return new Intl.NumberFormat("en-US").format(value);
+  }
+
+  return String(value || "").trim();
 }
 
 function dedupeTasks(tasks) {
@@ -863,6 +1316,8 @@ function normalizeKey(value) {
     .replace(/[إأآا]/g, "ا")
     .replace(/ى/g, "ي")
     .replace(/ة/g, "ه")
+    .replace(/[()（）[\]{}]/g, "")
+    .replace(/[،,:؛.]/g, "")
     .replace(/[\s_-]+/g, "")
     .trim();
 }
@@ -871,20 +1326,6 @@ function toEnglishNumbers(value) {
   return String(value)
     .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit))
     .replace(/[۰-۹]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹".indexOf(digit));
-}
-
-function openWhatsapp(user, farm) {
-  const phone = String(user.whatsapp || user.phone || "").replace(/\D/g, "");
-
-  if (!phone) return;
-
-  const taskNames = farm.tasks.map((task) => task.title).join("، ");
-
-  const message = encodeURIComponent(
-    `مرحبًا ${user.name}، تذكير بمهام مزرعة ${farm.name} ليوم ${tomorrowDayName.value} ${tomorrowDateLabel.value}: ${taskNames}.`
-  );
-
-  window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
 }
 </script>
 
@@ -1341,15 +1782,31 @@ function openWhatsapp(user, farm) {
 }
 
 .task-type-card {
-  min-height: 145px;
+  min-height: 155px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   padding: 20px;
   border-radius: 24px;
   border: 1px solid #e5e7eb;
   background: #f8fafc;
+  text-align: right;
+  cursor: pointer;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.task-type-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.1);
+}
+
+.task-type-card--active {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.14);
 }
 
 .task-type-card--irrigation {
@@ -1398,38 +1855,132 @@ function openWhatsapp(user, farm) {
   line-height: 1.7;
 }
 
-.farm-task-card__footer {
-  margin-top: auto;
+.task-type-card__hint {
+  width: fit-content;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 950;
+  border: 1px solid #e2e8f0;
+}
+
+.task-details-panel {
+  margin-top: 4px;
+  padding: 22px;
+  border-radius: 26px;
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);
+}
+
+.task-details-panel--irrigation {
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+  border-color: #bfdbfe;
+}
+
+.task-details-panel--fertilizer {
+  background: linear-gradient(135deg, #f0fdf4, #ffffff);
+  border-color: #bbf7d0;
+}
+
+.task-details-panel--spray {
+  background: linear-gradient(135deg, #fefce8, #ffffff);
+  border-color: #fde68a;
+}
+
+.task-details-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.task-details-panel__title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 14px;
-  padding-top: 18px;
-  border-top: 1px dashed #cbd5e1;
 }
 
-.farm-task-card__footer span {
+.task-details-panel__title > span {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: #ffffff;
+  font-size: 30px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.09);
+}
+
+.task-details-panel__title h4 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 950;
+}
+
+.task-details-panel__title p {
+  margin: 0;
   color: #475569;
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 850;
 }
 
-.farm-task-card__footer button {
+.task-details-panel__close {
   border: 0;
-  min-height: 48px;
-  padding: 0 22px;
-  border-radius: 16px;
-  background: #16a34a;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: #0f172a;
   color: #ffffff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 950;
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
-.farm-task-card__footer button:hover {
-  transform: translateY(-1px);
-  background: #15803d;
+.task-details-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.task-detail-item {
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: minmax(170px, 0.45fr) 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(203, 213, 225, 0.85);
+}
+
+.task-detail-item__label {
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.task-detail-item__value {
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.task-details-empty {
+  padding: 18px;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 900;
+  border: 1px dashed #cbd5e1;
 }
 
 @keyframes spin {
@@ -1454,6 +2005,10 @@ function openWhatsapp(user, farm) {
 
 @media (max-width: 900px) {
   .task-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-detail-item {
     grid-template-columns: 1fr;
   }
 }
@@ -1505,6 +2060,10 @@ function openWhatsapp(user, farm) {
 
   .farm-task-card h3 {
     font-size: 24px;
+  }
+
+  .task-details-panel__header {
+    flex-direction: column;
   }
 }
 </style>

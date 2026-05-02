@@ -128,6 +128,10 @@ const handleSubmit = async () => {
       defaultRedirect = "/farms";
     }
 
+    if (authStore.userData?.role === "admin_assistant") {
+      defaultRedirect = "/reports/list";
+    }
+
     const redirect = route.query.redirect || defaultRedirect;
     router.push(redirect);
   }
