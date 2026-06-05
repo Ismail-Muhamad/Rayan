@@ -242,6 +242,18 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import axiosClient from "@/api/axiosClient";
+import { storeToRefs } from "pinia";
+import { useUsersStore } from "@/stores/users.store";
+import { useFarmsStore } from "@/stores/farms.store";
+import { useReportsStore } from "@/stores/reports.store";
+
+const usersStore = useUsersStore();
+const farmsStore = useFarmsStore();
+const reportsStore = useReportsStore();
+
+const { records: usersRecords } = storeToRefs(usersStore);
+const { records: farmsRecords } = storeToRefs(farmsStore);
+const { records: reportsRecords } = storeToRefs(reportsStore);
 
 const loading = ref(false);
 const errorMessage = ref("");
@@ -603,22 +615,42 @@ function getLatestReport(reportList) {
 
 function extractTomorrowTasks(reports) {
   const reportsArray = Array.isArray(reports) ? reports : [reports];
-
   const allTasks = [];
+
+  const isTomorrowDay = (day) => {
+    const raw = day?.date ?? day?.day_date ?? day?.task_date ?? day?.execution_date;
+    if (!raw) return false;
+    return String(raw).slice(0, 10) === tomorrowIso.value;
+  };
+
+  const walkDaysInReport = (report) => {
+    const weeks = Array.isArray(report?.report_weeks)
+      ? report.report_weeks
+      : [];
+    const days = [];
+
+    weeks.forEach((week) => {
+      if (!week) return;
+      const weekDays = Array.isArray(week?.days) ? week.days : [];
+      weekDays.forEach((d) => days.push(d));
+    });
+
+    return days;
+  };
 
   reportsArray.forEach((report) => {
     if (!report) return;
 
-    const matchingDays = findMatchingDayObjects(report);
+    const reportDays = walkDaysInReport(report);
 
-    matchingDays.forEach((dayObject) => {
+    reportDays.forEach((dayObject) => {
+      if (!isTomorrowDay(dayObject)) return;
+
       const dayTasks = extractTasksFromDay(dayObject);
 
       dayTasks.forEach((task) => {
         const existingTask = allTasks.find(
-          (t) =>
-            t.type === task.type &&
-            t.title === task.title
+          (t) => t.type === task.type && t.title === task.title,
         );
 
         // لو المهمة موجودة قبل كده نجمع التفاصيل
@@ -767,88 +799,39 @@ function extractTasksFromDay(day) {
 }
 
 function buildIrrigationTask(day) {
-  const palmWater = getReportValue(day, {
-    exactKeys: [
-      "كمية الري لكل نخلة لتر",
-      "كمية الري لكل نخلة",
-      "irrigation_per_palm",
-      "irrigationPerPalm",
-      "water_per_palm",
-      "waterPerPalm",
-      "water_quantity_per_palm",
-      "waterQuantityPerPalm",
-    ],
-    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
-    fieldMarkers: ["quantity", "amount", "liter", "litre", "كمية"],
-    forbiddenMarkers: ["total", "اجمالي", "إجمالي", "duration", "time", "مدة", "hour", "ساعة"],
-  });
+  const irrigationPerTree = Number(day?.irrigation_amount_per_palm_tree || day?.irrigation_amount_per_palm || day?.irrigation_per_palm || 0);
+  const durationPerTreeMinutes = Number(
+    day?.duration_of_irrigation_per_palm_tree ||
+      day?.duration_of_irrigation_per_palm ||
+      day?.irrigation_duration_per_palm ||
+      day?.duration_per_palm ||
+      day?.duration_per_palm_tree ||
+      0,
+  );
 
-  const totalWater = getReportValue(day, {
-    exactKeys: [
-      "إجمالي كمية الري لتر",
-      "اجمالي كمية الري لتر",
-      "إجمالي كمية الري",
-      "اجمالي كمية الري",
-      "total_irrigation",
-      "totalIrrigation",
-      "total_water",
-      "totalWater",
-      "total_water_quantity",
-      "totalWaterQuantity",
-    ],
-    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
-    fieldMarkers: ["total", "اجمالي", "إجمالي"],
-    forbiddenMarkers: ["duration", "time", "مدة"],
-  });
+  // إجمالي القيم (إن كانت محسوبة في الـAPI) أو نعرضها فقط إن وجدت
+  const totalWater = Number(
+    day?.total_amount_of_irrigation ||
+      day?.total_irrigation ||
+      day?.total_water ||
+      day?.total_water_quantity ||
+      0,
+  );
 
-  const palmDuration = getReportValue(day, {
-    exactKeys: [
-      "مدة الري لكل نخلة دقيقة",
-      "مدة الري لكل نخلة",
-      "irrigation_time_per_palm",
-      "irrigationTimePerPalm",
-      "duration_per_palm",
-      "durationPerPalm",
-      "minutes_per_palm",
-      "minutesPerPalm",
-    ],
-    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
-    fieldMarkers: ["duration", "time", "minute", "minutes", "مدة", "دقيقة"],
-    forbiddenMarkers: ["total", "اجمالي", "إجمالي", "hour", "ساعة"],
-  });
+  const totalDuration = day?.total_duration_of_irrigation || day?.total_duration || day?.total_irrigation_time;
 
-  const totalDuration = getReportValue(day, {
-    exactKeys: [
-      "إجمالي مدة الري ساعة",
-      "اجمالي مدة الري ساعة",
-      "إجمالي مدة الري",
-      "اجمالي مدة الري",
-      "total_irrigation_time",
-      "totalIrrigationTime",
-      "total_duration",
-      "totalDuration",
-      "total_hours",
-      "totalHours",
-    ],
-    taskMarkers: ["irrigation", "water", "watering", "ري", "الري"],
-    fieldMarkers: ["total", "duration", "time", "hour", "hours", "اجمالي", "إجمالي", "مدة", "ساعة"],
-    forbiddenMarkers: [],
-  });
-
-  const hasIrrigation =
-    hasRealValue(palmWater) ||
-    hasRealValue(totalWater) ||
-    hasRealValue(palmDuration) ||
-    hasRealValue(totalDuration);
+  const hasIrrigation = irrigationPerTree > 0 || durationPerTreeMinutes > 0;
 
   if (!hasIrrigation) return null;
 
   const details = [];
 
-  pushDetail(details, "كمية الري لكل نخلة", palmWater, "لتر");
-  pushDetail(details, "إجمالي كمية الري", totalWater, "لتر");
-  pushDetail(details, "مدة الري لكل نخلة", palmDuration, "دقيقة");
-  pushDetail(details, "إجمالي مدة الري", totalDuration);
+  // بالاعتماد على UI: totalDuration عادة تكون string جاهزة (مثل "2 ساعة 10 دقيقة")
+  pushDetail(details, "كمية الري لكل نخلة", irrigationPerTree, "لتر");
+  if (totalWater > 0) pushDetail(details, "إجمالي كمية الري", totalWater, "لتر");
+  if (durationPerTreeMinutes > 0)
+    pushDetail(details, "مدة الري لكل نخلة", durationPerTreeMinutes, "دقيقة");
+  if (hasRealValue(totalDuration)) pushDetail(details, "إجمالي مدة الري", totalDuration);
 
   return {
     type: "irrigation",
@@ -860,286 +843,234 @@ function buildIrrigationTask(day) {
 }
 
 function buildFertilizerTasks(day) {
-  const materials = getAllReportValues(day, {
-    exactKeys: [
-      "نوع التسميد",
-      "اسم السماد",
-      "اسم الحمض",
-      "fertilizer_type",
-      "fertilizerType",
-      "fertilization_type",
-      "fertilizationType",
-      "fertilizer_name",
-      "fertilizerName",
-      "acid_name",
-      "acidName",
-    ],
-    taskMarkers: [
-      "fertilization",
-      "fertilizer",
-      "fertilizers",
-      "acid",
-      "acids",
-      "تسميد",
-      "التسميد",
-      "سماد",
-      "اسمدة",
-      "أسمدة",
-      "احماض",
-      "أحماض",
-    ],
-    fieldMarkers: ["name", "title", "type", "product", "material", "نوع", "اسم"],
-    forbiddenMarkers: [
-      "quantity",
-      "amount",
-      "total",
-      "dose",
-      "كمية",
-      "اجمالي",
-      "إجمالي",
-    ],
-    preferText: true,
+  const fertilizations = Array.isArray(day?.fertilizations) ? day.fertilizations : [];
+
+  const realFertilizations = fertilizations.filter((f) => {
+    const typeId = f?.fertilizer_type_id;
+    const typeName = f?.type_of_fertilization;
+    const qty = Number(f?.fertilizer_quantity_per_palm_tree || f?.fertilizer_quantity_per_palm || 0);
+    return (
+      hasRealValue(typeId) ||
+      hasRealValue(typeName) ||
+      qty > 0 ||
+      hasRealValue(f?.fertilizer_quantity_per_palm_tree)
+    );
   });
 
-  if (!materials.length) return [];
-
-  const palmQuantity = getReportValue(day, {
-    exactKeys: [
-      "كمية التسميد لكل نخلة جرام",
-      "كمية التسميد لكل نخلة",
-      "fertilizer_quantity_per_palm",
-      "fertilizerQuantityPerPalm",
-      "fertilizer_per_palm",
-      "fertilizerPerPalm",
-      "fertilizer_amount_per_palm",
-      "fertilizerAmountPerPalm",
-    ],
-    taskMarkers: [
-      "fertilization",
-      "fertilizer",
-      "fertilizers",
-      "acid",
-      "acids",
-      "تسميد",
-      "التسميد",
-      "سماد",
-      "اسمدة",
-      "أسمدة",
-      "احماض",
-      "أحماض",
-    ],
-    fieldMarkers: ["quantity", "amount", "dose", "كمية"],
-    forbiddenMarkers: ["total", "اجمالي", "إجمالي"],
-  });
-
-  const totalQuantity = getReportValue(day, {
-    exactKeys: [
-      "إجمالي التسميد كجم",
-      "اجمالي التسميد كجم",
-      "إجمالي التسميد",
-      "اجمالي التسميد",
-      "total_fertilizer",
-      "totalFertilizer",
-      "fertilizer_total",
-      "fertilizerTotal",
-      "total_fertilization",
-      "totalFertilization",
-    ],
-    taskMarkers: [
-      "fertilization",
-      "fertilizer",
-      "fertilizers",
-      "acid",
-      "acids",
-      "تسميد",
-      "التسميد",
-      "سماد",
-      "اسمدة",
-      "أسمدة",
-      "احماض",
-      "أحماض",
-    ],
-    fieldMarkers: ["total", "اجمالي", "إجمالي"],
-    forbiddenMarkers: [],
-  });
+  if (!realFertilizations.length) return [];
 
   const details = [];
 
-  materials.forEach((material, index) => {
-    pushDetail(details, `نوع التسميد ${index + 1}`, material);
+  realFertilizations.forEach((fertilization, index) => {
+    const typeName =
+      fertilization?.type_of_fertilization ||
+      fertilization?.fertilizer_type_name ||
+      fertilization?.fertilizer_type ||
+      fertilization?.fertilizer_name ||
+      fertilization?.fertilizerName ||
+      fertilization?.acid_name ||
+      fertilization?.acidName ||
+      `نوع ${index + 1}`;
+
+    pushDetail(details, `نوع التسميد ${index + 1}`, typeName);
   });
 
-  pushDetail(details, "كمية التسميد لكل نخلة", palmQuantity, "جرام");
-  pushDetail(details, "إجمالي التسميد", totalQuantity, "كجم");
+  const palmQuantity = Number(
+    realFertilizations[0]?.fertilizer_quantity_per_palm_tree ||
+      realFertilizations[0]?.fertilizer_quantity_per_palm ||
+      0,
+  );
+
+  // إجمالي كجم إن كان موجود في day مباشرة (أو متاح كـ total للمادة)
+  const totalQuantity =
+    realFertilizations.reduce((sum, f) => {
+      const v =
+        Number(f?.total || f?.fertilizer_total || f?.fertilizer_total_kg || 0) ||
+        0;
+      return sum + v;
+    }, 0) || Number(day?.total_fertilization || day?.total_fertilizer || 0);
+
+  if (palmQuantity > 0) pushDetail(details, "كمية التسميد لكل نخلة", palmQuantity, "جرام");
+  if (hasRealValue(totalQuantity) && Number(totalQuantity) > 0)
+    pushDetail(details, "إجمالي التسميد", totalQuantity, "كجم");
 
   return [
     {
       type: "fertilizer",
       title: "تسميد",
       icon: "🌿",
-      description: `عنده ${materials.length} نوع تسميد بكرة`,
+      description: `عنده ${realFertilizations.length} نوع تسميد بكرة`,
       details,
     },
   ];
 }
 
 function buildSprayTasks(day) {
-  const sprayItems = findSprayItems(day);
+  // في FarmWeekShow: spraying, pesticide_type_id, amount_of_spray (gram per tree)
+  const pesticideName = day?.spraying || day?.pesticide_name || day?.spraying_name || "";
+  const perTreeGrams = Number(day?.amount_of_spray || day?.spraying_per_tree || 0);
+  const totalKg =
+    Number(day?.amount_of_spray_total || day?.total_spray || day?.total_pesticide || 0) ||
+    Number(day?.total_amount_of_spray || 0);
 
-  if (!sprayItems.length) return [];
+  const hasSpray = hasRealValue(day?.pesticide_type_id) || hasRealValue(day?.spraying) || perTreeGrams > 0;
 
-  return sprayItems.map((sprayItem) => {
-    const material =
-      getObjectValue(sprayItem, [
-        "نوع المبيد",
-        "اسم المبيد",
-        "pesticide_type",
-        "pesticideType",
-        "pesticide_name",
-        "pesticideName",
-        "spray_type",
-        "sprayType",
-        "spray_name",
-        "sprayName",
-      ]) || "مبيد";
+  if (!hasSpray) return [];
 
-    const palmQuantity = getObjectValue(sprayItem, [
-      "كمية المبيد لكل نخلة جرام",
-      "كمية المبيد لكل نخلة",
-      "pesticide_quantity_per_palm",
-      "pesticideQuantityPerPalm",
-      "pesticide_per_palm",
-      "pesticidePerPalm",
-      "pesticide_amount_per_palm",
-      "pesticideAmountPerPalm",
-      "spray_quantity_per_palm",
-      "sprayQuantityPerPalm",
-    ]);
+  const details = [];
 
-    const totalQuantity = getObjectValue(sprayItem, [
-      "إجمالي كمية المبيد كجم",
-      "اجمالي كمية المبيد كجم",
-      "إجمالي كمية المبيد",
-      "اجمالي كمية المبيد",
-      "total_pesticide",
-      "totalPesticide",
-      "pesticide_total",
-      "pesticideTotal",
-      "total_spray",
-      "totalSpray",
-      "spray_total",
-      "sprayTotal",
-    ]);
+  // مثل UI الحالي: لو spraying=0 أو فاضي، هنعرض '--' عبر hasRealValue logic
+  if (hasRealValue(pesticideName)) pushDetail(details, "نوع المبيد", pesticideName);
 
-    const details = [];
+  if (perTreeGrams > 0) pushDetail(details, "كمية المبيد لكل نخلة", perTreeGrams, "جرام");
+  if (totalKg > 0) pushDetail(details, "إجمالي كمية المبيد", totalKg, "كجم");
 
-    pushDetail(details, "نوع المبيد", material);
-    pushDetail(details, "كمية المبيد لكل نخلة", palmQuantity, "جرام");
-    pushDetail(details, "إجمالي كمية المبيد", totalQuantity, "كجم");
+  const displayTitle = pesticideName ? `رش: ${pesticideName}` : "مهمة رش";
+  const displayDesc = pesticideName ? `عنده مهمة رش بكرة - ${pesticideName}` : "عنده مهمة رش بكرة";
 
-    return {
+  // إذا لا توجد تفاصيل كميات لكن الاسم موجود، نطلع Task بتفاصيل فارغة ليتظهر زر التفاصيل
+  if (!details.length) {
+    if (!hasRealValue(pesticideName)) return [];
+    return [
+      {
+        type: "spray",
+        title: displayTitle,
+        icon: "🧪",
+        description: displayDesc,
+        details: [{ label: "نوع المبيد", value: pesticideName }],
+      },
+    ];
+  }
+
+  return [
+    {
       type: "spray",
-      title: "رش: " + material,
+      title: displayTitle,
       icon: "🧪",
-      description: "عنده مهمة رش بكرة - " + material,
+      description: displayDesc,
       details,
-    };
-  });
+    },
+  ];
 }
-function findSprayItems(day) {
-  const results = [];
+
+function extractSprayItemsFromDay(day) {
+  const items = [];
   const visited = new WeakSet();
 
-  function walk(value, depth = 0) {
-    if (!value || typeof value !== "object" || visited.has(value) || depth > 8) {
-      return;
-    }
-
+  function walk(value, keyPath = "", isRoot = false) {
+    if (!value || typeof value !== "object") return;
+    if (visited.has(value)) return;
     visited.add(value);
 
-    if (Array.isArray(value)) {
-      const hasSprayItems = value.some((item) => isSprayItem(item));
+    const isArray = Array.isArray(value);
 
-      if (hasSprayItems) {
-        value.forEach((item) => {
-          if (isSprayItem(item)) {
-            results.push(item);
-          }
-        });
-        return;
+    if (!isRoot && !isArray) {
+      const normalizedPath = normalizeKey(keyPath);
+      const isSprayRelatedPath = ["spray", "pesticide", "رش", "مبيد"].some(kw => normalizedPath.includes(normalizeKey(kw)));
+
+      const keys = Object.keys(value);
+      const spraySpecificKeys = [
+        "نوع المبيد", "اسم المبيد", "pesticide_type", "pesticide_name", "spray_type", "spray_name", "كمية المبيد", "pesticide_quantity", "spray_quantity"
+      ];
+      
+      const hasSpraySpecificKey = keys.some(k => {
+        const normK = normalizeKey(k);
+        return spraySpecificKeys.some(sk => normK.includes(normalizeKey(sk)));
+      });
+
+      if (isSprayRelatedPath || hasSpraySpecificKey) {
+        items.push(value);
       }
-
-      value.forEach((item) => walk(item, depth + 1));
-      return;
     }
 
-    if (isSprayItem(value)) {
-      results.push(value);
-      return;
+    if (isArray) {
+      value.forEach((item) => {
+        walk(item, keyPath, false);
+      });
+    } else {
+      for (const [k, v] of Object.entries(value)) {
+        walk(v, k, false);
+      }
     }
-
-    Object.values(value).forEach((child) => walk(child, depth + 1));
   }
 
-  walk(day, 0);
-  return results;
+  walk(day, "", true);
+
+  return [...new Set(items)];
 }
 
-function isSprayItem(obj) {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
-    return false;
+function extractSprayFieldValue(sprayItem, specificKeys, genericHint = "name") {
+  if (!sprayItem || typeof sprayItem !== "object") return "";
+
+  const keys = Object.keys(sprayItem);
+  const normalizedSpecificKeys = specificKeys.map(k => normalizeKey(k));
+
+  let matchedValue = "";
+
+  for (const key of keys) {
+    const normKey = normalizeKey(key);
+    const isSpecificMatch = normalizedSpecificKeys.some(sk => 
+      normKey === sk || normKey.includes(sk) || sk.includes(normKey)
+    );
+    
+    if (isSpecificMatch && hasRealValue(sprayItem[key])) {
+      if (typeof sprayItem[key] !== "object") {
+        return sprayItem[key];
+      } else {
+        const objVal = extractNameFromObject(sprayItem[key]);
+        if (hasRealValue(objVal)) return objVal;
+      }
+    }
   }
 
-  const normalizedKeys = Object.keys(obj).map((k) => normalizeKey(k));
+  let genericKeys = [];
+  let forbiddenKeys = [];
+  
+  if (genericHint === "name") {
+    genericKeys = ["name", "title", "type", "material", "product", "اسم", "نوع", "مبيد", "pesticide", "spray"];
+    forbiddenKeys = ["quantity", "amount", "total", "dose", "كمية", "اجمالي", "إجمالي", "جرعة", "per_palm", "للنخلة"];
+  } else if (genericHint === "quantity") {
+    genericKeys = ["quantity", "amount", "dose", "per_palm", "كمية", "جرعة", "للنخلة", "معدل", "rate"];
+    forbiddenKeys = ["total", "اجمالي", "إجمالي", "sum"];
+  } else if (genericHint === "total") {
+    genericKeys = ["total", "اجمالي", "إجمالي", "sum", "كجم", "لتر", "kg", "liter"];
+    forbiddenKeys = ["per_palm", "للنخلة", "name", "type", "اسم", "نوع"];
+  }
 
-  const hasSprayMarker = normalizedKeys.some((k) => {
-    const sprayMarkers = [
-      "pesticide",
-      "pesticidename",
-      "pesticidetype",
-      "spray",
-      "sprayname",
-      "spraytype",
-      "مبيد",
-      "نوعالمبيد",
-      "اسمالمبيد",
-    ];
-    return sprayMarkers.some((marker) => k.includes(marker));
-  });
+  const normalizedGenericKeys = genericKeys.map(k => normalizeKey(k));
+  const normalizedForbiddenKeys = forbiddenKeys.map(k => normalizeKey(k));
 
-  if (!hasSprayMarker) return false;
+  for (const key of keys) {
+    const normKey = normalizeKey(key);
+    
+    const isForbidden = normalizedForbiddenKeys.some(fk => normKey.includes(fk));
+    if (isForbidden) continue;
 
-  const hasQuantityOrName = normalizedKeys.some((k) => {
-    const valueMarkers = [
-      "quantity",
-      "كمية",
-      "amount",
-      "name",
-      "اسم",
-      "نوع",
-      "type",
-    ];
-    return valueMarkers.some((marker) => k.includes(marker));
-  });
+    const isGenericMatch = normalizedGenericKeys.some(gk => normKey === gk || normKey.includes(gk));
+    
+    if (isGenericMatch && hasRealValue(sprayItem[key])) {
+      if (typeof sprayItem[key] !== "object") {
+        return sprayItem[key];
+      } else {
+        const objVal = extractNameFromObject(sprayItem[key]);
+        if (hasRealValue(objVal)) return objVal;
+      }
+    }
+  }
 
-  return hasQuantityOrName;
-}
-function getObjectValue(obj, keys = []) {
-  if (!obj || typeof obj !== "object") return "";
-
-  const normalizedKeys = keys.map((k) => normalizeKey(k));
-
-  for (const [key, value] of Object.entries(obj)) {
-    const normalizedKey = normalizeKey(key);
-
-    if (normalizedKeys.includes(normalizedKey)) {
-      return value;
+  for (const key of keys) {
+    if (genericHint === "name" && typeof sprayItem[key] === "string" && hasRealValue(sprayItem[key])) {
+       const normKey = normalizeKey(key);
+       const isForbidden = ["quantity", "amount", "total", "dose", "كمية", "اجمالي", "إجمالي"].some(fk => normKey.includes(normalizeKey(fk)));
+       if (!isForbidden) return sprayItem[key];
+    }
+    if ((genericHint === "quantity" || genericHint === "total") && typeof sprayItem[key] === "number" && hasRealValue(sprayItem[key])) {
+       return sprayItem[key];
     }
   }
 
   return "";
 }
-
 
 function getAllReportValues(
   root,
