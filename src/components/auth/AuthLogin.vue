@@ -88,7 +88,7 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth.store";
 import { useValidation } from "@/composables/useValidation";
 import authBg from "@/assets/auth-bg.png";
-import logoImage from "@/assets/لوجو مفرغ_.png";
+import logoImage from "@/assets/rayan-logo-transparent.png";
 
 const authStore = useAuthStore();
 const router = useRouter();

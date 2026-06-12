@@ -62,7 +62,7 @@ import PrimarySidebarItem from "./PrimarySidebarItem.vue";
 import i18n from "@/plugins/i18n";
 import { useAuthStore } from "@/stores/auth.store";
 import router from "@/router";
-import logoImage from "@/assets/لوجو مفرغ_.png";
+import logoImage from "@/assets/rayan-logo-transparent.png";
 
 export default {
   name: "PrimarySidebar",

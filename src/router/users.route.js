@@ -4,9 +4,7 @@ export default {
   component: () => import("@/components/users/UsersIndex.vue"),
   redirect: { name: "users_list" },
   meta: {
-    meta: {
-      roles: ["admin", "admin_assistant"],
-    },
+    roles: ["admin", "admin_assistant"],
   },
   children: [
     {

@@ -14,8 +14,9 @@ const serverErrorHandler = (
     // The request was made but no response was received
     if (error.code === "ERR_NETWORK") {
       errorMessage = "Network error, please check your internet connection.";
+    } else {
+      errorMessage = "No response received from the server.";
     }
-    errorMessage = "No response received from the server.";
   } else {
     // Something happened in setting up the request that triggered an Error
     errorMessage = error.message || message;

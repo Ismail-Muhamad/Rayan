@@ -2,7 +2,7 @@ import { generateFilename } from "./exportHelpers.utils";
 import ArabicReshaper from "arabic-reshaper";
 import { loadArabicFonts } from "./pdfFonts.utils";
 import systemLogo from "@/assets/22.png";
-// import systemLogo from "@/assets/لوجو مفرغ_.png";
+// import systemLogo from "@/assets/rayan-logo-transparent.png";
 
 function prepareArabicText(text) {
   if (!text || typeof text !== "string") return text ?? "";
