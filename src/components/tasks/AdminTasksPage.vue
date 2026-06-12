@@ -329,7 +329,8 @@ const groupedUsers = computed(() => {
           return String(getReportFarmId(report)) === String(farmId);
         });
 
-       const tasks = extractTomorrowTasks(farmReports);
+        const latestReport = getLatestReport(farmReports);
+        const tasks = latestReport ? extractTomorrowTasks(latestReport) : [];
 
         return {
           id: farmId,
@@ -601,106 +602,45 @@ function getLatestReport(reportList) {
   })[0];
 }
 
-function extractTomorrowTasks(reports) {
-  const reportsArray = Array.isArray(reports) ? reports : [reports];
+function extractTomorrowTasks(report) {
+  const matchingDays = findMatchingDayObjects(report);
+  const tasks = [];
 
-  const allTasks = [];
-
-  reportsArray.forEach((report) => {
-    if (!report) return;
-
-    const matchingDays = findMatchingDayObjects(report);
-
-    matchingDays.forEach((dayObject) => {
-      const dayTasks = extractTasksFromDay(dayObject);
-
-      dayTasks.forEach((task) => {
-        const existingTask = allTasks.find(
-          (t) =>
-            t.type === task.type &&
-            t.title === task.title
-        );
-
-        // لو المهمة موجودة قبل كده نجمع التفاصيل
-        if (existingTask) {
-          const existingDetails = existingTask.details || [];
-          const newDetails = task.details || [];
-
-          existingTask.details = dedupeDetails([
-            ...existingDetails,
-            ...newDetails,
-          ]);
-        } else {
-          allTasks.push({
-            ...task,
-            details: dedupeDetails(task.details || []),
-          });
-        }
-      });
-    });
+  matchingDays.forEach((dayObject) => {
+    tasks.push(...extractTasksFromDay(dayObject));
   });
 
-  return dedupeTasks(allTasks);
-}
-function dedupeDetails(details) {
-  const seen = new Set();
-
-  return details.filter((detail) => {
-    const key = `${detail.label}-${detail.value}`;
-
-    if (seen.has(key)) return false;
-
-    seen.add(key);
-
-    return true;
-  });
+  return dedupeTasks(tasks);
 }
 
 function findMatchingDayObjects(root) {
   const result = [];
   const visited = new WeakSet();
 
-  if (!root || typeof root !== "object") {
-    return result;
-  }
-
-  function walk(value, depth = 0) {
+  function walk(value) {
     if (!value || typeof value !== "object") return;
-    if (visited.has(value)) return;
-    if (depth > 8) return; // Allow deeper search
 
+    if (visited.has(value)) return;
     visited.add(value);
 
     if (Array.isArray(value)) {
-      value.forEach((item) => walk(item, depth + 1));
+      value.forEach(walk);
       return;
     }
 
     if (isTomorrowDayObject(value)) {
       result.push(value);
-      return; // Stop here, don't go deeper into this day object
     }
 
-    // Skip certain keys that likely contain old/nested data
-    const keysToSkip = [
-      "archived",
-      "deleted",
-      "old",
-      "history",
-      "backup",
-      "created_by",
-      "updated_by",
-    ];
-
-    for (const [key, child] of Object.entries(value)) {
-      if (keysToSkip.some((skip) => key.toLowerCase().includes(skip))) continue;
+    Object.values(value).forEach((child) => {
       if (child && typeof child === "object") {
-        walk(child, depth + 1);
+        walk(child);
       }
-    }
+    });
   }
 
   walk(root);
+
   return result;
 }
 
@@ -757,11 +697,11 @@ function extractTasksFromDay(day) {
   const irrigationTask = buildIrrigationTask(day);
   if (irrigationTask) tasks.push(irrigationTask);
 
-  const fertilizerTasks = buildFertilizerTasks(day);
-  if (fertilizerTasks.length) tasks.push(...fertilizerTasks);
+  const fertilizerTask = buildFertilizerTask(day);
+  if (fertilizerTask) tasks.push(fertilizerTask);
 
-  const sprayTasks = buildSprayTasks(day);
-  if (sprayTasks.length) tasks.push(...sprayTasks);
+  const sprayTask = buildSprayTask(day);
+  if (sprayTask) tasks.push(sprayTask);
 
   return dedupeTasks(tasks);
 }
@@ -859,8 +799,8 @@ function buildIrrigationTask(day) {
   };
 }
 
-function buildFertilizerTasks(day) {
-  const materials = getAllReportValues(day, {
+function buildFertilizerTask(day) {
+  const material = getReportValue(day, {
     exactKeys: [
       "نوع التسميد",
       "اسم السماد",
@@ -889,19 +829,9 @@ function buildFertilizerTasks(day) {
       "أحماض",
     ],
     fieldMarkers: ["name", "title", "type", "product", "material", "نوع", "اسم"],
-    forbiddenMarkers: [
-      "quantity",
-      "amount",
-      "total",
-      "dose",
-      "كمية",
-      "اجمالي",
-      "إجمالي",
-    ],
+    forbiddenMarkers: ["quantity", "amount", "total", "dose", "كمية", "اجمالي", "إجمالي"],
     preferText: true,
   });
-
-  if (!materials.length) return [];
 
   const palmQuantity = getReportValue(day, {
     exactKeys: [
@@ -963,47 +893,60 @@ function buildFertilizerTasks(day) {
     forbiddenMarkers: [],
   });
 
+  const hasFertilizer =
+    hasRealValue(material) ||
+    hasRealValue(palmQuantity) ||
+    hasRealValue(totalQuantity);
+
+  if (!hasFertilizer) return null;
+
   const details = [];
 
-  materials.forEach((material, index) => {
-    pushDetail(details, `نوع التسميد ${index + 1}`, material);
-  });
-
+  pushDetail(details, "نوع التسميد", material);
   pushDetail(details, "كمية التسميد لكل نخلة", palmQuantity, "جرام");
   pushDetail(details, "إجمالي التسميد", totalQuantity, "كجم");
 
-  return [
-    {
-      type: "fertilizer",
-      title: "تسميد",
-      icon: "🌿",
-      description: `عنده ${materials.length} نوع تسميد بكرة`,
-      details,
-    },
-  ];
+  return {
+    type: "fertilizer",
+    title: "تسميد",
+    icon: "🌿",
+    description: "عنده مهمة تسميد بكرة",
+    details,
+  };
 }
 
-function buildSprayTasks(day) {
-  const sprayItems = findSprayItems(day);
+function buildSprayTask(day) {
+  const material = getReportValue(day, {
+    exactKeys: [
+      "نوع المبيد",
+      "اسم المبيد",
+      "pesticide_type",
+      "pesticideType",
+      "pesticide_name",
+      "pesticideName",
+      "spray_type",
+      "sprayType",
+      "spray_name",
+      "sprayName",
+    ],
+    taskMarkers: [
+      "spraying",
+      "sprays",
+      "spray",
+      "pesticide",
+      "pesticides",
+      "رش",
+      "الرش",
+      "مبيد",
+      "مبيدات",
+    ],
+    fieldMarkers: ["name", "title", "type", "product", "material", "نوع", "اسم"],
+    forbiddenMarkers: ["quantity", "amount", "total", "dose", "كمية", "اجمالي", "إجمالي"],
+    preferText: true,
+  });
 
-  if (!sprayItems.length) return [];
-
-  return sprayItems.map((sprayItem) => {
-    const material =
-      getObjectValue(sprayItem, [
-        "نوع المبيد",
-        "اسم المبيد",
-        "pesticide_type",
-        "pesticideType",
-        "pesticide_name",
-        "pesticideName",
-        "spray_type",
-        "sprayType",
-        "spray_name",
-        "sprayName",
-      ]) || "مبيد";
-
-    const palmQuantity = getObjectValue(sprayItem, [
+  const palmQuantity = getReportValue(day, {
+    exactKeys: [
       "كمية المبيد لكل نخلة جرام",
       "كمية المبيد لكل نخلة",
       "pesticide_quantity_per_palm",
@@ -1014,9 +957,24 @@ function buildSprayTasks(day) {
       "pesticideAmountPerPalm",
       "spray_quantity_per_palm",
       "sprayQuantityPerPalm",
-    ]);
+    ],
+    taskMarkers: [
+      "spraying",
+      "sprays",
+      "spray",
+      "pesticide",
+      "pesticides",
+      "رش",
+      "الرش",
+      "مبيد",
+      "مبيدات",
+    ],
+    fieldMarkers: ["quantity", "amount", "dose", "كمية"],
+    forbiddenMarkers: ["total", "اجمالي", "إجمالي"],
+  });
 
-    const totalQuantity = getObjectValue(sprayItem, [
+  const totalQuantity = getReportValue(day, {
+    exactKeys: [
       "إجمالي كمية المبيد كجم",
       "اجمالي كمية المبيد كجم",
       "إجمالي كمية المبيد",
@@ -1029,176 +987,42 @@ function buildSprayTasks(day) {
       "totalSpray",
       "spray_total",
       "sprayTotal",
-    ]);
-
-    const details = [];
-
-    pushDetail(details, "نوع المبيد", material);
-    pushDetail(details, "كمية المبيد لكل نخلة", palmQuantity, "جرام");
-    pushDetail(details, "إجمالي كمية المبيد", totalQuantity, "كجم");
-
-    return {
-      type: "spray",
-      title: "رش: " + material,
-      icon: "🧪",
-      description: "عنده مهمة رش بكرة - " + material,
-      details,
-    };
-  });
-}
-function findSprayItems(day) {
-  const results = [];
-  const visited = new WeakSet();
-
-  function walk(value, depth = 0) {
-    if (!value || typeof value !== "object" || visited.has(value) || depth > 8) {
-      return;
-    }
-
-    visited.add(value);
-
-    if (Array.isArray(value)) {
-      const hasSprayItems = value.some((item) => isSprayItem(item));
-
-      if (hasSprayItems) {
-        value.forEach((item) => {
-          if (isSprayItem(item)) {
-            results.push(item);
-          }
-        });
-        return;
-      }
-
-      value.forEach((item) => walk(item, depth + 1));
-      return;
-    }
-
-    if (isSprayItem(value)) {
-      results.push(value);
-      return;
-    }
-
-    Object.values(value).forEach((child) => walk(child, depth + 1));
-  }
-
-  walk(day, 0);
-  return results;
-}
-
-function isSprayItem(obj) {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
-    return false;
-  }
-
-  const normalizedKeys = Object.keys(obj).map((k) => normalizeKey(k));
-
-  const hasSprayMarker = normalizedKeys.some((k) => {
-    const sprayMarkers = [
-      "pesticide",
-      "pesticidename",
-      "pesticidetype",
+    ],
+    taskMarkers: [
+      "spraying",
+      "sprays",
       "spray",
-      "sprayname",
-      "spraytype",
+      "pesticide",
+      "pesticides",
+      "رش",
+      "الرش",
       "مبيد",
-      "نوعالمبيد",
-      "اسمالمبيد",
-    ];
-    return sprayMarkers.some((marker) => k.includes(marker));
+      "مبيدات",
+    ],
+    fieldMarkers: ["total", "اجمالي", "إجمالي"],
+    forbiddenMarkers: [],
   });
 
-  if (!hasSprayMarker) return false;
+  const hasSpray =
+    hasRealValue(material) ||
+    hasRealValue(palmQuantity) ||
+    hasRealValue(totalQuantity);
 
-  const hasQuantityOrName = normalizedKeys.some((k) => {
-    const valueMarkers = [
-      "quantity",
-      "كمية",
-      "amount",
-      "name",
-      "اسم",
-      "نوع",
-      "type",
-    ];
-    return valueMarkers.some((marker) => k.includes(marker));
-  });
+  if (!hasSpray) return null;
 
-  return hasQuantityOrName;
-}
-function getObjectValue(obj, keys = []) {
-  if (!obj || typeof obj !== "object") return "";
+  const details = [];
 
-  const normalizedKeys = keys.map((k) => normalizeKey(k));
+  pushDetail(details, "نوع المبيد", material);
+  pushDetail(details, "كمية المبيد لكل نخلة", palmQuantity, "جرام");
+  pushDetail(details, "إجمالي كمية المبيد", totalQuantity, "كجم");
 
-  for (const [key, value] of Object.entries(obj)) {
-    const normalizedKey = normalizeKey(key);
-
-    if (normalizedKeys.includes(normalizedKey)) {
-      return value;
-    }
-  }
-
-  return "";
-}
-
-
-function getAllReportValues(
-  root,
-  {
-    exactKeys = [],
-    taskMarkers = [],
-    fieldMarkers = [],
-    forbiddenMarkers = [],
-    preferText = false,
-  }
-) {
-  if (!root || typeof root !== "object") return [];
-
-  const entries = flattenReportEntries(root);
-
-  const normalizedExactKeys = exactKeys.map((key) => normalizeKey(key));
-  const normalizedTaskMarkers = taskMarkers.map((key) => normalizeKey(key));
-  const normalizedFieldMarkers = fieldMarkers.map((key) => normalizeKey(key));
-  const normalizedForbiddenMarkers = forbiddenMarkers.map((key) =>
-    normalizeKey(key)
-  );
-
-  const results = [];
-
-  entries.forEach((entry) => {
-    const exactMatch = normalizedExactKeys.some((key) => {
-      return entry.key === key || entry.path.includes(key);
-    });
-
-    const hasTaskMarker = normalizedTaskMarkers.some((marker) => {
-      return entry.path.includes(marker);
-    });
-
-    const hasFieldMarker = normalizedFieldMarkers.some((marker) => {
-      return entry.path.includes(marker);
-    });
-
-    const hasForbidden = hasForbiddenMarker(
-      entry.path,
-      normalizedForbiddenMarkers
-    );
-
-    const valid =
-      (exactMatch || (hasTaskMarker && hasFieldMarker)) &&
-      !hasForbidden &&
-      hasRealValue(entry.value);
-
-    if (!valid) return;
-
-    const value = extractReportEntryValue(entry);
-
-    if (!hasRealValue(value)) return;
-
-    if (preferText && typeof value !== "string") return;
-
-    results.push(String(value).trim());
-  });
-
-  return [...new Set(results)];
+  return {
+    type: "spray",
+    title: "رش",
+    icon: "🧪",
+    description: "عنده مهمة رش بكرة",
+    details,
+  };
 }
 
 function getReportValue(
@@ -1272,14 +1096,11 @@ function getReportValue(
   return "";
 }
 
-function flattenReportEntries(root, maxDepth = 5) {
+function flattenReportEntries(root) {
   const entries = [];
   const visited = new WeakSet();
 
-  function walk(value, pathParts = [], currentDepth = 0) {
-    // Depth limit to prevent deep nested searches
-    if (currentDepth > maxDepth) return;
-
+  function walk(value, pathParts = []) {
     if (value === null || value === undefined || value === "") return;
 
     if (typeof value !== "object") {
@@ -1303,18 +1124,9 @@ function flattenReportEntries(root, maxDepth = 5) {
     visited.add(value);
 
     if (Array.isArray(value)) {
-      // For arrays, only process first few items at deep levels
-      const itemsToProcess = currentDepth > 3 ? Math.min(value.length, 3) : value.length;
-
-      for (let index = 0; index < itemsToProcess; index++) {
-        const item = value[index];
-        walk(item, [...pathParts, `item${index + 1}`], currentDepth + 1);
-      }
-      return;
-    }
-
-    // Skip problematic keys early
-    if (shouldSkipKeyDuringWalk(pathParts[pathParts.length - 1])) {
+      value.forEach((item, index) => {
+        walk(item, [...pathParts, `item${index + 1}`]);
+      });
       return;
     }
 
@@ -1335,35 +1147,13 @@ function flattenReportEntries(root, maxDepth = 5) {
     }
 
     Object.entries(value).forEach(([key, itemValue]) => {
-      walk(itemValue, [...pathParts, key], currentDepth + 1);
+      walk(itemValue, [...pathParts, key]);
     });
   }
 
   walk(root);
 
   return entries;
-}
-
-function shouldSkipKeyDuringWalk(key) {
-  if (!key) return false;
-
-  const keyLower = String(key).toLowerCase();
-  const skipPatterns = [
-    "archive",
-    "deleted",
-    "old",
-    "history",
-    "backup",
-    "metadata",
-    "meta",
-    "created_by",
-    "updated_by",
-    "timestamps",
-    "audit",
-    "logs",
-  ];
-
-  return skipPatterns.some((pattern) => keyLower.includes(pattern));
 }
 
 function extractReportEntryValue(entry) {
