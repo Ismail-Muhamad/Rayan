@@ -1,5 +1,0 @@
-- [ ] تحديث `src/components/tasks/AdminTasksPage.vue` لاستخدام Pinia stores بدل `fetchAll` على endpoints مباشرة.
-- [ ] استبدال منطق استخراج مهام بكرة ليعتمد على `report.report_weeks[].days[]` مباشرة (مثل `FarmWeekShow.vue`).
-- [ ] بناء `user.farms[].tasks[]` بالشكل المطلوب للـUI الحالي (type/title/description/icon/details).
-- [ ] تعديل منطق ربط Report ↔ Farm ↔ User لتقليل الاعتماد على guess.
-- [ ] تجربة تشغيل الصفحة والتأكد من عدم ظهور “empty” خطأ وظهور تفاصيل المهام.

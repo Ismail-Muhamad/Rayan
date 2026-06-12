@@ -685,21 +685,13 @@ const submitForm = async () => {
     await sendReportReadyWhatsAppMessage(createdReportId);
 
     toast.success("تم حفظ التقرير وإرسال رسالة الواتساب للعميل.");
- } catch (error) {
-  console.error("Failed to send report WhatsApp message:", error);
+  } catch (error) {
+    console.error("Failed to send report WhatsApp message:", error);
 
-  const backendMessage =
-    error?.response?.data?.error ||
-    error?.response?.data?.message ||
-    error?.message ||
-    "فشل إرسال رسالة الواتساب للعميل.";
-
-  toast.error(backendMessage);
-
-  toast.warning(
-    "تم حفظ التقرير بنجاح، لكن فشل إرسال رسالة الواتساب للعميل.",
-  );
-}
+    toast.warning(
+      "تم حفظ التقرير بنجاح، لكن فشل إرسال رسالة الواتساب للعميل.",
+    );
+  }
 };
 
 const resetForm = () => {
