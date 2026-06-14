@@ -98,8 +98,37 @@
                 {{ t("farms.table.headers.palm_types") }}
               </h4>
 
-              <div class="user__table-shell">
-                <BaseTable :headers="PALM_TYPES_HEADERS" :items="item.palm_types" :showToolbar="false" />
+              <div class="user__palm-grid">
+                <article
+                  v-for="(palmType, idx) in item.palm_types"
+                  :key="`${palmType.palm_type}-${idx}`"
+                  class="user__palm-card"
+                >
+                  <div class="user__palm-card-top">
+                    <div>
+                      <p class="user__palm-label">
+                        {{ t("farms.table.headers.palm_type") }}
+                      </p>
+                      <h3 class="user__palm-name">{{ palmType.palm_type }}</h3>
+                    </div>
+
+                    <span class="user__pill user__pill--emerald">
+                      {{ palmType.palm_count }}
+                    </span>
+                  </div>
+
+                  <div class="user__palm-meta">
+                    <span class="user__pill user__pill--slate">
+                      {{ t("farms.table.headers.palm_count") }}:
+                      {{ palmType.palm_count }}
+                    </span>
+
+                    <span class="user__pill user__pill--amber">
+                      {{ t("farms.table.headers.palm_age") }}:
+                      {{ palmType.palm_age }}
+                    </span>
+                  </div>
+                </article>
               </div>
             </div>
           </div>
@@ -156,21 +185,6 @@ const { t, locale } = useI18n();
 const isResetPasswordDialogOpen = ref(false);
 const newPassword = ref("");
 const isSubmittingResetPassword = ref(false);
-
-const PALM_TYPES_HEADERS = computed(() => [
-  {
-    text: t("farms.table.headers.palm_type"),
-    value: "palm_type",
-  },
-  {
-    text: t("farms.table.headers.palm_count"),
-    value: "palm_count",
-  },
-  {
-    text: t("farms.table.headers.palm_age"),
-    value: "palm_age",
-  },
-]);
 
 const currentRouteId = computed(() => route.params.id);
 
@@ -240,6 +254,7 @@ onMounted(async () => {
 
   await farmsStore.fetchRecords({
     owner_id: currentRouteId.value,
+    per_page: 100,
   });
 });
 
@@ -584,19 +599,82 @@ const getInitials = (name) => {
     margin-top: 18px;
   }
 
+  &__palm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  &__palm-card {
+    padding: 16px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+      border-color: var(--blue-200);
+    }
+  }
+
+  &__palm-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  &__palm-label {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--slate-500);
+  }
+
+  &__palm-name {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--slate-900);
+  }
+
+  &__palm-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 99px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    
+    &--emerald {
+      color: #059669;
+      background: #d1fae5;
+    }
+
+    &--slate {
+      color: #475569;
+      background: #f1f5f9;
+    }
+
+    &--amber {
+      color: #d97706;
+      background: #fef3c7;
+    }
+  }
+
   &__sub-title {
     margin: 0 0 12px;
     font-size: 1.35rem;
     font-weight: 800;
     color: var(--blue-700);
-  }
-
-  &__table-shell {
-    padding: 10px;
-    border-radius: 18px;
-    border: 1px solid var(--blue-100);
-    background: #ffffff;
-    overflow: hidden;
   }
 
   &__empty {

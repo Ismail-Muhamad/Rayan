@@ -10,7 +10,7 @@ export default {
     {
       path: "list",
       name: "users_list",
-      component: () => import("@/components/users/UsersList.vue"),
+      component: () => import("@/components/users/UsersList/UsersList.vue"),
     },
     {
       path: "assistants",

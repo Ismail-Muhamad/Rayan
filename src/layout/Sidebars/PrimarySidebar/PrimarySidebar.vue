@@ -11,13 +11,6 @@
       <div class="primary__logo-image-wrap">
         <img :src="logoImage" alt="Rayan Logo" class="primary__logo-image" />
       </div>
-
-      <div v-show="sidebarExpanded" class="primary__brand-wrap">
-        <span class="primary__brand"></span>
-        <span class="primary__brand-sub">
-          شريكك الحقيقي في إدارة مزرعتك
-        </span>
-      </div>
     </div>
 
     <div class="primary__items">

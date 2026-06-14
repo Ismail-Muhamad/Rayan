@@ -10,7 +10,7 @@ export default {
     {
       path: "list",
       name: "reports_list",
-      component: () => import("@/components/reports/ReportsList.vue"),
+      component: () => import("@/components/reports/ReportsList/ReportsList.vue"),
        meta: {
         roles: ["admin", "admin_assistant"],
       },
@@ -34,7 +34,7 @@ export default {
     {
       path: "show/:id",
       name: "show_report",
-      component: () => import("@/components/reports/ReportsShow.vue"),
+      component: () => import("@/components/reports/ReportsShow/ReportsShow.vue"),
        meta: {
         roles: ["admin", "admin_assistant"],
       },

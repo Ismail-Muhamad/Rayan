@@ -771,14 +771,164 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
   }
 
   .register-card :deep(.base-styled-section),
+  .register-card :deep(.base-styled-section__body),
+  .register-card :deep(.base-styled-section__content),
+  .register-card :deep(.base-styled-section__wrapper),
   .register-card :deep(.accordion),
   .register-card :deep(.accordion-item),
+  .register-card :deep(.accordion__body),
+  .register-card :deep(.accordion__content),
+  .register-card :deep(.accordion-item__body),
+  .register-card :deep(.accordion-item__content) {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 14px 30px rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: blur(18px);
+  }
+
+  .register-card :deep(.base-styled-section) {
+    border-radius: 22px !important;
+    overflow: hidden;
+  }
+
+  .register-card :deep(.base-styled-section::before),
+  .register-card :deep(.base-styled-section::after),
+  .register-card :deep(.accordion::before),
+  .register-card :deep(.accordion::after),
+  .register-card :deep(.accordion-item::before),
+  .register-card :deep(.accordion-item::after) {
+    background: transparent !important;
+  }
+
+  .register-card :deep(.accordion),
+  .register-card :deep(.accordion-item) {
+    border-radius: 18px !important;
+  }
+
+  .register-card :deep(.accordion-item) {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.055)) !important;
+  }
+
+  .register-card :deep(.accordion button),
+  .register-card :deep(.accordion-item button),
+  .register-card :deep(.accordion__header),
+  .register-card :deep(.accordion-item__header) {
+    background: transparent !important;
+    color: #ffffff !important;
+  }
+
+  .register-card :deep(.accordion svg),
+  .register-card :deep(.accordion-item svg) {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .register-card__farm,
+  .register-card__palms {
+    background: transparent !important;
+  }
+
   .register-card :deep(.register-card__secondary.button),
   .register-card :deep(.register-card__ghost.button),
   .register-card :deep(.register-card__danger.button) {
     background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.18);
     color: #ffffff;
+  }
+
+    .register-card__section {
+    background: transparent !important;
+  }
+
+  .register-card__section :deep(*) {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .register-card__section :deep([class*="base-styled"]),
+  .register-card__section :deep([class*="styled"]),
+  .register-card__section :deep([class*="accordion"]),
+  .register-card__section :deep([class*="section"]),
+  .register-card__section :deep([class*="body"]),
+  .register-card__section :deep([class*="content"]),
+  .register-card__section :deep([class*="wrapper"]) {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.10),
+        rgba(255, 255, 255, 0.045)
+      ) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+  }
+
+  .register-card__section :deep([class*="base-styled"]) {
+    border-radius: 24px !important;
+    overflow: hidden !important;
+  }
+
+  .register-card__section :deep([class*="accordion"]) {
+    border-radius: 18px !important;
+  }
+
+  .register-card__section :deep(button),
+  .register-card__section :deep([class*="header"]),
+  .register-card__section :deep([class*="title"]) {
+    background: transparent !important;
+    color: #ffffff !important;
+  }
+
+  .register-card__section :deep(label),
+  .register-card__section :deep(.form__label),
+  .register-card__section :deep([class*="label"]) {
+    color: rgba(255, 255, 255, 0.95) !important;
+    background: transparent !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .register-card__section :deep(input),
+  .register-card__section :deep(.form__input) {
+    height: 56px !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.13) !important;
+    border: 1px solid rgba(255, 255, 255, 0.24) !important;
+    color: #ffffff !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 10px 24px rgba(0, 0, 0, 0.10) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+  }
+
+  .register-card__section :deep(input::placeholder),
+  .register-card__section :deep(.form__input::placeholder) {
+    color: rgba(255, 255, 255, 0.72) !important;
+  }
+
+  .register-card__section :deep(input:focus),
+  .register-card__section :deep(input:focus-visible),
+  .register-card__section :deep(.form__input:focus),
+  .register-card__section :deep(.form__input:focus-visible) {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(96, 165, 250, 0.95) !important;
+    box-shadow:
+      0 0 0 3px rgba(59, 130, 246, 0.28),
+      0 12px 26px rgba(0, 0, 0, 0.14) !important;
+  }
+
+  .register-card__section :deep(svg) {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .register-card__section :deep(.text-danger),
+  .register-card__section :deep([class*="error"]) {
+    color: #ff7b7b !important;
+    background: transparent !important;
   }
 }
 </style>

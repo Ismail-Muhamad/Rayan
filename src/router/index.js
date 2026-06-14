@@ -16,7 +16,7 @@ const routes = [
     redirect: { name: "dashboard" },
     children: [
       dashboardRoutes,
-      tasksRoutes,
+      ...tasksRoutes,
       usersRoutes,
       reportsRoutes,
       farmsRoutes,
