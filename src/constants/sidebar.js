@@ -71,4 +71,12 @@ export default [
     routeName: "farm_consumptions",
     roles: ["farm_owner"],
   },
+  {
+    icon: "solar:checklist-minimalistic-outline",
+    key: "farm_tasks",
+    label: "مهام زراعية",
+    path: "/farms/tasks",
+    routeName: "farm_tasks",
+    roles: ["farm_owner"],
+  },
 ];

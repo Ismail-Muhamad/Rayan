@@ -42,5 +42,10 @@ export default {
       name: 'show_farm_report',
       component: () => import('@/components/farms/FarmReportShow.vue'),
     },
+    {
+      path: "tasks",
+      name: "farm_tasks",
+      component: () => import("@/components/farms/FarmTasks.vue"),
+    },
   ],
 };

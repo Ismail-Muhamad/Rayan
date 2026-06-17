@@ -7,6 +7,7 @@ import farmsRoutes from "./farms.route";
 import authRoutes from "./auth.route";
 import { authGuard } from "@/helpers/router.helper";
 import settingsRoutes from "./settings.route";
+import requestsRoutes from "./requests.route";
 
 const routes = [
   {
@@ -21,6 +22,7 @@ const routes = [
       reportsRoutes,
       farmsRoutes,
       settingsRoutes,
+      requestsRoutes,
     ],
   },
   {
