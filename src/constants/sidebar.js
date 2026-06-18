@@ -18,9 +18,17 @@ export default [
   {
     icon: "solar:checklist-minimalistic-outline",
     key: "tasks",
-    label: "مهام",
+    label: "مهام الغد",
     path: "/tasks",
     routeName: "tasks",
+    roles: ["admin", "admin_assistant"],
+  },
+  {
+    icon: "solar:calendar-search-outline",
+    key: "admin_tasks_calendar",
+    label: "المهام المزرعية",
+    path: "/tasks/calendar",
+    routeName: "admin_tasks_calendar",
     roles: ["admin", "admin_assistant"],
   },
   {

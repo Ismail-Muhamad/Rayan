@@ -63,8 +63,21 @@
               />
             </div>
 
-            <div class="register-card__section">
-              <BaseStyledSection :label="t('auth.register.form.labels.farms')">
+            <div class="register-card__farms-section">
+              <div class="farms-section__header">
+                <h3 class="farms-section__title">{{ t('auth.register.form.labels.farms') }}</h3>
+                <BaseButton
+                  class="farms-section__add-btn"
+                  variant="outline"
+                  size="sm"
+                  @click="addFarm"
+                >
+                  <BaseIcon name="mdi:plus" :width="16" :height="16" />
+                  {{ t("auth.register.actions.add_farm") }}
+                </BaseButton>
+              </div>
+
+              <div class="farms-section__list">
                 <ValidateEach
                   v-for="(farm, farmIndex) in registerForm.farms"
                   :key="farmIndex"
@@ -72,11 +85,25 @@
                   :rules="farmRules"
                 >
                   <template #default="{ v: farmV }">
-                    <div class="register-card__farm">
-                      <BaseAccordion variant="splitted">
-                        <BaseAccordionItem
-                          :title="`${t('auth.register.form.labels.farm_info', { number: farmIndex + 1 })}`"
+                    <div class="farm-smart-card">
+                      <div class="farm-smart-card__header">
+                        <div class="farm-smart-card__title">
+                          <span class="farm-smart-card__badge">{{ farmIndex + 1 }}</span>
+                          <h4>{{ t('auth.register.form.labels.farm_info', { number: farmIndex + 1 }) }}</h4>
+                        </div>
+                        <button
+                          v-if="registerForm.farms.length > 1"
+                          type="button"
+                          class="farm-smart-card__remove"
+                          @click="removeFarm(farmIndex)"
+                          :title="t('auth.register.actions.remove_farm')"
                         >
+                          <BaseIcon name="solar:trash-bin-trash-bold" :width="18" :height="18" />
+                        </button>
+                      </div>
+
+                      <div class="farm-smart-card__body">
+                        <div class="register-card__grid">
                           <div class="register-card__control">
                             <BaseInput
                               v-model="farmV.name.$model"
@@ -98,8 +125,12 @@
                               required
                             />
                           </div>
+                        </div>
 
-                          <div class="register-card__palms">
+                        <div class="palm-types-wrapper">
+                          <h5 class="palm-types-wrapper__title">أنواع النخيل بالمزرعة</h5>
+                          
+                          <div class="palm-types-wrapper__list">
                             <ValidateEach
                               v-for="(palm, palmIndex) in farm.palm_types"
                               :key="palmIndex"
@@ -107,11 +138,9 @@
                               :rules="palmTypeRules"
                             >
                               <template #default="{ v: palmV }">
-                                <BaseAccordion variant="splitted">
-                                  <BaseAccordionItem
-                                    :title="`${t('auth.register.form.labels.palm_type_info', { number: palmIndex + 1 })}`"
-                                  >
-                                    <div class="register-card__control">
+                                <div class="palm-type-row">
+                                  <div class="palm-type-row__inputs">
+                                    <div class="palm-type-row__control">
                                       <BaseInput
                                         v-model="palmV.name.$model"
                                         :label="t('auth.register.form.labels.palm_type_name')"
@@ -121,93 +150,55 @@
                                         required
                                       />
                                     </div>
-
-                                    <div class="register-card__grid">
-                                      <div class="register-card__control">
-                                        <BaseInput
-                                          v-model="palmV.number_of_trees.$model"
-                                          :label="t('auth.register.form.labels.palm_type_number_of_trees')"
-                                          :placeholder="t('auth.register.form.placeholders.palm_type_number_of_trees')"
-                                          :error="isFieldHasError(palmV.number_of_trees)"
-                                          :error-text="getFieldErrorMessage(palmV.number_of_trees)"
-                                          required
-                                        />
-                                      </div>
-
-                                      <div class="register-card__control">
-                                        <BaseInput
-                                          v-model="palmV.palm_age.$model"
-                                          :label="t('auth.register.form.labels.palm_age')"
-                                          :placeholder="t('auth.register.form.placeholders.palm_age')"
-                                          :error="isFieldHasError(palmV.palm_age)"
-                                          :error-text="getFieldErrorMessage(palmV.palm_age)"
-                                          required
-                                        />
-                                      </div>
+                                    <div class="palm-type-row__control">
+                                      <BaseInput
+                                        v-model="palmV.number_of_trees.$model"
+                                        :label="t('auth.register.form.labels.palm_type_number_of_trees')"
+                                        :placeholder="t('auth.register.form.placeholders.palm_type_number_of_trees')"
+                                        :error="isFieldHasError(palmV.number_of_trees)"
+                                        :error-text="getFieldErrorMessage(palmV.number_of_trees)"
+                                        required
+                                      />
                                     </div>
-
-                                    <div
-                                      v-if="registerForm.farms[farmIndex].palm_types.length > 1"
-                                      class="register-card__btns"
-                                    >
-                                      <BaseButton
-                                        class="register-card__danger"
-                                        color="red"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="removePalmType(farmIndex, palmIndex)"
-                                      >
-                                        <BaseIcon name="mdi:minus" :width="16" :height="16" />
-                                        {{ t("auth.register.actions.remove_palm_type") }}
-                                      </BaseButton>
+                                    <div class="palm-type-row__control">
+                                      <BaseInput
+                                        v-model="palmV.palm_age.$model"
+                                        :label="t('auth.register.form.labels.palm_age')"
+                                        :placeholder="t('auth.register.form.placeholders.palm_age')"
+                                        :error="isFieldHasError(palmV.palm_age)"
+                                        :error-text="getFieldErrorMessage(palmV.palm_age)"
+                                        required
+                                      />
                                     </div>
-                                  </BaseAccordionItem>
-                                </BaseAccordion>
+                                  </div>
+                                  <button
+                                    v-if="registerForm.farms[farmIndex].palm_types.length > 1"
+                                    type="button"
+                                    class="palm-type-row__remove"
+                                    @click="removePalmType(farmIndex, palmIndex)"
+                                    :title="t('auth.register.actions.remove_palm_type')"
+                                  >
+                                    <BaseIcon name="solar:close-circle-bold" :width="20" :height="20" />
+                                  </button>
+                                </div>
                               </template>
                             </ValidateEach>
                           </div>
-
-                          <div class="register-card__btns">
-                            <BaseButton
-                              class="register-card__ghost"
-                              variant="outline"
-                              size="sm"
-                              @click="addPalmType(farmIndex)"
-                            >
-                              <BaseIcon name="mdi:plus" :width="16" :height="16" />
-                              {{ t("auth.register.actions.add_palm_type") }}
-                            </BaseButton>
-
-                            <BaseButton
-                              v-if="registerForm.farms.length > 1"
-                              class="register-card__danger"
-                              color="red"
-                              variant="outline"
-                              size="sm"
-                              @click="removeFarm(farmIndex)"
-                            >
-                              <BaseIcon name="mdi:minus" :width="16" :height="16" />
-                              {{ t("auth.register.actions.remove_farm") }}
-                            </BaseButton>
-                          </div>
-                        </BaseAccordionItem>
-                      </BaseAccordion>
+                          
+                          <button
+                            type="button"
+                            class="palm-types-wrapper__add-btn"
+                            @click="addPalmType(farmIndex)"
+                          >
+                            <BaseIcon name="mdi:plus-circle" :width="18" :height="18" />
+                            <span>إضافة نوع نخيل آخر</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </template>
                 </ValidateEach>
-
-                <div class="register-card__btns">
-                  <BaseButton
-                    class="register-card__ghost"
-                    variant="outline"
-                    size="sm"
-                    @click="addFarm"
-                  >
-                    <BaseIcon name="mdi:plus" :width="16" :height="16" />
-                    {{ t("auth.register.actions.add_farm") }}
-                  </BaseButton>
-                </div>
-              </BaseStyledSection>
+              </div>
             </div>
 
             <div class="register-card__actions">
@@ -656,6 +647,202 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
   border-radius: 18px;
 }
 
+/* --- New Farms UI Styles --- */
+.register-card__farms-section {
+  margin-top: 36px;
+}
+
+.farms-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.farms-section__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin: 0;
+}
+
+.farms-section__add-btn {
+  border-radius: 12px;
+}
+
+.farms-section__list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Farm Smart Card */
+.farm-smart-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  animation: slideDownFade 300ms ease-out forwards;
+}
+
+.farm-smart-card:hover {
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.farm-smart-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.6));
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.farm-smart-card__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h4 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e40af;
+  }
+}
+
+.farm-smart-card__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+
+.farm-smart-card__remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 200ms ease;
+  
+  &:hover {
+    background: rgba(239, 68, 68, 0.1);
+    transform: scale(1.1);
+  }
+}
+
+.farm-smart-card__body {
+  padding: 24px;
+}
+
+/* Palm Types Wrapper */
+.palm-types-wrapper {
+  margin-top: 16px;
+  padding-top: 24px;
+  border-top: 1px dashed rgba(203, 213, 225, 0.8);
+}
+
+.palm-types-wrapper__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 16px 0;
+}
+
+.palm-types-wrapper__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Palm Type Row */
+.palm-type-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(248, 250, 252, 0.6);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  animation: slideDownFade 300ms ease-out forwards;
+}
+
+.palm-type-row__inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  flex-grow: 1;
+}
+
+.palm-type-row__control {
+  margin-bottom: 0 !important;
+}
+
+.palm-type-row__remove {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  margin-top: 36px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 200ms ease;
+
+  &:hover {
+    color: #ef4444;
+    transform: scale(1.1);
+  }
+}
+
+.palm-types-wrapper__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 12px 16px;
+  margin-top: 12px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 200ms ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.08);
+  }
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media screen and (max-width: 992px) {
   .register-page {
     padding: 0;
@@ -768,6 +955,74 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
 
   .register-card :deep(.form__input::placeholder) {
     color: rgba(255, 255, 255, 0.72);
+  }
+
+  /* --- Mobile Farms UI Overrides --- */
+  .farms-section__title {
+    color: #fff;
+  }
+  
+  .farm-smart-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .farm-smart-card__header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .farm-smart-card__title h4 {
+    color: #fff;
+  }
+  
+  .farm-smart-card__badge {
+    background: #10b981;
+  }
+
+  .palm-types-wrapper__title {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .palm-types-wrapper {
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .palm-type-row {
+    background: rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.1);
+    flex-direction: column;
+    padding: 20px;
+    position: relative;
+  }
+
+  .palm-type-row__inputs {
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 18px;
+  }
+  
+  .palm-type-row__remove {
+    margin-top: 0;
+    align-self: flex-end;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.2);
+    
+    &:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fff;
+    }
+  }
+
+  .palm-types-wrapper__add-btn {
+    color: #60a5fa;
+    &:hover {
+      background: rgba(96, 165, 250, 0.15);
+    }
   }
 
   .register-card :deep(.base-styled-section),

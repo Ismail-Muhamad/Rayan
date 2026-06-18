@@ -135,6 +135,14 @@ export default {
           this.currentPath.startsWith("/users/show")
         );
       }
+      
+      if (path === "/tasks") {
+        return this.currentPath === "/tasks" || (this.currentPath.startsWith("/tasks/") && !this.currentPath.startsWith("/tasks/calendar"));
+      }
+
+      if (path === "/farms") {
+        return this.currentPath === "/farms" || (this.currentPath.startsWith("/farms/") && !this.currentPath.startsWith("/farms/tasks") && !this.currentPath.startsWith("/farms/consumptions"));
+      }
 
       return this.currentPath === path || this.currentPath.startsWith(`${path}/`);
     },
@@ -213,7 +221,7 @@ export default {
       transform 260ms ease,
       margin-bottom 260ms ease;
     margin-bottom: 8px;
-    margin-top: -6px;
+    margin-top: 0;
   }
 
   &__logo-image {
@@ -451,16 +459,16 @@ export default {
 }
 
 .primary--expanded .primary__logo {
-  min-height: 220px;
-  padding: 0 10px 18px;
+  min-height: 200px;
+  padding: 0 10px 10px;
 }
 
 .primary--expanded .primary__logo-image-wrap {
-  width: 333px;
-  height: 333px;
-  margin-bottom: 10px;
-  margin-top: -50px;
-  transform: scale(1.05);
+  width: 260px;
+  height: 260px;
+  margin-bottom: 0px;
+  margin-top: -10px;
+  transform: scale(1);
 }
 
 .primary--expanded .primary__logo-image {
@@ -523,14 +531,14 @@ export default {
   }
 
   .primary__logo {
-    min-height: 280px;
-    padding: 4px 10px 20px;
+    min-height: 140px;
+    padding: 4px 10px 10px;
     margin-bottom: 12px;
   }
 
   .primary__logo-image-wrap {
-    width: 240px;
-    height: 240px;
+    width: 160px;
+    height: 160px;
     margin-bottom: 12px;
     margin-top: -4px;
   }

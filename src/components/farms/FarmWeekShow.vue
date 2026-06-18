@@ -77,7 +77,7 @@
           <template v-if="mappedDays.length">
             <div class="week-page__days-grid">
               <article v-for="(day, index) in mappedDays" :key="`${day.raw_date}-${index}`" class="week-page__day-card">
-                <div class="week-page__day-head">
+                <div class="week-page__day-head" @click="toggleDay(day.raw_date)">
                   <div>
                     <p class="week-page__day-label">
                       {{ t('farms.table.headers.day') }}
@@ -88,13 +88,18 @@
                     </h3>
                   </div>
 
-                  <span class="week-page__badge">
-                    {{ day.date }}
-                  </span>
+                  <div class="week-page__day-head-actions">
+                    <span class="week-page__badge">
+                      {{ day.date }}
+                    </span>
+                    <button class="week-page__toggle-btn" :class="{ 'week-page__toggle-btn--open': openDays.includes(day.raw_date) }">
+                      <BaseIcon name="solar:alt-arrow-down-outline" />
+                    </button>
+                  </div>
                 </div>
 
-                <div class="week-page__sections">
-                  <section class="week-page__section-box" :class="{
+                <div class="week-page__sections" v-show="openDays.includes(day.raw_date)">
+                  <section v-if="day.hasFertilization" class="week-page__section-box" :class="{
                     'week-page__section-box--focused':
                       focusedSection === 'fertilization' && focusedDay === day.raw_date,
                   }" :data-day="day.raw_date" data-section="fertilization">
@@ -103,39 +108,35 @@
                       {{ t('farms.table.headers.fertilization_section') }}
                     </div>
 
-                    <template v-if="day.fertilizations.length">
-                      <div v-for="(fertilization, fertIndex) in day.fertilizations" :key="fertIndex"
-                        class="week-page__mini-card">
-                        <p class="week-page__mini-title">
-                          {{ fertilization.type_of_fertilization || '--' }}
-                        </p>
+                    <div v-for="(fertilization, fertIndex) in day.fertilizations" :key="fertIndex"
+                      class="week-page__mini-card">
+                      <p class="week-page__mini-title">
+                        {{ fertilization.type_of_fertilization || '--' }}
+                      </p>
 
-                        <div class="week-page__mini-grid">
-                          <div class="week-page__metric">
-                            <span class="week-page__metric-label">
-                              {{ t('farms.table.headers.fertilizer_quantity_per_palm_tree') }}
-                            </span>
-                            <strong class="week-page__metric-value">
-                              {{ fertilization.fertilizer_quantity_per_palm_tree }}
-                            </strong>
-                          </div>
+                      <div class="week-page__mini-grid">
+                        <div class="week-page__metric" v-if="fertilization.fertilizer_quantity_per_palm_tree !== t('farms.form.no_quantity')">
+                          <span class="week-page__metric-label">
+                            {{ t('farms.table.headers.fertilizer_quantity_per_palm_tree') }}
+                          </span>
+                          <strong class="week-page__metric-value">
+                            {{ fertilization.fertilizer_quantity_per_palm_tree }}
+                          </strong>
+                        </div>
 
-                          <div class="week-page__metric">
-                            <span class="week-page__metric-label">
-                              {{ t('farms.table.headers.fertilization_total') }}
-                            </span>
-                            <strong class="week-page__metric-value">
-                              {{ fertilization.total }}
-                            </strong>
-                          </div>
+                        <div class="week-page__metric" v-if="fertilization.total !== t('farms.form.no_quantity')">
+                          <span class="week-page__metric-label">
+                            {{ t('farms.table.headers.fertilization_total') }}
+                          </span>
+                          <strong class="week-page__metric-value">
+                            {{ fertilization.total }}
+                          </strong>
                         </div>
                       </div>
-                    </template>
-
-                    <p v-else class="week-page__empty-line">--</p>
+                    </div>
                   </section>
 
-                  <section class="week-page__section-box" :class="{
+                  <section v-if="day.hasIrrigation" class="week-page__section-box" :class="{
                     'week-page__section-box--focused':
                       focusedSection === 'irrigation' && focusedDay === day.raw_date,
                   }" :data-day="day.raw_date" data-section="irrigation">
@@ -146,7 +147,7 @@
 
                     <div class="week-page__mini-card">
                       <div class="week-page__mini-grid">
-                        <div class="week-page__metric">
+                        <div class="week-page__metric" v-if="day.irrigation_amount_per_palm_tree !== t('farms.form.no_quantity')">
                           <span class="week-page__metric-label">
                             {{ t('farms.table.headers.irrigation_amount_per_palm_tree') }}
                           </span>
@@ -155,7 +156,7 @@
                           </strong>
                         </div>
 
-                        <div class="week-page__metric">
+                        <div class="week-page__metric" v-if="day.total_amount_of_irrigation !== t('farms.form.no_quantity')">
                           <span class="week-page__metric-label">
                             {{ t('farms.table.headers.total_amount_of_irrigation') }}
                           </span>
@@ -164,7 +165,7 @@
                           </strong>
                         </div>
 
-                        <div class="week-page__metric">
+                        <div class="week-page__metric" v-if="day.duration_of_irrigation_per_palm_tree !== t('farms.form.no_quantity')">
                           <span class="week-page__metric-label">
                             {{ t('farms.table.headers.duration_of_irrigation_per_palm_tree') }}
                           </span>
@@ -172,20 +173,11 @@
                             {{ day.duration_of_irrigation_per_palm_tree }}
                           </strong>
                         </div>
-
-                        <div class="week-page__metric">
-                          <span class="week-page__metric-label">
-                            {{ t('farms.table.headers.total_duration_of_irrigation') }}
-                          </span>
-                          <strong class="week-page__metric-value">
-                            {{ day.total_duration_of_irrigation }}
-                          </strong>
-                        </div>
                       </div>
                     </div>
                   </section>
 
-                  <section class="week-page__section-box" :class="{
+                  <section v-if="day.hasSpraying" class="week-page__section-box" :class="{
                     'week-page__section-box--focused':
                       focusedSection === 'spraying' && focusedDay === day.raw_date,
                   }" :data-day="day.raw_date" data-section="spraying">
@@ -196,7 +188,7 @@
 
                     <div class="week-page__mini-card">
                       <div class="week-page__mini-grid">
-                        <div class="week-page__metric">
+                        <div class="week-page__metric" v-if="day.spraying !== t('farms.form.no_quantity')">
                           <span class="week-page__metric-label">
                             {{ t('farms.table.headers.spraying') }}
                           </span>
@@ -205,7 +197,7 @@
                           </strong>
                         </div>
 
-                        <div class="week-page__metric">
+                        <div class="week-page__metric" v-if="day.spraying_per_tree !== t('farms.form.no_quantity')">
                           <span class="week-page__metric-label">
                             {{ t('farms.table.headers.spraying_per_tree') }}
                           </span>
@@ -214,7 +206,7 @@
                           </strong>
                         </div>
 
-                        <div class="week-page__metric">
+                        <div class="week-page__metric" v-if="day.amount_of_spray !== t('farms.form.no_quantity')">
                           <span class="week-page__metric-label">
                             {{ t('farms.table.headers.amount_of_spray') }}
                           </span>
@@ -277,6 +269,16 @@ const focusedSection = computed(() => String(route.query.focus || 'all'));
 const focusedDay = computed(() => String(route.query.day || ''));
 const { record: farmRecord, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
 const { records: reportsList, uiFlags: reportsUiFlags } = storeToRefs(reportsStore);
+
+const openDays = ref([]);
+
+const toggleDay = (rawDate) => {
+  if (openDays.value.includes(rawDate)) {
+    openDays.value = openDays.value.filter(d => d !== rawDate);
+  } else {
+    openDays.value.push(rawDate);
+  }
+};
 
 onMounted(async () => {
   await Promise.all([
@@ -420,7 +422,7 @@ const hasRealTaskForDay = (day) => {
   const sprayAmount = Number(day?.amount_of_spray || 0);
   const hasSprayingName =
     !!day?.pesticide_type_id ||
-    String(day?.spraying || '').trim() !== '';
+    (String(day?.spraying || '').trim() !== '' && String(day?.spraying || '').trim() !== '0');
 
   const hasIrrigation = irrigationPerTree > 0 || irrigationDuration > 0;
   const hasSpraying = hasSprayingName || sprayAmount > 0;
@@ -443,8 +445,35 @@ const mappedDays = computed(() => {
     .map((day) => {
       const dayDate = new Date(day.date);
 
+      const hasFertilization =
+        Array.isArray(day?.fertilizations) &&
+        day.fertilizations.some(
+          (f) =>
+            f?.fertilizer_type_id ||
+            (f?.type_of_fertilization && String(f.type_of_fertilization) !== '0')
+        );
+
+      const irrigationPerTree = Number(day?.irrigation_amount_per_palm_tree || 0);
+      const irrigationDuration = Number(day?.duration_of_irrigation_per_palm_tree || 0);
+      const sprayAmount = Number(day?.amount_of_spray || 0);
+      const hasSprayingName =
+        !!day?.pesticide_type_id || 
+        (String(day?.spraying || '').trim() !== '' && String(day?.spraying || '').trim() !== '0');
+
+      const hasIrrigation = irrigationPerTree > 0 || irrigationDuration > 0;
+      const hasSpraying = hasSprayingName || sprayAmount > 0;
+
+      // Ensure today is open by default
+      const todayString = moment().format('YYYY-MM-DD');
+      if (day.date === todayString && !openDays.value.includes(day.date)) {
+        openDays.value.push(day.date);
+      }
+
       return {
         ...day,
+        hasFertilization,
+        hasIrrigation,
+        hasSpraying,
         raw_date: day.date,
         day: new Intl.DateTimeFormat(locale.value || 'ar', {
           weekday: 'long',
@@ -668,8 +697,8 @@ const mappedDays = computed(() => {
   }
 
   &__days-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 18px;
   }
 
@@ -694,6 +723,35 @@ const mappedDays = computed(() => {
     align-items: flex-start;
     gap: 12px;
     margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  &__day-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--gray-500);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s;
+    cursor: pointer;
+
+    &--open {
+      transform: rotate(180deg);
+    }
   }
 
   &__day-label {
@@ -725,11 +783,30 @@ const mappedDays = computed(() => {
 
   &__sections {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    flex-direction: row;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: var(--gray-100);
+      border-radius: 8px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--gray-300);
+      border-radius: 8px;
+      &:hover {
+        background: var(--gray-400);
+      }
+    }
   }
 
 &__section-box {
+  flex: 0 0 auto;
+  min-width: 320px;
   border-radius: 18px;
   padding: 14px;
   transition: all 0.25s ease;

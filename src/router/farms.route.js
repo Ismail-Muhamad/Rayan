@@ -47,5 +47,10 @@ export default {
       name: "farm_tasks",
       component: () => import("@/components/farms/FarmTasks.vue"),
     },
+    {
+      path: "tasks/day/:date",
+      name: "farm_task_day",
+      component: () => import("@/components/farms/FarmTaskDay.vue"),
+    },
   ],
 };

@@ -1,38 +1,47 @@
-# Rayan
+# ياهلا بيك في المطبخ بتاعنا يا هندسة! 👨‍💻👩‍💻
 
-This template should help get you started developing with Vue 3 in Vite.
+منور التيم يا بطل! بما إنك وصلت هنا، فـ أنت بقيت جزء من تيم العمل السري بتاعنا. المشروع ده مش أوبن سورس ولا حاجة نلعب بيها، ده مشروع تقيل وهنكسر بيه الدنيا إن شاء الله. الشيت ده معمول مخصوص عشان تفهم "الطبخة" بتاعتنا ماشية إزاي وتدخل في الجو على طول من غير ما تلف حوالين نفسك.
 
-## Recommended IDE Setup
+## 🚀 نظرة عامة عن المشروع (الحدوتة باختصار)
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+المشروع بتاعنا عبارة عن تطبيق ويب مبني على أحدث التقنيات: **Vue 3**, **Vite**, **Pinia** للـ State Management، ومستعينين بمكاتب محترمة زي **PrimeVue** و **Element Plus**. 
+الهدف إننا نطلع حاجة أداءها طلقة، شكلها يفتح النفس، وسهلة في التعديل.
 
-## Recommended Browser Setup
+## 🏗️ هيكلة المجلدات (الـ Architecture)
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+عشان مانعكش الدنيا، مقسمين الشغل جوه فولدر `src` كالتالي:
 
-## Customize configuration
+- `views/`: هنا بنحط الصفحات الأساسية بتاعتنا.
+- `components/`: أي حتة كود UI هتتكرر (زي زراير، كروت، جداول) تترمي هنا عشان نعيد استخدامها.
+- `stores/`: المطبخ الفعلي للبيانات! هنا بنستخدم Pinia عشان نمسك الـ State ونكتب الـ Business Logic. أوعى تكتب Logic معقد جوه الـ UI.
+- `api/` و `services/`: هنا بنكلم الـ Backend والـ APIs. شغل الـ Axios كله هنا.
+- `composables/`: لو عندك Logic خاص بالـ Vue ينفع يتفصل ويتعاد استخدامه، اعمل له Composable هنا.
+- `layout/`: الهيكل الثابت بتاع الموقع (زي الـ Sidebar والـ Navbar).
+- `router/`: الطرق والمواصلات بتاعتنا جوه الأبلكيشن.
+- `locale/`: عشان الشغل بتاعنا يكون جاهز لأكثر من لغة (i18n).
+- `constants/`, `helpers/`, `utils/`: الثوابت وأي دوال مساعدة بتسهل علينا الحياة.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## 📜 سياسات كتابة الكود (Coding Guidelines)
 
-## Project Setup
+عشان نفضل حبايب والكود يفضل نضيف:
+1. **الـ Clean Code أهم من حياتك:** سمي المتغيرات بأسماء واضحة. بلاش `x` و `y`.
+2. **افصل الـ UI عن الـ Logic:** الـ Component وظيفته يعرض الداتا وبس. الـ Logic الثقيل مكانه في الـ `stores` أو الـ `composables`.
+3. **مفيش Hardcoded Strings:** أي نص هيتعرض لليوزر، لازم ييجي من ملفات اللغة (Locale).
+4. **حاول تخفف الـ Dependencies:** متسطبش مكتبة كاملة عشان تستخدم منها فانكشن واحدة!
 
-```sh
-npm install
-```
+## 🔄 طريقة الشغل (Workflow)
 
-### Compile and Hot-Reload for Development
+1. أول ما تسحب الكود، اعمل `npm install` عشان تجيب المكاتب.
+2. شغل السيرفر المحلي بـ `npm run dev`.
+3. لما تيجي تشتغل على تاسك، اعمل Branch جديد من `main`.
+4. خلصت شغل؟ اعمل Commit برسالة واضحة تشرح إنت عملت إيه بالظبط، وبعدين اعمل Pull Request.
+5. استنى الـ Code Review من زمايلك (ماتاخدش الكومنتات على أعصابك، كلنا بنتعلم).
 
-```sh
-npm run dev
-```
+## 🎨 تصميم واجهات المستخدم (UI/UX)
 
-### Compile and Minify for Production
+عايزين شغل فاخر من الآخر! 
+- استخدم الألوان والستايلات الثابتة في الـ Theme بتاعنا.
+- ركز في الـ Responsive Design، الموقع لازم يفتح على الموبايل زي الفل.
+- بلاش نستخدم الـ Inline CSS. شغلنا كله منظم.
 
-```sh
-npm run build
-```
+يلا يا هندسة، سمي الله، افتح الـ VSCode بتاعك، وورينا الشغل العالي! 💪

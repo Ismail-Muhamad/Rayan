@@ -15,4 +15,20 @@ export default [
       roles: ["admin", "admin_assistant"],
     },
   },
+  {
+    path: "/tasks/calendar",
+    name: "admin_tasks_calendar",
+    component: () => import("@/components/tasks/AdminTasksCalendar.vue"),
+    meta: {
+      roles: ["admin", "admin_assistant"],
+    },
+  },
+  {
+    path: "/tasks/calendar/day/:date",
+    name: "admin_task_calendar_day",
+    component: () => import("@/components/tasks/AdminTaskCalendarDay.vue"),
+    meta: {
+      roles: ["admin", "admin_assistant"],
+    },
+  },
 ];

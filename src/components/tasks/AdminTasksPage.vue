@@ -17,8 +17,7 @@
 
           <p>
             هنا هتشوف كل أصحاب المزارع اللي عندهم مهام يوم {{ tomorrowDayName }}
-            الموافق {{ tomorrowDateLabel }}، عشان فريق المتابعة يقدر يتواصل معاهم
-            قبل ميعاد التنفيذ.
+            الموافق {{ tomorrowDateLabel }}
           </p>
 
           <div class="tasks-hero__date">

@@ -150,6 +150,50 @@
           </BaseStyledSection>
         </div>
 
+        <div class="farm__filters">
+          <!-- Years Filter -->
+          <div class="farm__filters-row" v-if="uniqueYears.length">
+            <button
+              v-for="year in uniqueYears"
+              :key="year"
+              class="farm__filter-card"
+              :class="{'farm__filter-card--active': selectedYear === year}"
+              @click="selectedYear = selectedYear === year ? null : year"
+            >
+              <div class="farm__filter-card-content">
+                <h4 class="farm__filter-card-title">{{ year }}</h4>
+                <span class="farm__filter-card-subtitle">{{ t('farms.show.report_year', 'سنة التقرير') }}</span>
+              </div>
+              <div class="farm__filter-card-icon">
+                <BaseIcon name="solar:calendar-outline" />
+              </div>
+            </button>
+          </div>
+
+          <!-- Palm Types Filter -->
+          <div class="farm__filters-row farm__filters-row--pills" v-if="uniquePalmTypes.length">
+            <button
+              class="farm__filter-pill"
+              :class="{'farm__filter-pill--active': !selectedPalmType}"
+              @click="selectedPalmType = null"
+            >
+              <span class="farm__filter-pill-text">{{ t('farms.filters.all', 'الكل') }}</span>
+              <BaseIcon name="mdi:palm-tree" />
+            </button>
+
+            <button
+              v-for="palmType in uniquePalmTypes"
+              :key="palmType"
+              class="farm__filter-pill"
+              :class="{'farm__filter-pill--active': selectedPalmType === palmType}"
+              @click="selectedPalmType = palmType"
+            >
+              <span class="farm__filter-pill-text">{{ palmType }}</span>
+              <BaseIcon name="mdi:palm-tree" />
+            </button>
+          </div>
+        </div>
+
         <BaseStyledSection
           :label="t('farms.show.monthly_tasks')"
           :description="t('farms.show.tasks_text')"
@@ -279,7 +323,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -294,6 +338,8 @@ const route = useRoute();
 const { t, locale } = useI18n();
 
 const exportingReportId = ref(null);
+const selectedYear = ref(null);
+const selectedPalmType = ref(null);
 
 const currentRouteId = computed(() => route.params.id);
 const { record: farmRecord, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
@@ -556,6 +602,16 @@ const getReportStartTime = (report) => {
 
 const taskGroups = computed(() => {
   return [...(reportsList.value || [])]
+    .filter(report => {
+       const firstWeekDate = report?.report_weeks?.[0]?.date;
+       if (!firstWeekDate) return false;
+       const year = firstWeekDate.split('-')[0];
+       
+       if (selectedYear.value && selectedYear.value !== year) return false;
+       if (selectedPalmType.value && selectedPalmType.value !== report?.palm_type?.name) return false;
+       
+       return true;
+    })
     .sort((current, next) => {
       return getReportStartTime(next) - getReportStartTime(current);
     })
@@ -570,6 +626,33 @@ const taskGroups = computed(() => {
       weeks: report?.report_weeks || [],
     }));
 });
+
+const uniqueYears = computed(() => {
+  const years = new Set();
+  (reportsList.value || []).forEach(report => {
+    const firstWeek = report?.report_weeks?.[0];
+    if (firstWeek && firstWeek.date) {
+      years.add(firstWeek.date.split('-')[0]);
+    }
+  });
+  return Array.from(years).sort((a, b) => b - a);
+});
+
+const uniquePalmTypes = computed(() => {
+  const types = new Set();
+  (reportsList.value || []).forEach(report => {
+    if (report?.palm_type?.name) {
+      types.add(report.palm_type.name);
+    }
+  });
+  return Array.from(types).sort();
+});
+
+watch(() => uniqueYears.value, (newYears) => {
+  if (newYears.length > 0 && !selectedYear.value) {
+    selectedYear.value = newYears[0];
+  }
+}, { immediate: true });
 
 onMounted(async () => {
   await farmsStore.fetchRecord(currentRouteId.value);
@@ -759,6 +842,142 @@ const goToWeek = (reportId, weekId) => {
 
   &__overview-grid {
     grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.15fr);
+  }
+
+  &__filters {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 10px 0;
+  }
+
+  &__filters-row {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: var(--gray-100);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--gray-300);
+      border-radius: 4px;
+      &:hover {
+        background: var(--gray-400);
+      }
+    }
+  }
+
+  &__filter-card {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    min-width: 220px;
+    padding: 16px 20px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: var(--blue-300);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.08);
+    }
+
+    &--active {
+      background: var(--blue-600);
+      border-color: var(--blue-600);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+      
+      .farm__filter-card-title,
+      .farm__filter-card-subtitle,
+      .farm__filter-card-icon {
+        color: var(--white);
+      }
+      
+      .farm__filter-card-icon {
+        background: rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+
+  &__filter-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  &__filter-card-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--gray-900);
+  }
+
+  &__filter-card-subtitle {
+    font-size: 1.2rem;
+    color: var(--gray-500);
+  }
+
+  &__filter-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--blue-50);
+    color: var(--blue-600);
+    font-size: 2.2rem;
+    transition: all 0.3s ease;
+  }
+
+  &__filter-pill {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: var(--emerald-300);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+    }
+
+    &--active {
+      background: var(--emerald-500);
+      border-color: var(--emerald-500);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+      
+      .farm__filter-pill-text,
+      svg {
+        color: var(--white) !important;
+      }
+    }
+  }
+
+  &__filter-pill-text {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--gray-700);
+  }
+
+  &__filter-pill svg {
+    color: var(--emerald-600);
+    font-size: 1.6rem;
   }
 
   &__months-grid {

@@ -1,5 +1,5 @@
 <template>
-  <BasePageWrapper titleKey="requests.title" subtitleKey="requests.subtitle" iconName="solar:letter-bold-duotone">
+  <BasePageWrapper titleKey="كل الرسأل" subtitleKey="هنا هتلقي كل الرسأل الي اتبعتت من الموقع التعريفي" iconName="solar:letter-bold-duotone">
     <div class="requests-page">
       <div class="requests-page__header">
         <h2 class="requests-page__title">إدارة الرسائل والطلبات</h2>
