@@ -70,7 +70,7 @@
 
         <div v-if="farmsInfo.length" class="user__farms">
           <div v-for="(item, index) in farmsInfo" :key="item.id" class="user__farm-card">
-            <div class="user__farm-head">
+            <div class="user__farm-head" style="cursor: pointer" @click="toggleFarm(item.id)">
               <div>
                 <p class="user__farm-label">
                   {{ t("users.table.headers.farm_info", { number: index + 1 }) }}
@@ -80,12 +80,21 @@
                 </h3>
               </div>
 
-              <span class="user__farm-count">
-                {{ item.palm_types.length }}
-                {{ t("farms.table.headers.palm_types") }}
-              </span>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <span class="user__farm-count">
+                  {{ item.palm_types.length }}
+                  {{ t("farms.table.headers.palm_types") }}
+                </span>
+                <BaseIcon
+                  :name="expandedFarms.has(item.id) ? 'solar:alt-arrow-up-outline' : 'solar:alt-arrow-down-outline'"
+                  width="24"
+                  height="24"
+                  style="color: var(--blue-500);"
+                />
+              </div>
             </div>
 
+            <div v-show="expandedFarms.has(item.id)">
             <div class="user__grid">
               <div v-for="info in item.farm" :key="info.key" class="user__info-card user__info-card--soft">
                 <span class="user__info-label">{{ info.title }}</span>
@@ -112,9 +121,17 @@
                       <h3 class="user__palm-name">{{ palmType.palm_type }}</h3>
                     </div>
 
-                    <span class="user__pill user__pill--emerald">
-                      {{ palmType.palm_count }}
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="user__pill user__pill--emerald">
+                        {{ palmType.palm_count }}
+                      </span>
+                      <button type="button" @click.stop="openEditPalmModal(item, palmType)" style="border:none; background:rgba(59, 130, 246, 0.1); border-radius:8px; width:32px; height:32px; display:grid; place-items:center; cursor:pointer; color: var(--blue-600)">
+                        <BaseIcon name="solar:pen-outline" width="18" height="18" />
+                      </button>
+                      <button type="button" @click.stop="deletePalm(item, palmType)" style="border:none; background:rgba(239, 68, 68, 0.1); border-radius:8px; width:32px; height:32px; display:grid; place-items:center; cursor:pointer; color: var(--red-600)">
+                        <BaseIcon name="solar:trash-bin-minimalistic-outline" width="18" height="18" />
+                      </button>
+                    </div>
                   </div>
 
                   <div class="user__palm-meta">
@@ -130,6 +147,7 @@
                   </div>
                 </article>
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -162,13 +180,49 @@
           </div>
         </div>
       </div>
+
+      <!-- Edit Palm Type Modal -->
+      <div v-if="isPalmTypeModalOpen" class="user__dialog-backdrop" @click.self="closeEditPalmModal">
+        <div class="user__dialog">
+          <h3 class="user__dialog-title">تعديل نوع النخيل</h3>
+          
+          <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">نوع النخيل</label>
+              <input v-model="palmForm.name" type="text" class="user__dialog-input" />
+            </div>
+
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">العدد</label>
+              <input v-model.number="palmForm.number_of_trees" type="number" class="user__dialog-input" />
+            </div>
+
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">العمر</label>
+              <input v-model.number="palmForm.palm_age" type="number" class="user__dialog-input" />
+            </div>
+          </div>
+
+          <div class="user__dialog-actions">
+            <button type="button" class="user__dialog-btn user__dialog-btn--cancel" @click="closeEditPalmModal">
+              إلغاء
+            </button>
+            <button type="button" class="user__dialog-btn user__dialog-btn--submit"
+              :disabled="isSubmittingPalm" @click="submitEditPalm">
+              {{ isSubmittingPalm ? "جاري الحفظ..." : "حفظ" }}
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import UsersServices from "@/services/users.services";
+import BaseIcon from "@/components/shared/BaseIcon.vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -240,6 +294,9 @@ const farmsInfo = computed(() => {
       ],
       palm_types: (farm.palm_types || []).map((palmType) => {
         return {
+          id: palmType.id,
+          name: palmType.name,
+          number_of_trees: palmType.number_of_trees,
           palm_type: palmType.name,
           palm_count: palmType.number_of_trees,
           palm_age: palmType.palm_age,
@@ -257,6 +314,26 @@ onMounted(async () => {
     per_page: 100,
   });
 });
+
+const expandedFarms = ref(new Set());
+
+watch(farmsList, (newFarms) => {
+  if (newFarms && newFarms.length > 0) {
+    const newSet = new Set();
+    newSet.add(newFarms[0].id);
+    expandedFarms.value = newSet;
+  }
+}, { immediate: true });
+
+const toggleFarm = (id) => {
+  const newSet = new Set(expandedFarms.value);
+  if (newSet.has(id)) {
+    newSet.delete(id);
+  } else {
+    newSet.add(id);
+  }
+  expandedFarms.value = newSet;
+};
 
 const openResetPasswordDialog = () => {
   newPassword.value = "";
@@ -306,6 +383,106 @@ const submitResetPassword = async () => {
     );
   } finally {
     isSubmittingResetPassword.value = false;
+  }
+};
+
+const isPalmTypeModalOpen = ref(false);
+const editingFarmId = ref(null);
+const isSubmittingPalm = ref(false);
+const palmForm = ref({
+  id: null,
+  name: "",
+  number_of_trees: "",
+  palm_age: "",
+});
+
+const openEditPalmModal = (farm, palmType) => {
+  editingFarmId.value = farm.id;
+  palmForm.value = {
+    id: palmType.id,
+    name: palmType.name || palmType.palm_type,
+    number_of_trees: palmType.number_of_trees || palmType.palm_count,
+    palm_age: palmType.palm_age,
+  };
+  isPalmTypeModalOpen.value = true;
+};
+
+const closeEditPalmModal = () => {
+  isPalmTypeModalOpen.value = false;
+};
+
+const submitEditPalm = async () => {
+  if (!palmForm.value.name || !palmForm.value.number_of_trees || !palmForm.value.palm_age) {
+    window.alert("الرجاء إكمال جميع الحقول");
+    return;
+  }
+
+  isSubmittingPalm.value = true;
+  try {
+    const farm = farmsList.value.find(f => f.id === editingFarmId.value);
+    if (!farm) return;
+
+    const updatedPalmTypes = (farm.palm_types || []).map(p => {
+      if (p.id === palmForm.value.id) {
+        return {
+          id: p.id,
+          name: palmForm.value.name,
+          number_of_trees: palmForm.value.number_of_trees,
+          palm_age: palmForm.value.palm_age
+        };
+      }
+      return {
+        id: p.id,
+        name: p.name,
+        number_of_trees: p.number_of_trees,
+        palm_age: p.palm_age
+      };
+    });
+
+    const payload = {
+      name: farm.name,
+      location: farm.location,
+      palm_types: updatedPalmTypes
+    };
+
+    await farmsStore.updateRecord(farm.id, payload);
+    await farmsStore.fetchRecords({ owner_id: currentRouteId.value, per_page: 100 });
+    closeEditPalmModal();
+  } catch (err) {
+    console.error("error updating palm", err);
+    window.alert("حدث خطأ أثناء تعديل نوع النخيل");
+  } finally {
+    isSubmittingPalm.value = false;
+  }
+};
+
+const deletePalm = async (farmItem, palmType) => {
+  if (!window.confirm("هل أنت متأكد من حذف نوع النخيل هذا؟")) return;
+
+  try {
+    const farm = farmsList.value.find(f => f.id === farmItem.id);
+    if (!farm) return;
+
+    const updatedPalmTypes = (farm.palm_types || [])
+      .filter(p => p.id !== palmType.id)
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        number_of_trees: p.number_of_trees,
+        palm_age: p.palm_age
+      }));
+
+    const payload = {
+      name: farm.name,
+      location: farm.location,
+      palm_types: updatedPalmTypes
+    };
+
+    await farmsStore.updateRecord(farm.id, payload);
+    await farmsStore.fetchRecords({ owner_id: currentRouteId.value, per_page: 100 });
+  } catch (err) {
+    console.error("error deleting palm", err);
+    window.alert("حدث خطأ أثناء حذف نوع النخيل");
   }
 };
 

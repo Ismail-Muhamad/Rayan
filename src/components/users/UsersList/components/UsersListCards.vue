@@ -93,6 +93,14 @@
 
           <!-- Card Actions Footer -->
           <div class="user-card__footer">
+            <router-link
+              :to="{ name: 'users_show', params: { id: item.id } }"
+              class="user-card__action-btn user-card__action-btn--view"
+            >
+              <BaseIcon name="solar:eye-outline" width="18" height="18" />
+              <span>عرض</span>
+            </router-link>
+
             <template v-if="['pending', 'rejected'].includes(item.status)">
               <button
                 type="button"
@@ -111,7 +119,7 @@
                 @click="$emit('row-action', item, 'rejected')"
               >
                 <BaseIcon name="solar:close-circle-outline" width="18" height="18" />
-                <span>رفض</span>
+                <span>ايقاف</span>
               </button>
             </template>
 
@@ -497,6 +505,19 @@ const getInitials = (name) => {
     cursor: pointer;
     text-decoration: none;
     transition: all 0.2s ease;
+
+    &--view {
+      background: rgba(59, 130, 246, 0.06);
+      color: var(--blue-600);
+      border-color: rgba(59, 130, 246, 0.12);
+
+      &:hover {
+        background: var(--blue-600);
+        color: var(--white);
+        border-color: var(--blue-600);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+      }
+    }
 
     &--accept {
       background: rgba(34, 197, 94, 0.06);
