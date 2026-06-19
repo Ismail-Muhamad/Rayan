@@ -203,90 +203,96 @@
       </section>
 
       <div class="farms__list">
-        <BaseTable :headers="TABLE_HEADERS" :items="farmsList" :meta="meta" :isLoading="uiFlags.isFetchingList"
-          :title="t('farms.list.table_title')" :search-placeholder="t('farms.list.search_placeholder')" pagination
-          bordered @onPageChange="fetchRecords" @on-search="handleTableSearch">
-          <template #buttons>
+        <div class="farms__list-header">
+          <h3 class="farms__list-title">{{ t('farms.list.table_title') }}</h3>
+          <div class="farms__list-actions">
+            <div class="farms__search">
+              <div class="search-input-wrapper">
+                <BaseIcon name="solar:magnifer-outline" class="search-icon" />
+                <input 
+                  type="text" 
+                  v-model="searchQuery" 
+                  :placeholder="t('farms.list.search_placeholder')"
+                  @input="handleSearchInput"
+                  class="search-input"
+                />
+              </div>
+            </div>
             <BaseButton variant="soft" color="blue" size="sm" @click="router.push({ name: 'create_farm' })">
               <BaseIcon name="solar:add-circle-outline" />
               {{ t('auth.register.actions.add_farm') }}
             </BaseButton>
-          </template>
+          </div>
+        </div>
 
-          <template #farm_name="{ item }">
-            <div class="farm-row">
-              <div class="farm-row__avatar">
-                <BaseIcon name="mdi:palm-tree" />
-              </div>
-              <div class="farm-row__content">
-                <span class="farm-row__name">
-                  {{ item.farm_name }}
-                </span>
+        <div v-if="uiFlags.isFetchingList" class="farms__loading">
+          <BaseIcon name="solar:refresh-outline" class="spin-icon" :width="32" :height="32" />
+          <span>{{ t('GLOBAL.LOADING') || 'جاري التحميل...' }}</span>
+        </div>
 
-                <p class="farm-row__meta">
-                  <BaseIcon name="solar:map-point-outline" :width="14" :height="14" />
-                  <span>{{ item.location || '--' }}</span>
-                </p>
-
-                <div class="farm-row__chips">
-                  <span class="farm-chip farm-chip--emerald">
-                    {{ item.palm_types_count }} {{ t('farms.table.headers.palm_types') }}
-                  </span>
-                  <span class="farm-chip farm-chip--amber">
-                    {{ item.total_trees }} {{ t('farms.table.headers.palm_count') }}
-                  </span>
+        <template v-else-if="farmsList.length > 0">
+          <div class="farms-grid">
+            <article v-for="item in farmsList" :key="item.id" class="farm-card">
+              <div class="farm-card__top">
+                <div class="farm-card__avatar">
+                  <BaseIcon name="mdi:palm-tree" />
+                </div>
+                <div class="farm-card__content">
+                  <h3 class="farm-card__name">{{ item.farm_name }}</h3>
+                  <p class="farm-card__meta">
+                    <BaseIcon name="solar:map-point-outline" :width="14" :height="14" />
+                    <span>{{ item.location || '--' }}</span>
+                  </p>
+                </div>
+                <div class="farm-card__options">
+                  <BaseButton dropdown variant="soft" color="gray" size="icon-sm" :dropdownItems="ROW_ACTIONS"
+                    @dropdown-select="(action) => triggerShowModal(action.key, item)">
+                    <BaseIcon name="pepicons-pop:dots-y" />
+                  </BaseButton>
                 </div>
               </div>
-            </div>
-          </template>
 
-          <template #location="{ item }">
-            <span class="farm-chip farm-chip--slate">{{ item.location || '--' }}</span>
-          </template>
-
-          <template #palm_types_count="{ item }">
-            <span class="farm-badge farm-badge--emerald">
-              {{ item.palm_types_count }}
-            </span>
-          </template>
-
-          <template #total_trees="{ item }">
-            <span class="farm-badge farm-badge--amber">
-              {{ item.total_trees }}
-            </span>
-          </template>
-
-          <template #actions="{ item }">
-            <div class="farms__actions-cell">
-              <BaseButton variant="soft" color="blue" size="sm"
-                @click="router.push({ name: 'show_farm', params: { id: item.id } })">
-                <BaseIcon name="solar:clipboard-list-outline" />
-                {{ t('farms.actions.tasks') }}
-              </BaseButton>
-
-              <BaseButton dropdown variant="soft" color="gray" size="icon-sm" :dropdownItems="ROW_ACTIONS"
-                @dropdown-select="(action) => triggerShowModal(action.key, item)">
-                <BaseIcon name="pepicons-pop:dots-y" />
-              </BaseButton>
-            </div>
-          </template>
-
-          <template #initial>
-            <div class="farms__empty-state">
-              <div class="farms__empty-icon">
-                <BaseIcon name="mdi:palm-tree" />
+              <div class="farm-card__stats">
+                <div class="farm-card__stat">
+                  <span class="farm-card__stat-label">{{ t('farms.table.headers.palm_types') }}</span>
+                  <span class="farm-badge farm-badge--emerald">{{ item.palm_types_count }}</span>
+                </div>
+                <div class="farm-card__stat">
+                  <span class="farm-card__stat-label">{{ t('farms.table.headers.palm_count') }}</span>
+                  <span class="farm-badge farm-badge--amber">{{ item.total_trees }}</span>
+                </div>
               </div>
-              <h3 class="farms__empty-title">{{ t('farms.list.empty_title') }}</h3>
-              <p class="farms__empty-text">
-                {{ t('farms.list.empty_message') }}
-              </p>
-              <BaseButton size="sm" @click="router.push({ name: 'create_farm' })">
-                <BaseIcon name="solar:add-circle-outline" />
-                {{ t('auth.register.actions.add_farm') }}
-              </BaseButton>
+
+              <div class="farm-card__footer">
+                <BaseButton variant="soft" color="blue" size="sm" class="farm-card__task-btn"
+                  @click="router.push({ name: 'show_farm', params: { id: item.id } })">
+                  <BaseIcon name="solar:clipboard-list-outline" />
+                  {{ t('farms.actions.tasks') }}
+                </BaseButton>
+              </div>
+            </article>
+          </div>
+
+          <div class="farms__pagination" v-if="meta?.total > meta?.per_page">
+            <BasePagination :meta="meta" @pageChange="handlePageChange" />
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="farms__empty-state">
+            <div class="farms__empty-icon">
+              <BaseIcon name="mdi:palm-tree" />
             </div>
-          </template>
-        </BaseTable>
+            <h3 class="farms__empty-title">{{ t('farms.list.empty_title') }}</h3>
+            <p class="farms__empty-text">
+              {{ t('farms.list.empty_message') }}
+            </p>
+            <BaseButton size="sm" @click="router.push({ name: 'create_farm' })">
+              <BaseIcon name="solar:add-circle-outline" />
+              {{ t('auth.register.actions.add_farm') }}
+            </BaseButton>
+          </div>
+        </template>
 
         <FarmDeleteModal ref="deleteFarmModalRef" />
       </div>
@@ -295,11 +301,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, useTemplateRef } from 'vue';
+import { computed, onMounted, useTemplateRef, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useFarmsStore } from '@/stores/farms.store';
+import BasePagination from '@/components/shared/Table/BasePagination.vue';
 import { useReportsStore } from '@/stores/reports.store';
 import FarmDeleteModal from './Modals/FarmDeleteModal.vue';
 import { debounceHelper } from '@/helpers/debounceHelper';
@@ -309,36 +316,7 @@ const reportsStore = useReportsStore();
 const router = useRouter();
 const { t, locale } = useI18n();
 
-const TABLE_HEADERS = computed(() => [
-  {
-    text: t('farms.table.headers.farm_name'),
-    value: 'farm_name',
-    width: 340,
-  },
-  {
-    text: t('farms.table.headers.location'),
-    value: 'location',
-    width: 220,
-  },
-  {
-    text: t('farms.list.stats.palm_types_count'),
-    value: 'palm_types_count',
-    alignment: 'center',
-    width: 140,
-  },
-  {
-    text: t('farms.list.stats.trees_count'),
-    value: 'total_trees',
-    alignment: 'center',
-    width: 140,
-  },
-  {
-    text: t('farms.table.headers.actions'),
-    value: 'actions',
-    alignment: 'center',
-    width: 220,
-  },
-]);
+const searchQuery = ref('');
 
 const ROW_ACTIONS = computed(() => [
   {
@@ -551,9 +529,17 @@ const fetchRecords = (page, searchTerm = undefined) => {
   });
 };
 
+const handleSearchInput = () => {
+  handleTableSearch(searchQuery.value);
+};
+
 const handleTableSearch = debounceHelper(function (query) {
   fetchRecords(1, query);
 }, 500);
+
+const handlePageChange = (page) => {
+  fetchRecords(page, searchQuery.value);
+};
 
 const triggerShowModal = (action, item) => {
   const actionsMap = {
@@ -1110,55 +1096,221 @@ const openTaskSection = (task, section = 'all') => {
   }
 }
 
-.farm-row {
+.farms__list-header {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.farms__list-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+
+.farms__list-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  
+  .search-icon {
+    position: absolute;
+    right: 14px;
+    color: var(--gray-400);
+    font-size: 1.2rem;
+  }
+  
+  .search-input {
+    padding: 10px 40px 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+    background-color: var(--white);
+    font-size: 1.3rem;
+    color: var(--gray-900);
+    width: 260px;
+    transition: all 0.2s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--blue-400);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    &::placeholder {
+      color: var(--gray-400);
+    }
+  }
+}
+
+.farms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.farm-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdfd 100%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #0ea5e9);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+
+  &__top {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
 
   &__avatar {
-    width: 52px;
-    height: 52px;
-    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
     border-radius: 16px;
-    display: inline-flex;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    color: #2563eb;
+    display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
-    color: var(--blue-700);
-    font-size: 2rem;
+    font-size: 2.2rem;
+    flex-shrink: 0;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5);
   }
 
   &__content {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    min-width: 0;
+    gap: 4px;
+    margin-top: 2px;
   }
 
   &__name {
-    color: var(--gray-950);
-    font-size: 1.65rem;
+    font-size: 1.6rem;
     font-weight: 800;
-    text-decoration: none;
-    cursor: default;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__meta {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    font-size: 1.25rem;
     color: var(--gray-500);
-    font-size: 1.35rem;
   }
 
-  &__chips {
+  &__options {
+    margin-top: 2px;
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: rgba(248, 250, 252, 0.7);
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+  }
+
+  &__stat {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 8px;
+    align-items: center;
+    text-align: center;
+  }
+
+  &__stat-label {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gray-500);
+  }
+
+  &__footer {
+    display: flex;
+    margin-top: auto;
+  }
+
+  &__task-btn {
+    width: 100%;
+    border-radius: 14px !important;
+    font-weight: 700;
+    font-size: 1.3rem;
   }
 }
 
-.farm-chip,
+.farms__pagination {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 16px;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+
+.farms__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  color: var(--gray-500);
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  .spin-icon {
+    animation: spin 1s linear infinite;
+    color: var(--blue-500);
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .farm-badge {
   display: inline-flex;
   align-items: center;
@@ -1168,26 +1320,6 @@ const openTaskSection = (task, section = 'all') => {
   font-size: 1.25rem;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.farm-chip {
-  &--emerald {
-    background-color: var(--blue-50);
-    color: var(--blue-700);
-  }
-
-  &--amber {
-    background-color: var(--amber-50);
-    color: var(--amber-700);
-  }
-
-  &--slate {
-    background-color: var(--gray-100);
-    color: var(--gray-700);
-  }
-}
-
-.farm-badge {
   min-width: 42px;
 
   &--emerald {

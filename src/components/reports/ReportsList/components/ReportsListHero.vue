@@ -37,7 +37,7 @@
           </div>
         </div>
 
-        <div class="reports-hero__stat-card reports-hero__stat-card--accent">
+        <!-- <div class="reports-hero__stat-card reports-hero__stat-card--accent">
           <div class="reports-hero__stat-icon reports-hero__stat-icon--accent">
             <BaseIcon name="solar:clipboard-list-outline" width="24" height="24" />
           </div>
@@ -47,7 +47,7 @@
               {{ totalReports }}
             </strong>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </section>

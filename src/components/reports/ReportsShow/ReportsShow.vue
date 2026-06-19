@@ -93,6 +93,8 @@
                     :title="formatReportTitle(report)"
                     :exporting-report-id="exportingReportId"
                     @action="({ report: r, action: a }) => handleReportAction(r, a)"
+                    @edit-activity="(payload) => handleEditActivity(payload, report.id)"
+                    @delete-activity="(payload) => handleDeleteActivity(payload, report.id)"
                   />
                 </BaseAccordion>
               </div>
@@ -112,6 +114,19 @@
       ref="deleteReportModalRef"
       @refetch="fetchReportAndFarmInfo"
     />
+
+    <EditDayActivityModal
+      ref="editDayActivityModalRef"
+      :fertilizer-types="fertilizerTypesRecords"
+      :pesticide-types="pesticideTypesRecords"
+      @save="handleSaveActivity"
+    />
+
+    <DeleteFertilizationModal
+      ref="deleteFertilizationModalRef"
+      :fertilizer-types="fertilizerTypesRecords"
+      @save="handleSaveActivity"
+    />
   </div>
 </template>
 
@@ -125,6 +140,7 @@ import moment from "moment";
 // Stores & Modals
 import { useFarmsStore } from "@/stores/farms.store";
 import { useReportsStore } from "@/stores/reports.store";
+import { useTasksStore } from "@/stores/tasks.store";
 import ReportsDeleteModal from "../Modals/ReportsDeleteModal.vue";
 
 // Utilities & Services
@@ -138,9 +154,12 @@ import FarmInfoGrid from "./components/FarmInfoGrid.vue";
 import PalmTypesList from "./components/PalmTypesList.vue";
 import ReportAccordionItem from "./components/ReportAccordionItem.vue";
 import BaseIcon from "@/components/shared/BaseIcon.vue";
+import EditDayActivityModal from "../Modals/EditDayActivityModal.vue";
+import DeleteFertilizationModal from "../Modals/DeleteFertilizationModal.vue";
 
 const farmsStore = useFarmsStore();
 const reportsStore = useReportsStore();
+const tasksStore = useTasksStore();
 
 const router = useRouter();
 const route = useRoute();
@@ -148,6 +167,8 @@ const { t, locale } = useI18n();
 
 const exportingReportId = ref(null);
 const deleteReportModalRef = ref(null);
+const editDayActivityModalRef = ref(null);
+const deleteFertilizationModalRef = ref(null);
 const fertilizerTypesRecords = ref([]);
 const pesticideTypesRecords = ref([]);
 const selectedPalmTypeId = ref("all");
@@ -219,9 +240,12 @@ const filteredGroups = computed(() => {
 });
 
 const getFertilizerTypeName = (fertilization) => {
-  const matched = (fertilizerTypesRecords.value || []).find(
-    (item) => item.id === fertilization?.fertilizer_type_id,
-  );
+  const types = Array.isArray(fertilizerTypesRecords.value)
+    ? fertilizerTypesRecords.value
+    : fertilizerTypesRecords.value?.data || [];
+    
+  const typeId = fertilization?.fertilizer_type_id || fertilization?.type_of_fertilization;
+  const matched = types.find((item) => String(item.id) === String(typeId) || item.name === typeId);
 
   return (
     matched?.name ||
@@ -231,9 +255,12 @@ const getFertilizerTypeName = (fertilization) => {
 };
 
 const getPesticideTypeName = (day) => {
-  const matched = (pesticideTypesRecords.value || []).find(
-    (item) => item.id === day?.pesticide_type_id,
-  );
+  const types = Array.isArray(pesticideTypesRecords.value)
+    ? pesticideTypesRecords.value
+    : pesticideTypesRecords.value?.data || [];
+    
+  const typeId = day?.pesticide_type_id || day?.spraying;
+  const matched = types.find((item) => String(item.id) === String(typeId) || item.name === typeId);
 
   return matched?.name || day?.spraying || t("farms.form.no_quantity");
 };
@@ -287,8 +314,8 @@ const mapWeeksReport = (report) => {
       const validDays = (week.days || []).filter((day) => {
         const hasFertilization = (day.fertilizations || []).some(
           (f) =>
-            (f.fertilizer_type_id || f.type_of_fertilization) &&
-            String(f.type_of_fertilization) !== "0",
+            (f.fertilizer_type_id && String(f.fertilizer_type_id) !== "0") ||
+            (f.type_of_fertilization && String(f.type_of_fertilization) !== "0"),
         );
 
         const hasIrrigation =
@@ -298,7 +325,7 @@ const mapWeeksReport = (report) => {
             String(day.duration_of_irrigation_per_palm_tree) !== "0");
 
         const hasSpraying =
-          day.pesticide_type_id ||
+          (day.pesticide_type_id && String(day.pesticide_type_id) !== "0") ||
           (day.spraying && String(day.spraying) !== "0") ||
           (day.amount_of_spray && String(day.amount_of_spray) !== "0");
 
@@ -311,7 +338,9 @@ const mapWeeksReport = (report) => {
           return {
             ...day,
             day: getDayNameFromDate(day.date),
-            fertilizations: (day.fertilizations || []).map((f) => {
+            fertilizations: (day.fertilizations || [])
+              .filter((f) => (f.fertilizer_type_id && String(f.fertilizer_type_id) !== "0") || (f.type_of_fertilization && String(f.type_of_fertilization) !== "0"))
+              .map((f) => {
               return {
                 ...f,
                 type_of_fertilization:
@@ -431,6 +460,147 @@ const handleReportAction = (report, action) => {
       break;
     default:
       break;
+  }
+};
+
+const handleEditActivity = (payload, reportId) => {
+  const report = reportsList.value.find((r) => r.id === reportId);
+  if (!report) return;
+
+  const { dayDate, activityType } = payload;
+  
+  let foundWeekIndex = -1;
+  let foundDayIndex = -1;
+  let foundDayData = null;
+
+  for (let w = 0; w < report.report_weeks.length; w++) {
+    const week = report.report_weeks[w];
+    for (let d = 0; d < week.days.length; d++) {
+      if (week.days[d].date === dayDate) {
+        foundWeekIndex = w;
+        foundDayIndex = d;
+        foundDayData = week.days[d];
+        break;
+      }
+    }
+    if (foundDayData) break;
+  }
+
+  if (foundDayData) {
+    editDayActivityModalRef.value?.openModal(
+      reportId, 
+      foundWeekIndex, 
+      foundDayIndex, 
+      foundDayData, 
+      activityType
+    );
+  }
+};
+
+const handleDeleteActivity = async (payload, reportId) => {
+  const report = reportsList.value.find((r) => r.id === reportId);
+  if (!report) return;
+
+  const { dayDate, activityType } = payload;
+  
+  let foundWeekIndex = -1;
+  let foundDayIndex = -1;
+  let foundDayData = null;
+
+  for (let w = 0; w < report.report_weeks.length; w++) {
+    const week = report.report_weeks[w];
+    for (let d = 0; d < week.days.length; d++) {
+      if (week.days[d].date === dayDate) {
+        foundWeekIndex = w;
+        foundDayIndex = d;
+        foundDayData = week.days[d];
+        break;
+      }
+    }
+    if (foundDayData) break;
+  }
+
+  if (!foundDayData) return;
+
+  if (activityType === "fertilization") {
+    deleteFertilizationModalRef.value?.openModal(
+      reportId,
+      foundWeekIndex,
+      foundDayIndex,
+      foundDayData
+    );
+  } else {
+    // For irrigation and spraying, delete directly by setting to 0
+    const confirmDelete = window.confirm(
+      activityType === "irrigation" 
+        ? "هل أنت متأكد من حذف بيانات الري لهذا اليوم؟" 
+        : "هل أنت متأكد من حذف بيانات الرش لهذا اليوم؟"
+    );
+    
+    if (!confirmDelete) return;
+
+    const updatedDay = JSON.parse(JSON.stringify(foundDayData));
+    
+    if (activityType === "irrigation") {
+      updatedDay.irrigation_amount_per_palm_tree = "0";
+      updatedDay.duration_of_irrigation_per_palm_tree = "0";
+      updatedDay.total_amount_of_irrigation = "0";
+    } else if (activityType === "spraying") {
+      updatedDay.spraying = "0";
+      updatedDay.amount_of_spray = "0";
+      updatedDay.pesticide_type_id = null;
+    }
+
+    handleSaveActivity({
+      reportId,
+      weekIndex: foundWeekIndex,
+      dayIndex: foundDayIndex,
+      updatedDay,
+      done: () => {}
+    });
+  }
+};
+
+const handleSaveActivity = async (payload) => {
+  const { reportId, weekIndex, dayIndex, updatedDay, done } = payload;
+  
+  const report = reportsList.value.find((r) => r.id === reportId);
+  if (!report) {
+    done();
+    return;
+  }
+
+  const dateStr = report.report_weeks?.[0]?.days?.[0]?.date;
+  let monthPayload = null;
+  if (dateStr) {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      monthPayload = { month: d.getMonth(), year: d.getFullYear() };
+    }
+  }
+
+  // Build the payload
+  const payloadToSave = {
+    owner: report.owner_id || report.farm?.owner_id || null,
+    farm_id: report.farm_id || report.farm?.id || null,
+    palm_type_id: report.palm_type_id || report.palm_type?.id || null,
+    month: monthPayload,
+    review: report.review,
+    recommendations: report.recommendations,
+    report_weeks: JSON.parse(JSON.stringify(report.report_weeks)),
+  };
+
+  payloadToSave.report_weeks[weekIndex].days[dayIndex] = updatedDay;
+
+  try {
+    await reportsStore.updateRecord(reportId, payloadToSave);
+    // Reset tasks cache so next visit to task pages fetches fresh data
+    tasksStore.$reset();
+    await fetchReportAndFarmInfo();
+  } catch (error) {
+    console.error("Failed to update day activity:", error);
+  } finally {
+    done();
   }
 };
 </script>

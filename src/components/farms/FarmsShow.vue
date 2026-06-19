@@ -205,7 +205,7 @@
                 :key="taskGroup.id"
                 class="farm__month-card"
               >
-                <div class="farm__month-head">
+                <div class="farm__month-head" @click="toggleMonth(taskGroup.id)">
                   <div>
                     <p class="farm__month-label">
                       {{ t('farms.show.task_month') }}
@@ -234,70 +234,76 @@
                       />
                       {{ t('reports.actions.download') }}
                     </BaseButton>
+
+                    <div class="farm__month-chevron" :class="{ 'is-expanded': expandedMonths.includes(taskGroup.id) }">
+                      <BaseIcon name="solar:alt-arrow-down-outline" :width="20" :height="20" />
+                    </div>
                   </div>
                 </div>
 
-                <div class="farm__month-summary">
-                  <div class="farm__month-summary-box">
-                    <p class="farm__month-summary-title">
-                      {{ t('farms.table.headers.review') }}
-                    </p>
-                    <p class="farm__month-summary-text">
-                      {{ taskGroup.reviewPreview }}
-                    </p>
-                  </div>
-
-                  <div class="farm__month-summary-box">
-                    <p class="farm__month-summary-title">
-                      {{ t('farms.table.headers.recommendations') }}
-                    </p>
-                    <p class="farm__month-summary-text">
-                      {{ taskGroup.recommendationsPreview }}
-                    </p>
-                  </div>
-                </div>
-
-                <div class="farm__weeks-grid">
-                  <button
-                    v-for="week in taskGroup.weeks"
-                    :key="week.id"
-                    type="button"
-                    class="farm__week-card"
-                    @click="goToWeek(taskGroup.id, week.id)"
-                  >
-                    <div class="farm__week-icon">
-                      <BaseIcon name="solar:calendar-mark-outline" />
+                <div class="farm__month-body" v-show="expandedMonths.includes(taskGroup.id)">
+                  <div class="farm__month-summary">
+                    <div class="farm__month-summary-box">
+                      <p class="farm__month-summary-title">
+                        {{ t('farms.table.headers.review') }}
+                      </p>
+                      <p class="farm__month-summary-text">
+                        {{ taskGroup.reviewPreview }}
+                      </p>
                     </div>
 
-                    <div class="farm__week-copy">
-                      <div class="farm__week-top">
-                        <h4 class="farm__week-title">
-                          {{
-                            t(
-                              `farms.form.options.week_number.${week.week_number}`,
-                            )
-                          }}
-                        </h4>
+                    <div class="farm__month-summary-box">
+                      <p class="farm__month-summary-title">
+                        {{ t('farms.table.headers.recommendations') }}
+                      </p>
+                      <p class="farm__month-summary-text">
+                        {{ taskGroup.recommendationsPreview }}
+                      </p>
+                    </div>
+                  </div>
 
-                        <span class="farm__pill farm__pill--blue-soft">
-                          {{ week.days.length }}
-                          {{ t('farms.show.days_count') }}
-                        </span>
+                  <div class="farm__weeks-grid">
+                    <button
+                      v-for="week in taskGroup.weeks"
+                      :key="week.id"
+                      type="button"
+                      class="farm__week-card"
+                      @click="goToWeek(taskGroup.id, week.id)"
+                    >
+                      <div class="farm__week-icon">
+                        <BaseIcon name="solar:calendar-mark-outline" />
                       </div>
 
-                      <p class="farm__week-range">
-                        {{ getWeekRangeLabel(week) }}
-                      </p>
+                      <div class="farm__week-copy">
+                        <div class="farm__week-top">
+                          <h4 class="farm__week-title">
+                            {{
+                              t(
+                                `farms.form.options.week_number.${week.week_number}`,
+                              )
+                            }}
+                          </h4>
 
-                      <p class="farm__week-hint">
-                        {{ t('farms.show.open_week') }}
-                      </p>
-                    </div>
+                          <span class="farm__pill farm__pill--blue-soft">
+                            {{ week.days.length }}
+                            {{ t('farms.show.days_count') }}
+                          </span>
+                        </div>
 
-                    <div class="farm__week-arrow">
-                      <BaseIcon name="solar:alt-arrow-left-outline" />
-                    </div>
-                  </button>
+                        <p class="farm__week-range">
+                          {{ getWeekRangeLabel(week) }}
+                        </p>
+
+                        <p class="farm__week-hint">
+                          {{ t('farms.show.open_week') }}
+                        </p>
+                      </div>
+
+                      <div class="farm__week-arrow">
+                        <BaseIcon name="solar:alt-arrow-left-outline" />
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </article>
             </div>
@@ -340,6 +346,16 @@ const { t, locale } = useI18n();
 const exportingReportId = ref(null);
 const selectedYear = ref(null);
 const selectedPalmType = ref(null);
+
+const expandedMonths = ref([]);
+
+const toggleMonth = (id) => {
+  if (expandedMonths.value.includes(id)) {
+    expandedMonths.value = expandedMonths.value.filter(m => m !== id);
+  } else {
+    expandedMonths.value.push(id);
+  }
+};
 
 const currentRouteId = computed(() => route.params.id);
 const { record: farmRecord, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
@@ -626,6 +642,27 @@ const taskGroups = computed(() => {
       weeks: report?.report_weeks || [],
     }));
 });
+
+watch(() => taskGroups.value, (newGroups) => {
+  if (newGroups.length > 0) {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear().toString();
+    const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    
+    const currentMonthIds = newGroups
+      .filter(g => {
+         const firstWeekDate = g.report?.report_weeks?.[0]?.date;
+         if (!firstWeekDate) return false;
+         const [y, m] = firstWeekDate.split('-');
+         return y === currentYear && m === currentMonth;
+      })
+      .map(g => g.id);
+      
+    expandedMonths.value = currentMonthIds;
+  } else {
+    expandedMonths.value = [];
+  }
+}, { immediate: true });
 
 const uniqueYears = computed(() => {
   const years = new Set();
@@ -1100,6 +1137,29 @@ const goToWeek = (reportId, weekId) => {
     gap: 14px;
     margin-bottom: 18px;
     flex-wrap: wrap;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  &__month-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(241, 245, 249, 0.8);
+    color: var(--gray-600);
+    transition: transform 0.3s ease;
+    
+    &.is-expanded {
+      transform: rotate(180deg);
+    }
   }
 
   &__month-title {

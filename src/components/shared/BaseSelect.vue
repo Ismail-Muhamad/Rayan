@@ -1349,7 +1349,7 @@ onMounted(() => {
     box-shadow: var(--shadow-lg);
     border-radius: var(--border-radius-lg);
     overflow: hidden;
-    z-index: 9999;
+    z-index: 99999;
     // margin-top: 4px;
 
     &--up {

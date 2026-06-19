@@ -627,11 +627,13 @@ function extractTomorrowTasks(reports, farm) {
 
     let palmTypeName = "غير محدد";
     let palmTypeId = "unspecified";
+    let palmCount = 0;
     if (farm && farm?.palm_types && report?.palm_type_id) {
       const pt = farm.palm_types.find((p) => String(p.id) === String(report.palm_type_id));
       if (pt) {
          palmTypeName = pt.name;
          palmTypeId = pt.id;
+         palmCount = Number(pt.number_of_trees || 0);
       } else {
          palmTypeId = report.palm_type_id;
       }
@@ -644,7 +646,7 @@ function extractTomorrowTasks(reports, farm) {
     reportDays.forEach((dayObject) => {
       if (!isTomorrowDay(dayObject)) return;
 
-      const dayTasks = extractTasksFromDay(dayObject, palmTypeName, palmTypeId);
+      const dayTasks = extractTasksFromDay(dayObject, palmTypeName, palmTypeId, palmCount);
 
       dayTasks.forEach((task) => {
         const existingTask = allTasks.find(
@@ -781,24 +783,24 @@ function isTomorrowDayObject(obj) {
   return false;
 }
 
-function extractTasksFromDay(day, palmTypeName, palmTypeId) {
+function extractTasksFromDay(day, palmTypeName, palmTypeId, palmCount = 0) {
   const tasks = [];
 
-  const irrigationTask = buildIrrigationTask(day, palmTypeName);
+  const irrigationTask = buildIrrigationTask(day, palmTypeName, palmCount);
   if (irrigationTask) {
     irrigationTask.palmTypeId = palmTypeId;
     irrigationTask.palmTypeName = palmTypeName;
     tasks.push(irrigationTask);
   }
 
-  const fertilizerTasks = buildFertilizerTasks(day, palmTypeName);
+  const fertilizerTasks = buildFertilizerTasks(day, palmTypeName, palmCount);
   fertilizerTasks.forEach(t => {
     t.palmTypeId = palmTypeId;
     t.palmTypeName = palmTypeName;
     tasks.push(t);
   });
 
-  const sprayTasks = buildSprayTasks(day, palmTypeName);
+  const sprayTasks = buildSprayTasks(day, palmTypeName, palmCount);
   sprayTasks.forEach(t => {
     t.palmTypeId = palmTypeId;
     t.palmTypeName = palmTypeName;
@@ -808,7 +810,7 @@ function extractTasksFromDay(day, palmTypeName, palmTypeId) {
   return dedupeTasks(tasks);
 }
 
-function buildIrrigationTask(day, palmTypeName) {
+function buildIrrigationTask(day, palmTypeName, palmCount = 0) {
   const irrigationPerTree = Number(day?.irrigation_amount_per_palm_tree || day?.irrigation_amount_per_palm || day?.irrigation_per_palm || 0);
   const durationPerTreeMinutes = Number(
     day?.duration_of_irrigation_per_palm_tree ||
@@ -856,7 +858,7 @@ function buildIrrigationTask(day, palmTypeName) {
   };
 }
 
-function buildFertilizerTasks(day, palmTypeName) {
+function buildFertilizerTasks(day, palmTypeName, palmCount = 0) {
   const fertilizations = Array.isArray(day?.fertilizations) ? day.fertilizations : [];
 
   const realFertilizations = fertilizations.filter((f) => {
@@ -890,9 +892,14 @@ function buildFertilizerTasks(day, palmTypeName) {
       0
     );
 
-    const totalQty = Number(
+    let totalQty = Number(
       fertilization?.total || fertilization?.fertilizer_total || fertilization?.fertilizer_total_kg || 0
     );
+    
+    // Compute total if missing and we have per-tree amount and palmCount
+    if (totalQty === 0 && palmQuantity > 0 && palmCount > 0) {
+      totalQty = (palmQuantity * palmCount) / 1000;
+    }
 
     const details = [];
 
@@ -911,15 +918,20 @@ function buildFertilizerTasks(day, palmTypeName) {
   });
 }
 
-function buildSprayTasks(day, palmTypeName) {
+function buildSprayTasks(day, palmTypeName, palmCount = 0) {
   const typeName = day?.spraying || day?.spray_type || day?.sprayName || day?.spray_name;
   const perTreeGrams = Number(day?.amount_of_spray || day?.spray_amount_per_palm || 0);
-  const totalSpray = Number(
+  let totalSpray = Number(
     day?.total_amount_of_spray ||
       day?.total_spray ||
       day?.spray_total ||
       0,
   );
+  
+  // Compute total if missing
+  if (totalSpray === 0 && perTreeGrams > 0 && palmCount > 0) {
+    totalSpray = (perTreeGrams * palmCount) / 1000;
+  }
 
   const hasSpray = hasRealValue(typeName) || perTreeGrams > 0 || totalSpray > 0;
 

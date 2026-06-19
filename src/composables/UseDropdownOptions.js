@@ -107,7 +107,7 @@ export function useDropdown(triggerRef, dropdownRef, options = {}) {
       top: `${top}px`,
       left: `${left}px`,
       minWidth: `${triggerRect.width}px`,
-      zIndex: "1000",
+      zIndex: "99999",
     };
   };
 

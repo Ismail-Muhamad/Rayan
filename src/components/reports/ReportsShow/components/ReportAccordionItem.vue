@@ -2,7 +2,7 @@
   <BaseAccordionItem :value="report.id" class="report-item">
     <!-- Title Slot -->
     <template #title>
-      <div class="report-item__header" @click.stop>
+      <div class="report-item__header">
         <div class="report-item__header-left">
           <div class="report-item__month-icon">
             <BaseIcon name="solar:document-bold-duotone" width="26" height="26" />
@@ -96,6 +96,8 @@
           v-for="week in weeks"
           :key="week.id"
           :week="week"
+          @edit-activity="(payload) => $emit('edit-activity', payload)"
+          @delete-activity="(payload) => $emit('delete-activity', payload)"
         />
       </div>
     </div>
@@ -130,7 +132,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["action"]);
+const emit = defineEmits(["action", "edit-activity", "delete-activity"]);
 
 const { t } = useI18n();
 

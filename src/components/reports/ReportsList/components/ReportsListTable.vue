@@ -80,23 +80,23 @@
               <span>عرض</span>
             </router-link>
 
-            <button
+            <!-- <button
               type="button"
               class="farm-card__action-btn farm-card__action-btn--edit"
               @click="$emit('row-action', 'edit', item)"
             >
               <BaseIcon name="solar:pen-2-outline" width="18" height="18" />
               <span>تعديل</span>
-            </button>
+            </button> -->
 
-            <button
+            <!-- <button
               type="button"
               class="farm-card__action-btn farm-card__action-btn--delete"
               @click="$emit('row-action', 'delete', item)"
             >
               <BaseIcon name="solar:trash-bin-minimalistic-outline" width="18" height="18" />
               <span>حذف</span>
-            </button>
+            </button> -->
           </div>
         </div>
       </div>

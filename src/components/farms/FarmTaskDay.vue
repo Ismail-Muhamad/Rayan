@@ -169,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onActivated } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks.store';
 
@@ -247,6 +247,17 @@ const fetchTasks = async () => {
         const calculatedTotalIrrigation = irrigationPerTree > 0 && palmCount > 0 ? irrigationPerTree * palmCount : '';
         qData.total_amount_of_irrigation = String(qData.total_amount_of_irrigation || qData.total_irrigation || qData.total_water || qData.total_water_quantity || calculatedTotalIrrigation || '');
 
+        let shouldKeepTask = true;
+        if (task.task_type === 'irrigation' && irrigationPerTree === 0) {
+          shouldKeepTask = false;
+        } else if (task.task_type === 'spraying' && sprayPerTree === 0) {
+          shouldKeepTask = false;
+        } else if (task.task_type === 'fertilization' && fertilizerPerTree === 0) {
+          shouldKeepTask = false;
+        }
+
+        if (!shouldKeepTask) return;
+
         palmTypesMap.get(palmTypeId).tasks.push({
           id: task.id,
           title: task.title,
@@ -276,6 +287,13 @@ onMounted(() => {
     fetchTasks();
   } else {
     loading.value = false;
+  }
+});
+
+// Re-fetch whenever the user navigates back to this page (e.g., after editing a report)
+onActivated(() => {
+  if (farmIdParam && dateParam) {
+    fetchTasks();
   }
 });
 

@@ -59,8 +59,18 @@
                 class="activity-block activity-block--fertilization"
               >
                 <div class="activity-block__header">
-                  <BaseIcon name="solar:leaf-bold" width="24" height="24" class="activity-block__icon" />
-                  <strong class="activity-block__title">{{ t("farms.table.headers.fertilization_section") }}</strong>
+                  <div class="activity-block__header-left">
+                    <BaseIcon name="solar:leaf-bold" width="24" height="24" class="activity-block__icon" />
+                    <strong class="activity-block__title">{{ t("farms.table.headers.fertilization_section") }}</strong>
+                  </div>
+                  <div class="activity-block__actions">
+                    <button class="activity-block__delete-btn" @click.stop="$emit('delete-activity', { dayDate: day.date, activityType: 'fertilization' })">
+                      <BaseIcon name="solar:trash-bin-trash-bold" width="16" height="16" />
+                    </button>
+                    <button class="activity-block__edit-btn" @click.stop="$emit('edit-activity', { dayDate: day.date, activityType: 'fertilization' })">
+                      <BaseIcon name="solar:pen-bold" width="16" height="16" />
+                    </button>
+                  </div>
                 </div>
                 <div class="activity-block__content">
                   <div
@@ -92,8 +102,18 @@
                 class="activity-block activity-block--irrigation"
               >
                 <div class="activity-block__header">
-                  <BaseIcon name="solar:droplet-bold" width="24" height="24" class="activity-block__icon" />
-                  <strong class="activity-block__title">{{ t("farms.table.headers.irrigation_section") }}</strong>
+                  <div class="activity-block__header-left">
+                    <BaseIcon name="solar:droplet-bold" width="24" height="24" class="activity-block__icon" />
+                    <strong class="activity-block__title">{{ t("farms.table.headers.irrigation_section") }}</strong>
+                  </div>
+                  <div class="activity-block__actions">
+                    <button class="activity-block__delete-btn" @click.stop="$emit('delete-activity', { dayDate: day.date, activityType: 'irrigation' })">
+                      <BaseIcon name="solar:trash-bin-trash-bold" width="16" height="16" />
+                    </button>
+                    <button class="activity-block__edit-btn" @click.stop="$emit('edit-activity', { dayDate: day.date, activityType: 'irrigation' })">
+                      <BaseIcon name="solar:pen-bold" width="16" height="16" />
+                    </button>
+                  </div>
                 </div>
                 <div class="activity-block__content">
                   <div class="activity-block__details-list">
@@ -118,13 +138,6 @@
                       <span class="activity-block__detail-label">{{ t("farms.table.headers.duration_of_irrigation_per_palm_tree") }}:</span>
                       <strong class="activity-block__detail-value">{{ day.duration_of_irrigation_per_palm_tree }}</strong>
                     </div>
-                    <div 
-                      v-if="day.total_duration_of_irrigation !== t('farms.form.no_quantity')"
-                      class="activity-block__detail-row"
-                    >
-                      <span class="activity-block__detail-label">{{ t("farms.table.headers.total_duration_of_irrigation") }}:</span>
-                      <strong class="activity-block__detail-value">{{ day.total_duration_of_irrigation }}</strong>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -135,8 +148,18 @@
                 class="activity-block activity-block--spraying"
               >
                 <div class="activity-block__header">
-                  <BaseIcon name="solar:shield-warning-bold" width="24" height="24" class="activity-block__icon" />
-                  <strong class="activity-block__title">{{ t("farms.table.headers.spraying_section") }}</strong>
+                  <div class="activity-block__header-left">
+                    <BaseIcon name="solar:shield-warning-bold" width="24" height="24" class="activity-block__icon" />
+                    <strong class="activity-block__title">{{ t("farms.table.headers.spraying_section") }}</strong>
+                  </div>
+                  <div class="activity-block__actions">
+                    <button class="activity-block__delete-btn" @click.stop="$emit('delete-activity', { dayDate: day.date, activityType: 'spraying' })">
+                      <BaseIcon name="solar:trash-bin-trash-bold" width="16" height="16" />
+                    </button>
+                    <button class="activity-block__edit-btn" @click.stop="$emit('edit-activity', { dayDate: day.date, activityType: 'spraying' })">
+                      <BaseIcon name="solar:pen-bold" width="16" height="16" />
+                    </button>
+                  </div>
                 </div>
                 <div class="activity-block__content">
                   <div class="activity-block__sub-item">
@@ -184,6 +207,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(["edit-activity", "delete-activity"]);
+
 const { t } = useI18n();
 
 // Collapsible state (Closed by default)
@@ -213,9 +238,7 @@ const hasIrrigation = (day) => {
       day.duration_of_irrigation_per_palm_tree !==
         t("farms.form.no_quantity")) ||
     (day.total_amount_of_irrigation &&
-      day.total_amount_of_irrigation !== t("farms.form.no_quantity")) ||
-    (day.total_duration_of_irrigation &&
-      day.total_duration_of_irrigation !== t("farms.form.no_quantity"))
+      day.total_amount_of_irrigation !== t("farms.form.no_quantity"))
   );
 };
 
@@ -430,9 +453,55 @@ const hasSpraying = (day) => {
   &__header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-    padding-bottom: 6px;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+
+  &__header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__edit-btn,
+  &__delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  &__edit-btn {
+    color: var(--blue-600);
+    &:hover {
+      background: #ffffff;
+      color: var(--blue-800);
+      transform: scale(1.05);
+    }
+  }
+
+  &__delete-btn {
+    color: var(--red-500);
+    &:hover {
+      background: #ffffff;
+      color: var(--red-700);
+      transform: scale(1.05);
+    }
   }
 
   &__title {
