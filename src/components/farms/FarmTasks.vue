@@ -135,9 +135,13 @@ import { useRouter } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks.store';
 import { useFarmsStore } from '@/stores/farms.store';
 
+import { useReportsStore } from '@/stores/reports.store';
+import { mergeReportActivitiesIntoTasks } from '@/helpers/taskMerger.helper';
+
 const router = useRouter();
 const farmsStore = useFarmsStore();
 const tasksStore = useTasksStore();
+const reportsStore = useReportsStore();
 
 const farms = ref([]);
 const loading = ref(true);
@@ -185,8 +189,14 @@ const groupTasksIntoCalendar = (tasks) => {
   const currentWeekNum = Math.ceil(currentDayOfMonth / 7);
 
   tasks.forEach(task => {
-    const dateObj = new Date(task.date);
-    const monthStr = task.date.substring(0, 7); 
+    const normalizedDate = task.date ? task.date.split('T')[0] : '';
+    if (!normalizedDate) return;
+    
+    // update task.date to be normalized so the UI works correctly
+    task.date = normalizedDate;
+
+    const dateObj = new Date(normalizedDate);
+    const monthStr = normalizedDate.substring(0, 7); 
     
     if (!calendarMap.has(monthStr)) {
       calendarMap.set(monthStr, {
@@ -199,13 +209,13 @@ const groupTasksIntoCalendar = (tasks) => {
     
     const monthObj = calendarMap.get(monthStr);
     
-    const taskDayStr = task.date.split('-')[2];
+    const taskDayStr = normalizedDate.split('-')[2];
     const dayOfMonth = parseInt(taskDayStr, 10);
     const weekNum = Math.ceil(dayOfMonth / 7);
     
     if (!monthObj.weeksMap.has(weekNum)) {
       const startDay = (weekNum - 1) * 7 + 1;
-      const endDay = Math.min(weekNum * 7, new Date(parseInt(task.date.split('-')[0]), parseInt(task.date.split('-')[1]), 0).getDate());
+      const endDay = Math.min(weekNum * 7, new Date(parseInt(normalizedDate.split('-')[0]), parseInt(normalizedDate.split('-')[1]), 0).getDate());
       const weekNames = { 1: 'الأول', 2: 'الثاني', 3: 'الثالث', 4: 'الرابع', 5: 'الخامس' };
       
       monthObj.weeksMap.set(weekNum, {
@@ -218,16 +228,16 @@ const groupTasksIntoCalendar = (tasks) => {
     
     const weekObj = monthObj.weeksMap.get(weekNum);
     
-    if (!weekObj.daysMap.has(task.date)) {
-      weekObj.daysMap.set(task.date, {
-        date: task.date,
+    if (!weekObj.daysMap.has(normalizedDate)) {
+      weekObj.daysMap.set(normalizedDate, {
+        date: normalizedDate,
         dayName: dateObj.toLocaleDateString('ar-SA', { weekday: 'long' }),
         tasksSummary: { irrigation: false, fertilization: false, spraying: false, other: false },
         tasks: []
       });
     }
     
-    const dayObj = weekObj.daysMap.get(task.date);
+    const dayObj = weekObj.daysMap.get(normalizedDate);
     
     if (task.task_type === 'irrigation') dayObj.tasksSummary.irrigation = true;
     else if (task.task_type === 'fertilization') dayObj.tasksSummary.fertilization = true;
@@ -256,7 +266,11 @@ watch([selectedFarmId, selectedPalmTypeId], async ([farmId, palmId]) => {
   if (farmId && palmId) {
     try {
       const response = await tasksStore.fetchRecords({ farm_id: farmId, palm_type_id: palmId, per_page: 1000 });
-      const tasksData = Array.isArray(response) ? response : (response.data || []);
+      let tasksData = Array.isArray(response) ? response : (response.data || []);
+      
+      // We no longer need to fetch reports and merge them here,
+      // because the backend now correctly creates these tasks in the tasks table.
+      
       activeCalendar.value = groupTasksIntoCalendar(tasksData);
       
       nextTick(() => {

@@ -35,27 +35,54 @@
               </div>
 
               <!-- Filter tabs with horizontal scroll -->
-              <div class="report-show__filters-wrapper">
-                <div class="report-show__filters">
-                  <button
-                    type="button"
-                    class="report-show__filter-btn"
-                    :class="{ 'report-show__filter-btn--active': selectedPalmTypeId === 'all' }"
-                    @click="selectedPalmTypeId = 'all'"
-                  >
-                    {{ "الكل" }}
-                  </button>
-                  <button
-                    v-for="type in palmTypesInfo"
-                    :key="type.id"
-                    type="button"
-                    class="report-show__filter-btn"
-                    :class="{ 'report-show__filter-btn--active': selectedPalmTypeId === type.id }"
-                    @click="selectedPalmTypeId = type.id"
-                  >
-                    <BaseIcon name="solar:leaf-linear" width="14" height="14" />
-                    {{ type.palm_type }}
-                  </button>
+              <div class="report-show__filters-container">
+                <div class="report-show__filters-wrapper">
+                  <div class="report-show__filters">
+                    <button
+                      type="button"
+                      class="report-show__filter-btn"
+                      :class="{ 'report-show__filter-btn--active': selectedPalmTypeId === 'all' }"
+                      @click="selectedPalmTypeId = 'all'"
+                    >
+                      {{ "الكل" }}
+                    </button>
+                    <button
+                      v-for="type in palmTypesInfo"
+                      :key="type.id"
+                      type="button"
+                      class="report-show__filter-btn"
+                      :class="{ 'report-show__filter-btn--active': selectedPalmTypeId === type.id }"
+                      @click="selectedPalmTypeId = type.id"
+                    >
+                      <BaseIcon name="solar:leaf-linear" width="14" height="14" />
+                      {{ type.palm_type }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Year Filter Tabs -->
+                <div v-if="availableYears.length > 0" class="report-show__filters-wrapper" style="margin-top: 12px;">
+                  <div class="report-show__filters">
+                    <button
+                      type="button"
+                      class="report-show__filter-btn"
+                      :class="{ 'report-show__filter-btn--active': selectedYear === 'all' }"
+                      @click="selectedYear = 'all'"
+                    >
+                      {{ "كل السنين" }}
+                    </button>
+                    <button
+                      v-for="year in availableYears"
+                      :key="year"
+                      type="button"
+                      class="report-show__filter-btn"
+                      :class="{ 'report-show__filter-btn--active': selectedYear === year }"
+                      @click="selectedYear = year"
+                    >
+                      <BaseIcon name="solar:calendar-date-outline" width="14" height="14" />
+                      {{ year }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -84,7 +111,7 @@
                 </div>
 
                 <!-- Accordion for Reports in this group -->
-                <BaseAccordion variant="splitted">
+                <BaseAccordion variant="splitted" selection-mode="multiple" :default-expanded-keys="currentMonthExpandedKeys">
                   <ReportAccordionItem
                     v-for="report in group.reports"
                     :key="report.id"
@@ -127,6 +154,16 @@
       :fertilizer-types="fertilizerTypesRecords"
       @save="handleSaveActivity"
     />
+
+    <DeleteActivityConfirmModal
+      ref="deleteActivityConfirmModalRef"
+      @confirm="handleConfirmDeleteActivity"
+    />
+
+    <AddDayModal
+      ref="addDayModalRef"
+      @save="onAddDaySave"
+    />
   </div>
 </template>
 
@@ -156,6 +193,8 @@ import ReportAccordionItem from "./components/ReportAccordionItem.vue";
 import BaseIcon from "@/components/shared/BaseIcon.vue";
 import EditDayActivityModal from "../Modals/EditDayActivityModal.vue";
 import DeleteFertilizationModal from "../Modals/DeleteFertilizationModal.vue";
+import DeleteActivityConfirmModal from "../Modals/DeleteActivityConfirmModal.vue";
+import AddDayModal from "../Modals/AddDayModal.vue";
 
 const farmsStore = useFarmsStore();
 const reportsStore = useReportsStore();
@@ -169,9 +208,12 @@ const exportingReportId = ref(null);
 const deleteReportModalRef = ref(null);
 const editDayActivityModalRef = ref(null);
 const deleteFertilizationModalRef = ref(null);
+const deleteActivityConfirmModalRef = ref(null);
+const addDayModalRef = ref(null);
 const fertilizerTypesRecords = ref([]);
 const pesticideTypesRecords = ref([]);
 const selectedPalmTypeId = ref("all");
+const selectedYear = ref(new Date().getFullYear());
 
 const currentRouteId = computed(() => route.params.id);
 
@@ -190,28 +232,65 @@ const palmTypesInfo = computed(() => {
 });
 
 const mappedReportsList = computed(() => {
-  return (reportsList.value || []).map((report) => {
+  const mapped = (reportsList.value || []).map((report) => {
     const startDate = report?.report_weeks?.[0]?.date;
+    const dateObj = startDate && !Number.isNaN(new Date(startDate).getTime()) ? new Date(startDate) : null;
 
     return {
       ...report,
       month:
-        startDate && !Number.isNaN(new Date(startDate).getTime())
-          ? new Intl.DateTimeFormat(locale.value, { month: "long" }).format(
-              new Date(startDate),
-            )
+        dateObj
+          ? new Intl.DateTimeFormat(locale.value, { month: "long" }).format(dateObj)
           : "-",
+      year: dateObj ? dateObj.getFullYear() : null,
+      dateObj: dateObj,
       farm_name: report?.farm?.name,
       palm_type_name: report?.palm_type?.name,
     };
   });
+
+  return mapped.sort((a, b) => {
+    const timeA = a.dateObj ? a.dateObj.getTime() : 0;
+    const timeB = b.dateObj ? b.dateObj.getTime() : 0;
+    return timeB - timeA; // Descending
+  });
+});
+
+const availableYears = computed(() => {
+  const years = new Set();
+  mappedReportsList.value.forEach((r) => {
+    if (r.year) years.add(r.year);
+  });
+  return Array.from(years).sort((a, b) => b - a);
+});
+
+const currentMonthExpandedKeys = computed(() => {
+  const keys = [];
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  mappedReportsList.value.forEach(report => {
+    if (report.dateObj && report.dateObj.getMonth() === currentMonth && report.dateObj.getFullYear() === currentYear) {
+      keys.push(String(report.id));
+    }
+  });
+  return keys;
+});
+
+const filteredReports = computed(() => {
+  let reports = mappedReportsList.value || [];
+  if (selectedYear.value !== "all") {
+    reports = reports.filter(r => String(r.year) === String(selectedYear.value));
+  }
+  return reports;
 });
 
 // Group reports by Palm Type ID
 const reportsGroupedByPalmType = computed(() => {
   const groups = {};
 
-  (mappedReportsList.value || []).forEach((report) => {
+  (filteredReports.value || []).forEach((report) => {
     const typeId = report.palm_type?.id || "unknown";
     const typeName = report.palm_type?.name || t("farms.table.headers.palm_type");
 
@@ -458,9 +537,79 @@ const handleReportAction = (report, action) => {
     case "delete":
       deleteReportModalRef.value.openModal(report);
       break;
+    case "add-day":
+      addDayModalRef.value.openModal(report.id, report.dateObj);
+      break;
     default:
       break;
   }
+};
+
+const onAddDaySave = async (payload) => {
+  const { reportId, date, activity, done, error } = payload;
+  
+  const report = reportsList.value.find((r) => r.id === reportId);
+  if (!report) return done();
+
+  let exists = false;
+  for (const w of report.report_weeks) {
+    if (w.days && w.days.some((d) => d.date === date)) {
+      exists = true;
+      break;
+    }
+  }
+  
+  if (exists) {
+    error("هذا اليوم موجود مسبقاً في التقرير");
+    return;
+  }
+
+  const newDay = {
+    date: date,
+    day: getDayNameFromDate(date),
+    irrigation_amount_per_palm_tree: "0",
+    duration_of_irrigation_per_palm_tree: "0",
+    total_amount_of_irrigation: "0",
+    spraying: "0",
+    amount_of_spray: "0",
+    fertilizations: [
+      {
+        type_of_fertilization: "0",
+        fertilizer_quantity_per_palm_tree: "0"
+      }
+    ]
+  };
+
+  let weekIndex = 0;
+  let dayIndex = 0;
+
+  if (report.report_weeks.length > 0) {
+    report.report_weeks[0].days.push(newDay);
+    weekIndex = 0;
+    dayIndex = report.report_weeks[0].days.length - 1;
+  } else {
+    report.report_weeks.push({
+      week_number: 1,
+      date: date,
+      days: [newDay]
+    });
+    weekIndex = 0;
+    dayIndex = 0;
+  }
+
+  // Close the AddDay modal
+  done();
+
+  // Give Vue a tick to process the close, then open EditDayActivityModal
+  setTimeout(() => {
+    editDayActivityModalRef.value?.openModal(
+      reportId,
+      weekIndex,
+      dayIndex,
+      newDay,
+      activity
+    );
+  }, 100);
 };
 
 const handleEditActivity = (payload, reportId) => {
@@ -530,35 +679,39 @@ const handleDeleteActivity = async (payload, reportId) => {
       foundDayData
     );
   } else {
-    // For irrigation and spraying, delete directly by setting to 0
-    const confirmDelete = window.confirm(
-      activityType === "irrigation" 
-        ? "هل أنت متأكد من حذف بيانات الري لهذا اليوم؟" 
-        : "هل أنت متأكد من حذف بيانات الرش لهذا اليوم؟"
-    );
-    
-    if (!confirmDelete) return;
-
-    const updatedDay = JSON.parse(JSON.stringify(foundDayData));
-    
-    if (activityType === "irrigation") {
-      updatedDay.irrigation_amount_per_palm_tree = "0";
-      updatedDay.duration_of_irrigation_per_palm_tree = "0";
-      updatedDay.total_amount_of_irrigation = "0";
-    } else if (activityType === "spraying") {
-      updatedDay.spraying = "0";
-      updatedDay.amount_of_spray = "0";
-      updatedDay.pesticide_type_id = null;
-    }
-
-    handleSaveActivity({
+    // For irrigation and spraying, open the new confirm modal
+    deleteActivityConfirmModalRef.value?.openModal(
       reportId,
-      weekIndex: foundWeekIndex,
-      dayIndex: foundDayIndex,
-      updatedDay,
-      done: () => {}
-    });
+      foundWeekIndex,
+      foundDayIndex,
+      foundDayData,
+      activityType
+    );
   }
+};
+
+const handleConfirmDeleteActivity = (payload) => {
+  const { reportId, weekIndex, dayIndex, dayData, activityType, done } = payload;
+
+  const updatedDay = JSON.parse(JSON.stringify(dayData));
+  
+  if (activityType === "irrigation") {
+    updatedDay.irrigation_amount_per_palm_tree = "0";
+    updatedDay.duration_of_irrigation_per_palm_tree = "0";
+    updatedDay.total_amount_of_irrigation = "0";
+  } else if (activityType === "spraying") {
+    updatedDay.spraying = "0";
+    updatedDay.amount_of_spray = "0";
+    updatedDay.pesticide_type_id = null;
+  }
+
+  handleSaveActivity({
+    reportId,
+    weekIndex,
+    dayIndex,
+    updatedDay,
+    done
+  });
 };
 
 const handleSaveActivity = async (payload) => {

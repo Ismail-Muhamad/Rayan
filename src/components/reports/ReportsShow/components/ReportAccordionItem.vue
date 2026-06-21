@@ -147,6 +147,12 @@ const actions = computed(() => [
     action: "download",
   },
   {
+    text: "إضافة يوم للتقرير",
+    icon: "solar:calendar-add-outline",
+    color: "green",
+    action: "add-day",
+  },
+  {
     text: t("reports.actions.edit"),
     icon: "basil:edit-outline",
     color: "blue",

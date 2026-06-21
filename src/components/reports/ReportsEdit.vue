@@ -637,7 +637,30 @@ const submitForm = async () => {
   v$.value.$validate();
   if (v$.value.$invalid) return;
 
-  await reportsStore.updateRecord(reportId.value, report.value);
+  const payloadToSave = JSON.parse(JSON.stringify(report.value));
+
+  payloadToSave.report_weeks = payloadToSave.report_weeks.map(week => {
+    week.days = week.days.filter(day => {
+      const hasFertilization = day.fertilizations && day.fertilizations.some(f => 
+        (f.type_of_fertilization && f.type_of_fertilization !== "0") || 
+        (f.fertilizer_quantity_per_palm_tree && f.fertilizer_quantity_per_palm_tree !== "0")
+      );
+      
+      const hasIrrigation = 
+        (day.irrigation_amount_per_palm_tree && day.irrigation_amount_per_palm_tree !== "0") || 
+        (day.duration_of_irrigation_per_palm_tree && day.duration_of_irrigation_per_palm_tree !== "0") || 
+        (day.total_amount_of_irrigation && day.total_amount_of_irrigation !== "0");
+        
+      const hasSpraying = 
+        (day.spraying && day.spraying !== "0") || 
+        (day.amount_of_spray && day.amount_of_spray !== "0");
+      
+      return hasFertilization || hasIrrigation || hasSpraying;
+    });
+    return week;
+  }).filter(week => week.days.length > 0);
+
+  await reportsStore.updateRecord(reportId.value, payloadToSave);
 };
 
 const resetForm = () => {

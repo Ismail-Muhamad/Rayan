@@ -172,10 +172,13 @@
 import { ref, computed, onMounted, onActivated } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks.store';
+import { useReportsStore } from '@/stores/reports.store';
+import { mergeReportActivitiesIntoTasks } from '@/helpers/taskMerger.helper';
 
 const route = useRoute();
 const router = useRouter();
 const tasksStore = useTasksStore();
+const reportsStore = useReportsStore();
 
 const dateParam = route.params.date;
 const farmIdParam = route.query.farmId;
@@ -188,9 +191,16 @@ const fetchTasks = async () => {
   loading.value = true;
   try {
     const response = await tasksStore.fetchRecords({ farm_id: farmIdParam, per_page: 500 });
-    const allTasks = Array.isArray(response) ? response : (response.data || []);
+    let allTasks = Array.isArray(response) ? response : (response.data || []);
     
-    const dayTasks = allTasks.filter(t => t.date === dateParam);
+    // We no longer need to fetch reports and merge them here,
+    // because the backend now correctly creates these tasks in the tasks table.
+    
+    const dayTasks = allTasks.filter(t => {
+      const normalizedDate = t.date ? t.date.split('T')[0] : '';
+      t.date = normalizedDate; // Normalize it on the object so UI renders cleanly
+      return normalizedDate === dateParam;
+    });
     
     if (dayTasks.length > 0) {
       const firstTask = dayTasks[0];
@@ -247,15 +257,8 @@ const fetchTasks = async () => {
         const calculatedTotalIrrigation = irrigationPerTree > 0 && palmCount > 0 ? irrigationPerTree * palmCount : '';
         qData.total_amount_of_irrigation = String(qData.total_amount_of_irrigation || qData.total_irrigation || qData.total_water || qData.total_water_quantity || calculatedTotalIrrigation || '');
 
+        // Remove filtering out tasks based on zero quantities since additional tasks might only have duration or type
         let shouldKeepTask = true;
-        if (task.task_type === 'irrigation' && irrigationPerTree === 0) {
-          shouldKeepTask = false;
-        } else if (task.task_type === 'spraying' && sprayPerTree === 0) {
-          shouldKeepTask = false;
-        } else if (task.task_type === 'fertilization' && fertilizerPerTree === 0) {
-          shouldKeepTask = false;
-        }
-
         if (!shouldKeepTask) return;
 
         palmTypesMap.get(palmTypeId).tasks.push({

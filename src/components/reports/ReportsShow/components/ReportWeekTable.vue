@@ -47,7 +47,57 @@
                 <BaseIcon name="solar:calendar-outline" width="22" height="22" class="day-activity-card__cal-icon" />
                 <span class="day-activity-card__day-name">{{ day.day }}</span>
               </div>
-              <span class="day-activity-card__date">{{ day.date }}</span>
+              
+              <div class="day-activity-card__header-actions">
+                <span class="day-activity-card__date">{{ day.date }}</span>
+                
+                <BaseButton
+                  dropdown
+                  :dropdownItems="[{}]"
+                  variant="soft"
+                  color="blue"
+                  size="icon-sm"
+                  class="day-activity-card__add-btn"
+                >
+                  <template #dropdown>
+                    <div class="day-activity-card__actions-dropdown">
+                      <BaseButton
+                        variant="soft"
+                        color="green"
+                        size="sm"
+                        class="day-activity-card__dropdown-item"
+                        @click="$emit('edit-activity', { dayDate: day.date, activityType: 'fertilization' })"
+                      >
+                        <BaseIcon name="solar:leaf-bold" width="16" height="16" />
+                        إضافة تسميد
+                      </BaseButton>
+                      <BaseButton
+                        v-if="!hasIrrigation(day)"
+                        variant="soft"
+                        color="blue"
+                        size="sm"
+                        class="day-activity-card__dropdown-item"
+                        @click="$emit('edit-activity', { dayDate: day.date, activityType: 'irrigation' })"
+                      >
+                        <BaseIcon name="solar:waterdrops-bold" width="16" height="16" />
+                        إضافة ري
+                      </BaseButton>
+                      <BaseButton
+                        v-if="!hasSpraying(day)"
+                        variant="soft"
+                        color="orange"
+                        size="sm"
+                        class="day-activity-card__dropdown-item"
+                        @click="$emit('edit-activity', { dayDate: day.date, activityType: 'spraying' })"
+                      >
+                        <BaseIcon name="solar:shield-warning-bold" width="16" height="16" />
+                        إضافة رش
+                      </BaseButton>
+                    </div>
+                  </template>
+                  <BaseIcon name="mdi:plus" width="18" height="18" />
+                </BaseButton>
+              </div>
             </div>
 
             <!-- Day Card Body -->
@@ -103,7 +153,7 @@
               >
                 <div class="activity-block__header">
                   <div class="activity-block__header-left">
-                    <BaseIcon name="solar:droplet-bold" width="24" height="24" class="activity-block__icon" />
+                    <BaseIcon name="solar:waterdrops-bold" width="24" height="24" class="activity-block__icon" />
                     <strong class="activity-block__title">{{ t("farms.table.headers.irrigation_section") }}</strong>
                   </div>
                   <div class="activity-block__actions">
@@ -199,6 +249,7 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseIcon from "@/components/shared/BaseIcon.vue";
+import BaseButton from "@/components/shared/BaseButton.vue";
 
 const props = defineProps({
   week: {
@@ -391,10 +442,38 @@ const hasSpraying = (day) => {
     color: var(--blue-800);
   }
 
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
   &__date {
     font-size: 1.45rem;
     font-weight: 600;
     color: var(--slate-500);
+  }
+
+  &__add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  &__actions-dropdown {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px;
+  }
+  
+  &__dropdown-item {
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    font-weight: 700;
+    font-size: 1.1rem;
+    white-space: nowrap;
   }
 
   &__body {
