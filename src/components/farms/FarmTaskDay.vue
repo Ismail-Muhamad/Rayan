@@ -524,6 +524,10 @@ const formatWeight = (valueInGrams) => {
   transition: all 0.3s;
   box-shadow: 0 4px 15px rgba(0,0,0,0.02);
 
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+
   &:hover {
     box-shadow: 0 12px 30px rgba(0,0,0,0.06);
     border-color: var(--gray-300);
@@ -554,6 +558,11 @@ const formatWeight = (valueInGrams) => {
     padding: 20px;
     gap: 16px;
     border-left: 1px dashed var(--gray-200);
+
+    @media (max-width: 768px) {
+      border-left: none;
+      border-bottom: 1px dashed var(--gray-200);
+    }
   }
 
   &__checkbox-wrap {
@@ -596,6 +605,10 @@ const formatWeight = (valueInGrams) => {
     padding: 20px;
     display: flex;
     flex-direction: column;
+
+    @media (max-width: 768px) {
+      width: 100%;
+    }
   }
 }
 

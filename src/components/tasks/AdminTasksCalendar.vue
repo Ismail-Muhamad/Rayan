@@ -108,16 +108,26 @@
           <!-- فلاتر أنواع النخيل داخل المزرعة -->
           <transition name="fade">
             <div v-if="selectedFarm && selectedFarm.palmTypes" class="tasks__palm-filters">
-              <button
-                v-for="palmType in selectedFarm.palmTypes"
-                :key="palmType.id"
-                class="palm-filter-btn"
-                :class="{ 'palm-filter-btn--active': selectedPalmTypeId === palmType.id }"
-                @click="selectedPalmTypeId = palmType.id"
-              >
-                <div class="palm-filter-btn__icon">🌴</div>
-                <div class="palm-filter-btn__name">نخيل {{ palmType.name }}</div>
-              </button>
+              <div class="palm-filters-group">
+                <button
+                  v-for="palmType in selectedFarm.palmTypes"
+                  :key="palmType.id"
+                  class="palm-filter-btn"
+                  :class="{ 'palm-filter-btn--active': selectedPalmTypeId === palmType.id }"
+                  @click="selectedPalmTypeId = palmType.id"
+                >
+                  <div class="palm-filter-btn__icon">🌴</div>
+                  <div class="palm-filter-btn__name">نخيل {{ palmType.name }}</div>
+                </button>
+              </div>
+
+              <div class="year-filter">
+                <BaseIcon name="solar:calendar-date-bold-duotone" class="year-icon" />
+                <select v-model="selectedYear" class="year-select">
+                  <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
+                </select>
+                <BaseIcon name="solar:alt-arrow-down-outline" class="dropdown-icon" />
+              </div>
             </div>
           </transition>
 
@@ -263,6 +273,10 @@ const selectedFarmId = ref('');
 const selectedPalmTypeId = ref('');
 const searchQuery = ref('');
 
+const selectedYear = ref(new Date().getFullYear());
+const availableYears = ref([new Date().getFullYear()]);
+const allFetchedTasks = ref([]);
+
 const selectedUser = computed(() => {
   return realUsers.value.find(u => u.id === selectedUserId.value) || null;
 });
@@ -405,33 +419,70 @@ const groupTasksIntoCalendar = (tasks) => {
   return calendar;
 };
 
+const updateCalendar = () => {
+  const year = selectedYear.value;
+  const filteredTasks = allFetchedTasks.value.filter(task => {
+    if (!task.date) return false;
+    return task.date.startsWith(year.toString());
+  });
+  
+  activeCalendar.value = groupTasksIntoCalendar(filteredTasks);
+  
+  nextTick(() => {
+    setTimeout(() => {
+      const openWeek = document.querySelector('.week-block--open');
+      if (openWeek) {
+        openWeek.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 400); // Wait for transitions and dom
+  });
+};
+
 watch([selectedFarmId, selectedPalmTypeId], async ([farmId, palmId]) => {
   if (farmId && palmId) {
     try {
       const response = await tasksStore.fetchRecords({ farm_id: farmId, palm_type_id: palmId, per_page: 1000 });
       let tasksData = Array.isArray(response) ? response : (response.data || []);
       
-      // We no longer need to fetch reports and merge them here,
-      // because the backend now correctly creates these tasks in the tasks table.
+      allFetchedTasks.value = tasksData;
       
-      activeCalendar.value = groupTasksIntoCalendar(tasksData);
-      
-      nextTick(() => {
-        setTimeout(() => {
-          const openWeek = document.querySelector('.week-block--open');
-          if (openWeek) {
-            openWeek.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 400); // Wait for transitions and dom
+      const yearsSet = new Set();
+      tasksData.forEach(task => {
+        if (task.date) {
+          const y = parseInt(task.date.substring(0, 4));
+          if (!isNaN(y)) yearsSet.add(y);
+        }
       });
+      
+      let yearsArray = Array.from(yearsSet).sort((a, b) => b - a);
+      const currentYear = new Date().getFullYear();
+      if (yearsArray.length === 0) {
+        yearsArray = [currentYear];
+      }
+      
+      availableYears.value = yearsArray;
+      
+      if (!yearsArray.includes(selectedYear.value)) {
+        selectedYear.value = yearsArray.includes(currentYear) ? currentYear : yearsArray[0];
+      }
+      
+      updateCalendar();
     } catch (error) {
       console.error("Error fetching tasks:", error);
       activeCalendar.value = [];
+      allFetchedTasks.value = [];
     }
   } else {
     activeCalendar.value = [];
+    allFetchedTasks.value = [];
   }
 }, { immediate: true });
+
+watch(selectedYear, (newYear, oldYear) => {
+  if (newYear !== oldYear) {
+    updateCalendar();
+  }
+});
 
 const goToDay = (date, userId, farmId, palmTypeId) => {
   router.push({ name: 'admin_task_calendar_day', params: { date }, query: { userId, farmId, palmTypeId } });
@@ -704,6 +755,63 @@ const isToday = (dateStr) => {
   padding: 8px 16px;
   border-radius: 12px;
   transition: all 0.2s;
+}
+
+.tasks__palm-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid var(--gray-200);
+}
+
+.palm-filters-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.year-filter {
+  display: flex;
+  align-items: center;
+  background: var(--blue-50);
+  border: 1px solid var(--blue-100);
+  border-radius: 14px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--blue-100);
+  }
+
+  .year-icon {
+    font-size: 1.4rem;
+    color: var(--blue-600);
+    margin-left: 8px; /* arabic RTL */
+  }
+
+  .dropdown-icon {
+    font-size: 1.2rem;
+    color: var(--blue-600);
+    margin-right: 8px;
+    pointer-events: none;
+  }
+
+  .year-select {
+    appearance: none;
+    background: transparent;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--blue-800);
+    outline: none;
+    cursor: pointer;
+  }
 }
 
 @keyframes glowToday {
