@@ -36,6 +36,10 @@
       "title": "الغاء تفعيل الحساب",
       "description": "هل انت متاكد من الغاء تفعيل حساب <strong>{name}</strong>"
     },
+    "suspended": {
+      "title": "إيقاف الحساب مؤقتاً",
+      "description": "هل انت متأكد من إيقاف حساب <strong>{name}</strong> مؤقتاً؟"
+    },
     "delete": {
       "title": "حذف الحساب",
       "description": "هل انت متاكد من حذف حساب <strong>{name}</strong>"
@@ -44,12 +48,14 @@
   "actions": {
     "active": "تفعيل الحساب",
     "rejected": "الغاء تفعيل الحساب",
+    "suspended": "إيقاف الحساب",
     "delete": "حذف الحساب",
     "cancel": "الغاء"
   },
   "status": {
     "active": "مفعل",
     "pending": "قيد الانتظار",
-    "rejected": "مرفوض"
+    "rejected": "مرفوض",
+    "suspended": "موقوف مؤقتاً"
   }
 }

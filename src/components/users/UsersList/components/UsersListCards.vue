@@ -101,24 +101,24 @@
               <span>عرض</span>
             </router-link>
 
-            <template v-if="['pending', 'rejected'].includes(item.status)">
+            <template v-if="['pending', 'rejected', 'suspended'].includes(item.status)">
               <button
                 type="button"
                 class="user-card__action-btn user-card__action-btn--accept"
                 @click="$emit('row-action', item, 'active')"
               >
                 <BaseIcon name="solar:check-circle-outline" width="18" height="18" />
-                <span>قبول</span>
+                <span>تفعيل</span>
               </button>
             </template>
 
             <template v-if="['active'].includes(item.status)">
               <button
                 type="button"
-                class="user-card__action-btn user-card__action-btn--reject"
-                @click="$emit('row-action', item, 'rejected')"
+                class="user-card__action-btn user-card__action-btn--suspended"
+                @click="$emit('row-action', item, 'suspended')"
               >
-                <BaseIcon name="solar:close-circle-outline" width="18" height="18" />
+                <BaseIcon name="solar:lock-keyhole-outline" width="18" height="18" />
                 <span>ايقاف</span>
               </button>
             </template>
@@ -291,6 +291,10 @@ const getInitials = (name) => {
     &--pending {
       background: #f59e0b;
     }
+
+    &--suspended {
+      background: #eab308;
+    }
   }
 
   &__body {
@@ -382,6 +386,12 @@ const getInitials = (name) => {
       background: #fff7ed;
       border-color: #fed7aa;
     }
+
+    &--suspended {
+      color: #854d0e;
+      background: #fefce8;
+      border-color: #fef08a;
+    }
   }
 
   &__dot {
@@ -403,6 +413,11 @@ const getInitials = (name) => {
     &--pending {
       background: #f59e0b;
       box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+    }
+
+    &--suspended {
+      background: #eab308;
+      box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.12);
     }
   }
 
@@ -532,7 +547,7 @@ const getInitials = (name) => {
       }
     }
 
-    &--reject {
+    &--suspended {
       background: rgba(245, 158, 11, 0.06);
       color: #d97706;
       border-color: rgba(245, 158, 11, 0.12);

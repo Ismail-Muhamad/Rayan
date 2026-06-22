@@ -23,8 +23,9 @@
         :type="inputTypeValue"
         :placeholder="placeholder"
         :value="modelValue"
-        :name="label"
-        autocomplete="off"
+        :name="name || label"
+        :autocomplete="autocomplete"
+        :inputmode="inputmode"
         :disabled="disabled"
         :readonly="readonly"
         @input="handleInputValueChange"
@@ -142,6 +143,19 @@ export default {
     },
     maxLength: {
       type: Number,
+      required: false,
+    },
+    name: {
+      type: String,
+      required: false,
+    },
+    autocomplete: {
+      type: String,
+      required: false,
+      default: "off",
+    },
+    inputmode: {
+      type: String,
       required: false,
     },
   },

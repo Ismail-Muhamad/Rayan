@@ -596,10 +596,11 @@ const handleStatusChanged = async () => {
   if (user && action === "active") {
     try {
       await sendAccountApprovedWhatsAppMessage(user);
-      toast.success("تم قبول الحساب وإرسال رسالة واتساب للعميل.");
+      toast.success("تم إرسال رسالة الترحيب على الواتساب للعميل.");
     } catch (error) {
       console.error("Failed to send account approved WhatsApp message:", error);
-      toast.warning("تم قبول الحساب، لكن فشل إرسال رسالة الواتساب.");
+      const errorMsg = error?.response?.data?.message || error?.message || "مجهول";
+      toast.warning(`تم قبول الحساب، لكن فشل الواتساب. السبب: ${errorMsg}`);
     }
   }
 

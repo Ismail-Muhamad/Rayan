@@ -1,4 +1,5 @@
 import APIClient from "@/api/apiClient.api";
+import axiosClient from "@/api/axiosClient";
 
 class WhatsAppTemplatesServices extends APIClient {
   constructor() {
@@ -10,7 +11,7 @@ class WhatsAppTemplatesServices extends APIClient {
   }
 
   sendAccountApproved(data) {
-    return this.create(data, {}, "account-approved");
+    return axiosClient.post(`${this.url}/account-approved`, data, { hideErrorToast: true });
   }
 }
 

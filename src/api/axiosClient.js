@@ -92,13 +92,31 @@ axiosClient.interceptors.response.use(
     // Process response data before returning
     response,
   (error) => {
+    // Check if the request config specifies to hide the global error toast
+    if (error?.config?.hideErrorToast) {
+      return Promise.reject(error);
+    }
+
     const errorMessage = serverErrorHandler(error);
     // if user not activated and try to access login page
     if (
       error?.response?.status === 403 &&
       router.currentRoute.value.name === "login"
     ) {
-      toast.warning(i18n.global.t("auth.login.messages.pending"));
+      const errorMsg = error?.response?.data?.message || "";
+      const isRejected = errorMsg.toLowerCase().includes("rejected");
+      const isSuspended = errorMsg.toLowerCase().includes("suspended");
+      
+      let toastMsg = i18n.global.t("auth.login.messages.pending");
+      if (isRejected) toastMsg = i18n.global.t("auth.login.messages.rejected");
+      if (isSuspended) toastMsg = i18n.global.t("auth.login.messages.suspended");
+
+      toast.warning(toastMsg);
+    } else if (
+      error?.response?.status === 401 &&
+      router.currentRoute.value.name === "login"
+    ) {
+      toast.error(i18n.global.t("auth.login.messages.invalid_credentials"));
     } else {
       toast.error(errorMessage);
     }

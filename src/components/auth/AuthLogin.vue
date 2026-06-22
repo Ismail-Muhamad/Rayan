@@ -12,6 +12,22 @@
             <p class="auth-card__message">{{ t("auth.login.message") }}</p>
           </div>
 
+          <div 
+            v-if="accountStatusMessage" 
+            class="auth-card__alert"
+            :class="[
+              accountStatusType === 'rejected' ? 'auth-card__alert--rejected' : '',
+              accountStatusType === 'suspended' ? 'auth-card__alert--suspended' : ''
+            ]"
+          >
+            <BaseIcon 
+              :name="accountStatusType === 'rejected' ? 'solar:close-circle-bold' : (accountStatusType === 'suspended' ? 'solar:lock-keyhole-bold' : 'solar:danger-triangle-bold')" 
+              :width="24" 
+              :height="24" 
+            />
+            <p>{{ accountStatusMessage }}</p>
+          </div>
+
           <form class="auth-card__form" @submit.prevent="handleSubmit">
             <div class="auth-card__control">
               <BaseInput
@@ -115,25 +131,52 @@ const heroStyle = computed(() => ({
   backgroundImage: `url(${authBg})`,
 }));
 
+const accountStatusMessage = ref(null);
+const accountStatusType = ref("pending"); // "pending" or "rejected"
+
 const handleSubmit = async () => {
   v$.value.$touch();
-  if (v$.value.$invalid || uiFlags.value.isCreating) return;
+  if (v$.value.$invalid || uiFlags.value.isSubmitting) return;
 
-  await authStore.login(loginForm.value);
+  accountStatusMessage.value = null;
 
-  if (isAuthenticated.value) {
-    let defaultRedirect = "/dashboard";
+  try {
+    await authStore.login(loginForm.value);
 
-    if (authStore.userData?.role === "farm_owner") {
-      defaultRedirect = "/farms";
+    if (isAuthenticated.value) {
+      let defaultRedirect = "/dashboard";
+
+      if (authStore.userData?.role === "farm_owner") {
+        defaultRedirect = "/farms";
+      }
+
+      if (authStore.userData?.role === "admin_assistant") {
+        defaultRedirect = "/reports/list";
+      }
+
+      const redirect = route.query.redirect || defaultRedirect;
+      router.push(redirect);
     }
-
-    if (authStore.userData?.role === "admin_assistant") {
-      defaultRedirect = "/reports/list";
+  } catch (error) {
+    if (error?.response?.status === 403) {
+      const errorMsg = error?.response?.data?.message || "";
+      const isRejected = errorMsg.toLowerCase().includes("rejected");
+      const isSuspended = errorMsg.toLowerCase().includes("suspended");
+      
+      if (isRejected) {
+        accountStatusType.value = "rejected";
+        accountStatusMessage.value = t("auth.login.messages.rejected");
+      } else if (isSuspended) {
+        accountStatusType.value = "suspended";
+        accountStatusMessage.value = t("auth.login.messages.suspended");
+      } else {
+        accountStatusType.value = "pending";
+        accountStatusMessage.value = t("auth.login.messages.pending");
+      }
+    } else if (error?.response?.status === 401) {
+      accountStatusType.value = "rejected"; // Use the same red styling for invalid credentials
+      accountStatusMessage.value = t("auth.login.messages.invalid_credentials");
     }
-
-    const redirect = route.query.redirect || defaultRedirect;
-    router.push(redirect);
   }
 };
 
@@ -281,10 +324,53 @@ const navigateToRegister = () => {
     }
   }
 
+  &__alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: #fff7ed;
+    color: #c2410c;
+    padding: 16px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    border: 1px solid #ffedd5;
+    animation: fadeInDown 0.3s ease-out;
+
+    p {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    &--rejected {
+      background-color: #fef2f2;
+      color: #b91c1c;
+      border-color: #fee2e2;
+    }
+
+    &--suspended {
+      background-color: #fefce8;
+      color: #854d0e;
+      border-color: #fef08a;
+    }
+  }
+
   &__actions {
     display: grid;
     gap: 14px;
     margin-top: 28px;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
