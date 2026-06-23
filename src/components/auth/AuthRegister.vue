@@ -22,56 +22,46 @@
                 :placeholder="t('auth.register.form.placeholders.full_name')"
                 :error="isFieldHasError(v$.registerForm.name)"
                 :error-text="getFieldErrorMessage(v$.registerForm.name)"
-                required
-                type="text"
-                name="name"
                 autocomplete="name"
+                required
               />
             </div>
 
-            <div class="register-card__grid">
-              <div class="register-card__control">
-                <BaseInput
-                  v-model="registerForm.email"
-                  :label="t('auth.register.form.labels.email')"
-                  :placeholder="t('auth.register.form.placeholders.email')"
-                  :error="isFieldHasError(v$.registerForm.email)"
-                  :error-text="getFieldErrorMessage(v$.registerForm.email)"
-                  required
-                  type="email"
-                  name="email"
-                  autocomplete="email"
-                  inputmode="email"
-                />
-              </div>
+            <div class="register-card__control">
+              <BaseInput
+                v-model="registerForm.whatsapp_number"
+                :label="t('auth.register.form.labels.whatsapp_number')"
+                :placeholder="t('auth.register.form.placeholders.whatsapp_number')"
+                :error="isFieldHasError(v$.registerForm.whatsapp_number)"
+                :error-text="getFieldErrorMessage(v$.registerForm.whatsapp_number)"
+                autocomplete="tel"
+                required
+                type="number"
+              />
+            </div>
 
-              <div class="register-card__control">
-                <BaseInput
-                  v-model="registerForm.whatsapp_number"
-                  :label="t('auth.register.form.labels.whatsapp_number')"
-                  :placeholder="t('auth.register.form.placeholders.whatsapp_number')"
-                  :error="isFieldHasError(v$.registerForm.whatsapp_number)"
-                  :error-text="getFieldErrorMessage(v$.registerForm.whatsapp_number)"
-                  required
-                  type="tel"
-                  name="whatsapp_number"
-                  autocomplete="tel"
-                  inputmode="tel"
-                />
-              </div>
+            <div class="register-card__control">
+              <BaseInput
+                v-model="registerForm.email"
+                :label="t('auth.register.form.labels.email')"
+                :placeholder="t('auth.register.form.placeholders.email')"
+                :error="isFieldHasError(v$.registerForm.email)"
+                :error-text="getFieldErrorMessage(v$.registerForm.email)"
+                autocomplete="email"
+                required
+              />
             </div>
 
             <div class="register-card__control">
               <BaseInput
                 v-model="registerForm.password"
-                :label="t('auth.register.form.labels.password')"
+                label="إنشاء كلمة المرور"
                 :placeholder="t('auth.register.form.placeholders.password')"
                 :error="isFieldHasError(v$.registerForm.password)"
                 :error-text="getFieldErrorMessage(v$.registerForm.password)"
+                autocomplete="new-password"
                 required
                 type="password"
-                name="password"
-                autocomplete="new-password"
               />
             </div>
 
@@ -124,9 +114,6 @@
                               :error="isFieldHasError(farmV.name)"
                               :error-text="getFieldErrorMessage(farmV.name)"
                               required
-                              type="text"
-                              name="farm_name"
-                              autocomplete="off"
                             />
                           </div>
 
@@ -138,9 +125,6 @@
                               :error="isFieldHasError(farmV.location)"
                               :error-text="getFieldErrorMessage(farmV.location)"
                               required
-                              type="text"
-                              name="farm_location"
-                              autocomplete="off"
                             />
                           </div>
                         </div>
@@ -166,9 +150,6 @@
                                         :error="isFieldHasError(palmV.name)"
                                         :error-text="getFieldErrorMessage(palmV.name)"
                                         required
-                                        type="text"
-                                        name="palm_type_name"
-                                        autocomplete="off"
                                       />
                                     </div>
                                     <div class="palm-type-row__control">
@@ -179,9 +160,6 @@
                                         :error="isFieldHasError(palmV.number_of_trees)"
                                         :error-text="getFieldErrorMessage(palmV.number_of_trees)"
                                         required
-                                        type="number"
-                                        name="palm_type_number_of_trees"
-                                        inputmode="numeric"
                                       />
                                     </div>
                                     <div class="palm-type-row__control">
@@ -192,9 +170,6 @@
                                         :error="isFieldHasError(palmV.palm_age)"
                                         :error-text="getFieldErrorMessage(palmV.palm_age)"
                                         required
-                                        type="number"
-                                        name="palm_age"
-                                        inputmode="numeric"
                                       />
                                     </div>
                                   </div>
@@ -596,7 +571,7 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
     display: grid;
     gap: 14px;
     margin-top: 30px;
-    padding-bottom: 4px;
+    padding-bottom: 32px;
   }
 }
 
@@ -856,17 +831,6 @@ const removePalmType = (farmIndex, palmTypeIndex) => {
 
   &:hover {
     background: rgba(59, 130, 246, 0.08);
-  }
-}
-
-@keyframes slideDownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

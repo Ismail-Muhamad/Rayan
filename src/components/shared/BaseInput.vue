@@ -315,7 +315,6 @@ export default {
     &:-webkit-autofill:focus,
     &:-webkit-autofill:active {
       -webkit-text-fill-color: var(--gray-900) !important;
-      -webkit-box-shadow: 0 0 0 30px var(--white) inset !important;
       transition: background-color 5000s ease-in-out 0s;
     }
   }
