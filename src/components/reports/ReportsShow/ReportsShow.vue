@@ -844,14 +844,21 @@ const handleSaveActivity = async (payload) => {
     color: var(--blue-800);
   }
 
-  &__filters-wrapper {
+  &__filters-container {
     display: flex;
-    overflow: hidden;
+    flex-direction: column;
     max-width: 100%;
-    
+    overflow: hidden; /* Ensure it doesn't cause page overflow */
+
     @media (max-width: 768px) {
       width: 100%;
     }
+  }
+
+  &__filters-wrapper {
+    display: flex;
+    max-width: 100%;
+    width: 100%;
   }
 
   &__filters {

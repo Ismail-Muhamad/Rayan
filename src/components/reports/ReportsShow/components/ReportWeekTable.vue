@@ -15,6 +15,9 @@
         </div>
         <h3 class="report-week-card__title">
           {{ t(`farms.form.options.week_number.${week.week_number}`) }}
+          <span v-if="weekDateRange" class="report-week-card__date-range">
+            {{ weekDateRange }}
+          </span>
         </h3>
       </div>
 
@@ -246,7 +249,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseIcon from "@/components/shared/BaseIcon.vue";
 import BaseButton from "@/components/shared/BaseButton.vue";
@@ -264,6 +267,39 @@ const { t } = useI18n();
 
 // Collapsible state (Closed by default)
 const isOpen = ref(false);
+
+const weekDateRange = computed(() => {
+  if (!props.week.days || props.week.days.length === 0) return "";
+  
+  const getDayStr = (dateStr) => {
+    if (!dateStr) return "";
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      return parseInt(parts[2], 10);
+    }
+    return "";
+  };
+
+  const dates = [...props.week.days].sort((a, b) => {
+    const dateA = a.date || "";
+    const dateB = b.date || "";
+    return dateA.localeCompare(dateB);
+  });
+  
+  const startDayNum = getDayStr(dates[0].date);
+  const startDayName = dates[0].day || "";
+  
+  const endDayNum = getDayStr(dates[dates.length - 1].date);
+  const endDayName = dates[dates.length - 1].day || "";
+  
+  if (startDayNum && endDayNum) {
+    if (startDayNum === endDayNum) {
+      return `(يوم ${startDayName} ${startDayNum})`;
+    }
+    return `(من ${startDayNum} يوم ${startDayName} إلى ${endDayNum} يوم ${endDayName})`;
+  }
+  return "";
+});
 
 const hasFertilization = (day) => {
   return (
@@ -365,6 +401,16 @@ const hasSpraying = (day) => {
     font-size: 1.9rem;
     font-weight: 800;
     color: var(--blue-700);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__date-range {
+    font-size: 1.45rem;
+    font-weight: 600;
+    color: var(--slate-500);
   }
 
   &__days-badge {

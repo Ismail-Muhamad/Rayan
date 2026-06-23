@@ -1,6 +1,6 @@
 <template>
-  <section class="palm-types-list">
-    <div class="palm-types-list__head">
+  <section class="palm-types-list" :class="{ 'palm-types-list--open': isOpen }">
+    <button type="button" class="palm-types-list__head" @click="isOpen = !isOpen">
       <div class="palm-types-list__title-wrapper">
         <div class="palm-types-list__title-icon">
           <BaseIcon name="solar:leaf-bold" width="22" height="22" />
@@ -9,9 +9,17 @@
           {{ t("farms.table.headers.palm_types") }}
         </h2>
       </div>
-    </div>
+      <BaseIcon 
+        name="solar:alt-arrow-down-outline" 
+        width="24" 
+        height="24" 
+        class="palm-types-list__chevron" 
+      />
+    </button>
 
-    <div class="palm-types-list__grid">
+    <transition name="fade-slide">
+      <div v-show="isOpen" class="palm-types-list__body">
+        <div class="palm-types-list__grid">
       <div
         v-for="(type, idx) in palmTypesInfo"
         :key="idx"
@@ -41,11 +49,14 @@
           </strong>
         </div>
       </div>
-    </div>
+        </div>
+      </div>
+    </transition>
   </section>
 </template>
 
 <script setup>
+import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseIcon from "@/components/shared/BaseIcon.vue";
 
@@ -57,6 +68,14 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+
+const isOpen = ref(true);
+
+onMounted(() => {
+  if (typeof window !== "undefined" && window.innerWidth <= 768) {
+    isOpen.value = false;
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -68,7 +87,31 @@ const { t } = useI18n();
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
 
   &__head {
-    margin-bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: start;
+    outline: none;
+    padding: 0;
+  }
+
+  &__chevron {
+    color: var(--slate-400);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .palm-types-list--open & {
+      transform: rotate(180deg);
+      color: var(--blue-600);
+    }
+  }
+
+  &__body {
+    padding-top: 20px;
+    width: 100%;
   }
 
   &__title-wrapper {
@@ -211,5 +254,17 @@ const { t } = useI18n();
       padding: 16px;
     }
   }
+}
+
+// Fade & Slide transition animation
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
