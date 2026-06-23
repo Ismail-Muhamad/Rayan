@@ -10,19 +10,24 @@
       />
 
       <div v-else-if="selectedReport" class="report-show__content">
-        <section class="report-show__hero">
+        <section class="report-show__hero glass-panel">
           <div class="report-show__hero-bg"></div>
+          <div class="report-show__hero-blobs">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+            <div class="blob blob-3"></div>
+          </div>
 
           <div class="report-show__hero-content">
-            <div class="report-show__hero-top">
-              <span class="report-show__status-pill">
+            <div class="report-show__hero-top fade-in-up">
+              <span class="report-show__status-pill frosted">
+                <div class="pulse-dot"></div>
                 <BaseIcon name="solar:verified-check-bold" />
                 التقرير جاهز
               </span>
 
               <BaseButton
-                color="blue"
-                variant="outline"
+                class="frosted-btn"
                 size="sm"
                 @click="router.push({ name: 'show_farm', params: { id: currentFarmId } })"
               >
@@ -31,19 +36,17 @@
               </BaseButton>
             </div>
 
-            <div class="report-show__main-title">
+            <div class="report-show__main-title fade-in-up delay-1">
               <p class="report-show__eyebrow">تقرير مهام الشهر</p>
-
               <h1>{{ reportMonthLabel }}</h1>
-
               <p>
                 جدول الري والتسميد والرش الخاص بمزرعة
                 <strong>{{ farmRecord?.name || selectedReport?.farm?.name || '--' }}</strong>
               </p>
             </div>
 
-            <div class="report-show__hero-cards">
-              <article class="report-show__mini-card">
+            <div class="report-show__hero-cards fade-in-up delay-2">
+              <article class="report-show__mini-card frosted">
                 <div class="report-show__mini-icon">
                   <BaseIcon name="tabler:trees" />
                 </div>
@@ -53,7 +56,7 @@
                 </div>
               </article>
 
-              <article class="report-show__mini-card">
+              <article class="report-show__mini-card frosted">
                 <div class="report-show__mini-icon">
                   <BaseIcon name="solar:calendar-outline" />
                 </div>
@@ -63,7 +66,7 @@
                 </div>
               </article>
 
-              <article class="report-show__mini-card">
+              <article class="report-show__mini-card frosted">
                 <div class="report-show__mini-icon">
                   <BaseIcon name="solar:leaf-outline" />
                 </div>
@@ -76,10 +79,10 @@
           </div>
         </section>
 
-        <section class="report-show__summary-grid">
-          <article class="report-show__summary-card">
+        <section class="report-show__summary-grid fade-in-up delay-3">
+          <article class="report-show__summary-card float-hover">
             <div class="report-show__section-head">
-              <div class="report-show__section-icon">
+              <div class="report-show__section-icon icon-blue">
                 <BaseIcon name="solar:document-text-outline" />
               </div>
               <div>
@@ -87,15 +90,14 @@
                 <h3>ملخص حالة المزرعة</h3>
               </div>
             </div>
-
             <p class="report-show__summary-text">
               {{ stripHtml(selectedReport?.review) || 'لا توجد مراجعة لهذا التقرير.' }}
             </p>
           </article>
 
-          <article class="report-show__summary-card">
+          <article class="report-show__summary-card float-hover">
             <div class="report-show__section-head">
-              <div class="report-show__section-icon">
+              <div class="report-show__section-icon icon-emerald">
                 <BaseIcon name="solar:lightbulb-bolt-outline" />
               </div>
               <div>
@@ -103,7 +105,6 @@
                 <h3>إرشادات الشهر</h3>
               </div>
             </div>
-
             <p class="report-show__summary-text">
               {{
                 stripHtml(selectedReport?.recommendations) ||
@@ -113,7 +114,7 @@
           </article>
         </section>
 
-        <section class="report-show__weeks-section">
+        <section class="report-show__weeks-section fade-in-up delay-4">
           <div class="report-show__weeks-head">
             <div>
               <p>تفاصيل المهام</p>
@@ -123,6 +124,7 @@
             <BaseButton
               color="blue"
               size="sm"
+              class="download-btn shadow-hover"
               :isLoading="exportingReportId === selectedReport.id"
               @click="handleDownloadReport(selectedReport)"
             >
@@ -136,10 +138,11 @@
               v-for="week in mappedWeeks"
               :key="week.id"
               class="report-show__week-card"
+              :class="{ 'is-open': openedWeeks.includes(week.id) }"
             >
               <button
                 type="button"
-                class="report-show__week-main"
+                class="report-show__week-main ripple"
                 @click="toggleWeek(week.id)"
               >
                 <div class="report-show__week-number">
@@ -150,122 +153,115 @@
                   <h3>
                     {{ t(`farms.form.options.week_number.${week.week_number}`) }}
                   </h3>
-
                   <p>{{ getWeekRangeLabel(week) }}</p>
                 </div>
 
                 <div class="report-show__week-meta">
                   <span>{{ week.days.length }} أيام</span>
-                  <BaseIcon
-                    :name="
-                      openedWeeks.includes(week.id)
-                        ? 'solar:alt-arrow-up-outline'
-                        : 'solar:alt-arrow-down-outline'
-                    "
-                  />
+                  <div class="arrow-icon">
+                    <BaseIcon name="solar:alt-arrow-down-outline" />
+                  </div>
                 </div>
               </button>
 
-              <div
-                v-if="openedWeeks.includes(week.id)"
-                class="report-show__days-list"
-              >
-                <article
-                  v-for="day in week.days"
-                  :key="day.id"
-                  class="report-show__day-card"
-                >
-                  <div class="report-show__day-head">
-                    <div>
-                      <span>{{ day.day }}</span>
-                      <strong>{{ formatDayDate(day.date) }}</strong>
+              <div class="report-show__days-wrapper">
+                <div class="report-show__days-list">
+                  <article
+                    v-for="day in week.days"
+                    :key="day.id"
+                    class="report-show__day-card"
+                    :class="{ 'is-open': openedDays.includes(day.id) }"
+                  >
+                    <button type="button" class="report-show__day-main ripple" @click="toggleDay(day.id)">
+                      <div class="report-show__day-head">
+                        <div>
+                          <span>{{ day.day }}</span>
+                          <strong>{{ formatDayDate(day.date) }}</strong>
+                        </div>
+                      </div>
+                      <div class="day-arrow">
+                        <BaseIcon name="solar:alt-arrow-down-outline" />
+                      </div>
+                    </button>
+
+                    <div class="report-show__tasks-wrapper">
+                      <div class="report-show__tasks-inner">
+                        <div class="report-show__tasks-grid">
+                          <!-- الري -->
+                          <div
+                            v-if="day.irrigation_amount_per_palm_tree !== t('farms.form.no_quantity')"
+                            class="report-show__task-box report-show__task-box--water float-hover-light"
+                          >
+                            <div class="report-show__task-icon icon-water">
+                              <BaseIcon name="solar:waterdrops-outline" />
+                            </div>
+                            <div class="report-show__task-content">
+                              <p>الري</p>
+                              <h4>{{ day.irrigation_amount_per_palm_tree }}</h4>
+                              <span>الإجمالي: {{ day.total_amount_of_irrigation }}</span>
+                            </div>
+                          </div>
+
+                          <!-- التسميد (يدعم المتعدد) -->
+                          <template v-if="day.fertilizations?.length">
+                            <div
+                              v-for="(fert, index) in day.fertilizations"
+                              :key="`fert-${index}`"
+                              class="report-show__task-box report-show__task-box--fertilizer float-hover-light"
+                            >
+                              <div class="report-show__task-icon icon-fert">
+                                <BaseIcon name="solar:leaf-outline" />
+                              </div>
+                              <div class="report-show__task-content">
+                                <p>التسميد {{ day.fertilizations.length > 1 ? (index + 1) : '' }}</p>
+                                <h4>{{ fert.type_of_fertilization }}</h4>
+                                <span>للنخلة: {{ fert.fertilizer_quantity_per_palm_tree }}</span>
+                              </div>
+                            </div>
+                          </template>
+
+                          <!-- الرش -->
+                          <div
+                            v-if="day.spraying !== t('farms.form.no_quantity')"
+                            class="report-show__task-box report-show__task-box--spray float-hover-light"
+                          >
+                            <div class="report-show__task-icon icon-spray">
+                              <BaseIcon name="solar:test-tube-outline" />
+                            </div>
+                            <div class="report-show__task-content">
+                              <p>الرش</p>
+                              <h4>{{ day.spraying }}</h4>
+                              <span>الكمية: {{ day.amount_of_spray }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-
-                  <div class="report-show__tasks-grid">
-                    <div class="report-show__task-box report-show__task-box--water">
-                      <div class="report-show__task-icon">
-                        <BaseIcon name="solar:drop-outline" />
-                      </div>
-
-                      <div>
-                        <p>الري</p>
-                        <h4>{{ day.irrigation_amount_per_palm_tree }}</h4>
-                        <span>
-                          الإجمالي:
-                          {{ day.total_amount_of_irrigation }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="report-show__task-box report-show__task-box--fertilizer">
-                      <div class="report-show__task-icon">
-                        <BaseIcon name="solar:leaf-outline" />
-                      </div>
-
-                      <div>
-                        <p>التسميد</p>
-
-                        <template v-if="day.fertilizations?.length">
-                          <h4>
-                            {{ day.fertilizations[0].type_of_fertilization }}
-                          </h4>
-                          <span>
-                            للنخلة:
-                            {{
-                              day.fertilizations[0]
-                                .fertilizer_quantity_per_palm_tree
-                            }}
-                          </span>
-                        </template>
-
-                        <template v-else>
-                          <h4>{{ t('farms.form.no_quantity') }}</h4>
-                        </template>
-                      </div>
-                    </div>
-
-                    <div class="report-show__task-box report-show__task-box--spray">
-                      <div class="report-show__task-icon">
-                        <BaseIcon name="solar:test-tube-outline" />
-                      </div>
-
-                      <div>
-                        <p>الرش</p>
-                        <h4>{{ day.spraying }}</h4>
-                        <span>
-                          الكمية:
-                          {{ day.amount_of_spray }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
+                  </article>
+                </div>
               </div>
             </article>
           </div>
 
-          <div v-else class="report-show__empty">
-            <div>
+          <div v-else class="report-show__empty glass-empty fade-in-up delay-4">
+            <div class="empty-icon-wrap">
               <BaseIcon name="solar:calendar-minimalistic-outline" />
             </div>
-
             <h3>لا توجد مهام ظاهرة لهذا الشهر</h3>
             <p>قد يكون التقرير موجودًا، لكن لا توجد أيام بها ري أو تسميد أو رش.</p>
           </div>
         </section>
       </div>
 
-      <div v-else class="report-show__empty report-show__empty--page">
-        <div>
+      <div v-else class="report-show__empty report-show__empty--page glass-empty">
+        <div class="empty-icon-wrap danger">
           <BaseIcon name="solar:danger-triangle-outline" />
         </div>
-
         <h3>التقرير غير موجود</h3>
         <p>تأكد من رابط التقرير أو رقم التقرير المرسل في رسالة الواتساب.</p>
-
         <BaseButton
           color="blue"
+          class="frosted-btn frosted-btn--dark shadow-hover"
           @click="router.push({ name: 'show_farm', params: { id: currentFarmId } })"
         >
           الرجوع للمزرعة
@@ -293,6 +289,15 @@ const { t, locale } = useI18n();
 
 const exportingReportId = ref(null);
 const openedWeeks = ref([]);
+const openedDays = ref([]);
+
+const toggleDay = (dayId) => {
+  if (openedDays.value.includes(dayId)) {
+    openedDays.value = openedDays.value.filter((id) => id !== dayId);
+    return;
+  }
+  openedDays.value = [...openedDays.value, dayId];
+};
 
 const { record: farmRecord, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
 const { records: reportsList, uiFlags: reportsUiFlags } =
@@ -549,25 +554,135 @@ onMounted(async () => {
 </script>
 
 <style lang="scss" scoped>
+/*
+  =========================================
+  Premium Glassmorphism & UI Enhancements
+  =========================================
+*/
+
+/* --- Variables & Core Utilities --- */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --glass-blur: blur(12px);
+  --primary-gradient: linear-gradient(135deg, #0f2f5f, #0b63c7);
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-purple: #8b5cf6;
+}
+
 .report-show {
+  --anim-speed: 0.4s;
+  --anim-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
   &__content {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 24px;
+    position: relative;
+    z-index: 1;
   }
 
+  /* --- Animations --- */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulseDot {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+    }
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
+
+  @keyframes blobMove1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+  }
+
+  @keyframes blobMove2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-30px, 40px) scale(1.2); }
+    66% { transform: translate(20px, -20px) scale(0.8); }
+  }
+
+  .fade-in-up {
+    animation: fadeInUp var(--anim-speed) var(--anim-ease) forwards;
+    opacity: 0;
+  }
+
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+
+  /* --- Hero Section --- */
   &__hero {
     position: relative;
     overflow: hidden;
-    border-radius: 34px;
-    padding: 18px;
-    min-height: 360px;
-    background:
-      radial-gradient(circle at top right, rgba(37, 99, 235, 0.32), transparent 34%),
-      radial-gradient(circle at bottom left, rgba(14, 165, 233, 0.22), transparent 34%),
-      linear-gradient(145deg, #06172f, #0f2f5f 52%, #0b63c7);
-    box-shadow: 0 24px 70px rgba(15, 47, 95, 0.25);
+    border-radius: 32px;
+    padding: 32px;
+    min-height: 380px;
+    background: #0f172a;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
     color: white;
+    isolation: isolate;
+
+    &.glass-panel {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  &__hero-blobs {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    filter: blur(60px);
+    opacity: 0.6;
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      animation: 10s infinite alternate ease-in-out;
+    }
+
+    .blob-1 {
+      top: -10%; left: -10%; width: 50%; height: 60%;
+      background: radial-gradient(circle, #3b82f6, transparent);
+      animation-name: blobMove1;
+    }
+
+    .blob-2 {
+      bottom: -20%; right: -10%; width: 60%; height: 70%;
+      background: radial-gradient(circle, #0ea5e9, transparent);
+      animation-name: blobMove2;
+    }
+
+    .blob-3 {
+      top: 40%; left: 40%; width: 40%; height: 40%;
+      background: radial-gradient(circle, #6366f1, transparent);
+      opacity: 0.4;
+    }
   }
 
   &__hero-bg {
@@ -575,92 +690,150 @@ onMounted(async () => {
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(120deg, rgba(255, 255, 255, 0.12), transparent 30%),
-      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.12), transparent 24%);
+      linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 40%),
+      url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+') repeat;
+    z-index: -1;
+    opacity: 0.5;
   }
 
   &__hero-content {
-    position: relative;
-    z-index: 1;
-    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
+    height: 100%;
   }
 
   &__hero-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
     flex-wrap: wrap;
   }
 
   &__status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    width: fit-content;
-    padding: 9px 14px;
+    gap: 10px;
+    padding: 10px 18px;
     border-radius: 999px;
-    background-color: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 800;
-    backdrop-filter: blur(14px);
+    
+    &.frosted {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #60a5fa;
+      border-radius: 50%;
+      animation: pulseDot 2s infinite;
+    }
+  }
+
+  .frosted-btn {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    &--dark {
+      background: rgba(15, 23, 42, 0.05);
+      color: var(--blue-700);
+      border: 1px solid var(--blue-200);
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.1);
+      }
+    }
   }
 
   &__main-title {
     margin-top: auto;
-    max-width: 760px;
+    max-width: 800px;
 
     h1 {
-      margin-top: 8px;
-      font-size: clamp(3.8rem, 8vw, 7rem);
-      line-height: 1.05;
+      margin-top: 12px;
+      font-size: clamp(4rem, 8vw, 7.5rem);
+      line-height: 1.1;
       font-weight: 950;
-      letter-spacing: -1px;
+      letter-spacing: -1.5px;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     p:last-child {
-      margin-top: 14px;
-      max-width: 620px;
-      color: rgba(255, 255, 255, 0.82);
-      font-size: 1.6rem;
-      line-height: 1.9;
+      margin-top: 16px;
+      max-width: 650px;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 1.65rem;
+      line-height: 1.8;
 
       strong {
         color: white;
+        background: rgba(255,255,255,0.15);
+        padding: 2px 8px;
+        border-radius: 6px;
       }
     }
   }
 
   &__eyebrow {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.4rem;
+    color: #93c5fd;
+    font-size: 1.5rem;
     font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
 
   &__hero-cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 16px;
+    margin-top: 16px;
   }
 
   &__mini-card {
     display: flex;
     align-items: center;
-    gap: 12px;
-    border-radius: 22px;
-    padding: 14px;
-    background-color: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(16px);
+    gap: 16px;
+    border-radius: 24px;
+    padding: 16px 20px;
+    transition: transform 0.3s ease, background 0.3s ease;
+
+    &.frosted {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    &:hover {
+      transform: translateY(-4px);
+      background: rgba(255, 255, 255, 0.12);
+    }
 
     span {
       display: block;
-      color: rgba(255, 255, 255, 0.66);
-      font-size: 1.15rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.25rem;
       font-weight: 700;
       margin-bottom: 4px;
     }
@@ -668,202 +841,316 @@ onMounted(async () => {
     strong {
       display: block;
       color: white;
-      font-size: 1.45rem;
+      font-size: 1.6rem;
       font-weight: 900;
     }
   }
 
-  &__mini-icon,
-  &__section-icon,
-  &__task-icon,
-  &__week-number {
-    display: inline-flex;
+  &__mini-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    color: white;
+    font-size: 2.2rem;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+    display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.3);
   }
 
-  &__mini-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 16px;
-    color: white;
-    font-size: 2rem;
-    background-color: rgba(255, 255, 255, 0.14);
-  }
-
+  /* --- Summary Cards --- */
   &__summary-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
   }
 
-  &__summary-card,
-  &__weeks-section,
-  &__week-card,
-  &__day-card {
-    background-color: var(--white);
-    border: 1px solid var(--gray-200);
-    box-shadow: 0 12px 34px rgba(17, 24, 39, 0.06);
+  .float-hover {
+    transition: transform var(--anim-speed) var(--anim-ease), box-shadow var(--anim-speed) var(--anim-ease);
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    }
   }
 
   &__summary-card {
-    border-radius: 26px;
-    padding: 20px;
+    background-color: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 28px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
   }
 
   &__section-head {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: 16px;
+    margin-bottom: 16px;
 
     p {
-      color: var(--blue-700);
-      font-size: 1.2rem;
+      color: var(--gray-500);
+      font-size: 1.3rem;
       font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     h3 {
-      margin-top: 3px;
+      margin-top: 4px;
       color: var(--gray-950);
-      font-size: 1.75rem;
+      font-size: 1.85rem;
       font-weight: 900;
     }
   }
 
   &__section-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 18px;
-    color: var(--blue-700);
-    background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
-    font-size: 2.2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 20px;
+    font-size: 2.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.icon-blue {
+      color: var(--blue-700);
+      background: linear-gradient(135deg, #dbeafe, #eff6ff);
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+    }
+
+    &.icon-emerald {
+      color: #047857;
+      background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.15);
+    }
   }
 
   &__summary-text {
-    color: var(--gray-700);
-    font-size: 1.42rem;
-    line-height: 1.95;
+    color: var(--gray-600);
+    font-size: 1.5rem;
+    line-height: 1.9;
   }
 
+  /* --- Weeks Section --- */
   &__weeks-section {
-    border-radius: 28px;
-    padding: 20px;
+    background-color: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 32px;
+    padding: 28px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
   }
 
   &__weeks-head {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 14px;
-    margin-bottom: 18px;
+    align-items: flex-end;
+    margin-bottom: 24px;
     flex-wrap: wrap;
+    gap: 16px;
 
     p {
-      color: var(--blue-700);
-      font-size: 1.25rem;
+      color: var(--blue-600);
+      font-size: 1.35rem;
       font-weight: 800;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
 
     h2 {
       color: var(--gray-950);
-      font-size: 2.4rem;
+      font-size: 2.6rem;
       font-weight: 950;
+      letter-spacing: -0.5px;
+    }
+  }
+
+  .shadow-hover {
+    transition: all 0.3s ease;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
     }
   }
 
   &__weeks-list {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
   }
 
   &__week-card {
-    overflow: hidden;
     border-radius: 24px;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    transition: all 0.4s var(--anim-ease);
+    overflow: hidden;
+
+    &.is-open {
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+      border-color: var(--blue-300);
+
+      .report-show__week-main {
+        background: linear-gradient(to right, #f8fafc, #ffffff);
+      }
+
+      .arrow-icon {
+        transform: rotate(180deg);
+        background: var(--blue-100);
+        color: var(--blue-700);
+      }
+    }
   }
 
   &__week-main {
     width: 100%;
-    border: 0;
-    outline: 0;
-    background:
-      radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 26%),
-      linear-gradient(135deg, rgba(248, 251, 255, 1), rgba(255, 255, 255, 1));
+    border: none;
+    background: transparent;
     display: flex;
     align-items: center;
-    gap: 14px;
-    text-align: start;
-    padding: 16px;
+    gap: 18px;
+    padding: 20px;
     cursor: pointer;
+    text-align: right;
+    transition: background 0.3s ease;
+
+    &:hover {
+      background: #f8fafc;
+    }
+
+    &.ripple {
+      position: relative;
+      overflow: hidden;
+    }
   }
 
   &__week-number {
-    width: 54px;
-    height: 54px;
-    border-radius: 18px;
+    width: 60px;
+    height: 60px;
+    border-radius: 20px;
     background: linear-gradient(135deg, var(--blue-600), var(--blue-800));
     color: white;
-    font-size: 2rem;
+    font-size: 2.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
   }
 
   &__week-copy {
     flex: 1;
-    min-width: 0;
 
     h3 {
-      color: var(--gray-950);
-      font-size: 1.75rem;
+      color: var(--gray-900);
+      font-size: 1.85rem;
       font-weight: 900;
     }
 
     p {
       margin-top: 6px;
       color: var(--gray-500);
-      font-size: 1.25rem;
+      font-size: 1.3rem;
       font-weight: 700;
     }
   }
 
   &__week-meta {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    color: var(--blue-700);
-    font-size: 1.25rem;
-    font-weight: 900;
+    gap: 12px;
 
     span {
-      padding: 8px 12px;
+      padding: 8px 14px;
       border-radius: 999px;
-      background-color: rgba(59, 130, 246, 0.1);
+      background-color: var(--blue-50);
+      color: var(--blue-700);
+      font-size: 1.3rem;
+      font-weight: 800;
     }
   }
 
+  .arrow-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gray-100);
+    color: var(--gray-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    transition: transform 0.4s var(--anim-ease), background 0.3s, color 0.3s;
+  }
+
+  /* --- Days List --- */
+  &__days-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s var(--anim-ease);
+  }
+
+  .is-open .report-show__days-wrapper {
+    grid-template-rows: 1fr;
+  }
+
   &__days-list {
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 0 14px 14px;
+    gap: 16px;
+    padding: 0 20px 20px;
   }
 
   &__day-card {
-    border-radius: 22px;
-    padding: 14px;
+    border-radius: 24px;
+    background: #fdfdfd;
+    border: 1px solid var(--gray-100);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    overflow: hidden;
+    transition: all 0.4s var(--anim-ease);
+
+    &.is-open {
+      border-color: var(--blue-200);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+
+      .day-arrow {
+        transform: rotate(180deg);
+        background: var(--blue-100);
+        color: var(--blue-700);
+      }
+    }
+  }
+
+  &__day-main {
+    width: 100%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    cursor: pointer;
+    text-align: right;
+    transition: background 0.3s ease;
+
+    &:hover {
+      background: #f8fafc;
+    }
+
+    &.ripple {
+      position: relative;
+      overflow: hidden;
+    }
   }
 
   &__day-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+    gap: 16px;
 
     span {
       display: block;
-      color: var(--blue-700);
-      font-size: 1.2rem;
+      color: var(--blue-600);
+      font-size: 1.25rem;
       font-weight: 900;
     }
 
@@ -871,380 +1158,322 @@ onMounted(async () => {
       display: block;
       margin-top: 4px;
       color: var(--gray-950);
-      font-size: 1.55rem;
+      font-size: 1.65rem;
       font-weight: 950;
     }
   }
 
+  .day-arrow {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--gray-50);
+    color: var(--gray-400);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    transition: transform 0.4s var(--anim-ease), background 0.3s, color 0.3s;
+  }
+
+  &__tasks-wrapper {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.5s ease, opacity 0.3s ease;
+  }
+
+  &__day-card.is-open &__tasks-wrapper {
+    max-height: 2000px;
+    opacity: 1;
+  }
+
+  &__tasks-inner {
+    min-height: 0;
+  }
+
+  /* --- Tasks Grid --- */
   &__tasks-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 0 20px 20px;
+  }
+
+  .float-hover-light {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+    }
   }
 
   &__task-box {
     display: flex;
-    gap: 10px;
+    gap: 16px;
     border-radius: 20px;
-    padding: 14px;
-    border: 1px solid var(--gray-200);
-    background-color: var(--gray-50);
-
+    padding: 18px;
+    border: 1px solid rgba(0,0,0,0.04);
+    
     p {
-      color: var(--gray-500);
-      font-size: 1.15rem;
+      color: var(--gray-600);
+      font-size: 1.25rem;
       font-weight: 800;
+      margin-bottom: 6px;
     }
 
     h4 {
-      margin-top: 5px;
       color: var(--gray-950);
-      font-size: 1.42rem;
+      font-size: 1.55rem;
       font-weight: 950;
-      line-height: 1.45;
+      line-height: 1.4;
     }
 
     span {
       display: block;
-      margin-top: 6px;
+      margin-top: 8px;
       color: var(--gray-500);
-      font-size: 1.12rem;
+      font-size: 1.2rem;
       font-weight: 700;
-      line-height: 1.6;
     }
 
     &--water {
-      background: linear-gradient(135deg, rgba(239, 246, 255, 1), rgba(255, 255, 255, 1));
+      background: linear-gradient(145deg, #f0f9ff, #ffffff);
+      border-color: #e0f2fe;
     }
 
     &--fertilizer {
-      background: linear-gradient(135deg, rgba(240, 253, 244, 1), rgba(255, 255, 255, 1));
+      background: linear-gradient(145deg, #ecfdf5, #ffffff);
+      border-color: #d1fae5;
     }
 
     &--spray {
-      background: linear-gradient(135deg, rgba(250, 245, 255, 1), rgba(255, 255, 255, 1));
+      background: linear-gradient(145deg, #faf5ff, #ffffff);
+      border-color: #f3e8ff;
     }
   }
 
   &__task-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 15px;
-    background-color: white;
-    color: var(--blue-700);
-    font-size: 1.8rem;
-    box-shadow: 0 8px 20px rgba(17, 24, 39, 0.06);
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+
+    &.icon-water {
+      background: white;
+      color: #0ea5e9;
+    }
+    &.icon-fert {
+      background: white;
+      color: #10b981;
+    }
+    &.icon-spray {
+      background: white;
+      color: #a855f7;
+    }
   }
 
+  &__task-content {
+    flex: 1;
+  }
+
+  /* --- Empty State --- */
   &__empty {
-    min-height: 280px;
-    border-radius: 28px;
-    background-color: var(--white);
-    border: 1px solid var(--gray-200);
+    min-height: 300px;
+    border-radius: 32px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 16px;
     text-align: center;
-    padding: 24px;
+    padding: 32px;
+    border: 1px dashed var(--gray-300);
+
+    &.glass-empty {
+      background: linear-gradient(to bottom, #f8fafc, #ffffff);
+    }
 
     &--page {
       min-height: 70vh;
+      border: 1px solid var(--gray-200);
     }
 
-    div {
-      width: 70px;
-      height: 70px;
+    .empty-icon-wrap {
+      width: 80px;
+      height: 80px;
       border-radius: 24px;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, var(--blue-100), var(--sky-50));
-      color: var(--blue-700);
-      font-size: 3rem;
+      background: linear-gradient(135deg, var(--blue-100), var(--blue-50));
+      color: var(--blue-600);
+      font-size: 3.5rem;
+      box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+
+      &.danger {
+        background: linear-gradient(135deg, #fee2e2, #fef2f2);
+        color: #ef4444;
+        box-shadow: 0 12px 24px rgba(239, 68, 68, 0.15);
+      }
     }
 
     h3 {
       color: var(--gray-950);
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: 950;
+      margin-top: 8px;
     }
 
     p {
-      max-width: 460px;
+      max-width: 500px;
       color: var(--gray-500);
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       line-height: 1.8;
     }
   }
 }
 
+/* --- Media Queries --- */
 @media (max-width: 900px) {
   .report-show {
-    margin-top: -10px;
+    margin-top: -16px;
 
     &__content {
-      gap: 14px;
+      gap: 16px;
     }
 
     &__hero {
-      border-radius: 0 0 30px 30px;
-      margin: -18px -16px 0;
-      min-height: unset;
-      padding: 14px 16px 18px;
-      box-shadow: 0 18px 42px rgba(15, 47, 95, 0.22);
-    }
-
-    &__hero-content {
-      gap: 14px;
+      border-radius: 0 0 36px 36px;
+      margin: -20px -16px 0;
+      padding: 24px 20px;
+      min-height: auto;
     }
 
     &__hero-top {
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
       flex-wrap: nowrap;
     }
 
     &__status-pill {
-      padding: 8px 12px;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
+      padding: 8px 14px;
       white-space: nowrap;
     }
 
     &__main-title {
-      margin-top: 8px;
       text-align: right;
-
+      
       h1 {
-        margin-top: 6px;
-        font-size: 4.1rem;
-        line-height: 1.05;
+        font-size: 4.5rem;
       }
-
       p:last-child {
-        margin-top: 10px;
-        font-size: 1.28rem;
-        line-height: 1.8;
+        font-size: 1.4rem;
       }
-    }
-
-    &__eyebrow {
-      font-size: 1.18rem;
     }
 
     &__hero-cards {
       grid-template-columns: 1fr;
-      gap: 9px;
-      margin-top: 2px;
+      gap: 12px;
     }
 
     &__mini-card {
-      min-height: 74px;
-      border-radius: 18px;
-      padding: 11px 12px;
-      background-color: rgba(255, 255, 255, 0.13);
+      padding: 14px 16px;
+      min-height: 80px;
 
-      span {
-        font-size: 1.05rem;
-      }
-
-      strong {
-        font-size: 1.35rem;
-      }
+      span { font-size: 1.15rem; }
+      strong { font-size: 1.45rem; }
     }
 
     &__mini-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 16px;
-      font-size: 1.9rem;
+      width: 48px;
+      height: 48px;
+      font-size: 2rem;
     }
 
     &__summary-grid {
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 16px;
     }
 
     &__summary-card {
+      padding: 20px;
       border-radius: 24px;
-      padding: 17px;
     }
 
     &__section-head {
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 10px;
-
-      p {
-        font-size: 1.08rem;
-      }
-
-      h3 {
-        font-size: 1.55rem;
-      }
+      h3 { font-size: 1.65rem; }
     }
 
     &__section-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 17px;
-      font-size: 2rem;
-    }
-
-    &__summary-text {
-      font-size: 1.27rem;
-      line-height: 1.95;
+      width: 50px;
+      height: 50px;
+      font-size: 2.2rem;
     }
 
     &__weeks-section {
-      border-radius: 24px;
-      padding: 15px;
+      padding: 20px;
+      border-radius: 28px;
     }
 
     &__weeks-head {
-      align-items: center;
-      margin-bottom: 14px;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 12px;
 
-      p {
-        font-size: 1.1rem;
-      }
-
-      h2 {
-        font-size: 1.9rem;
-      }
-    }
-
-    &__week-card {
-      border-radius: 22px;
+      h2 { font-size: 2.2rem; }
     }
 
     &__week-main {
-      padding: 13px;
-      align-items: center;
-      gap: 11px;
+      padding: 16px;
+      gap: 14px;
     }
 
     &__week-number {
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
-      font-size: 1.8rem;
+      width: 50px;
+      height: 50px;
+      font-size: 2rem;
     }
 
-    &__week-copy {
-      h3 {
-        font-size: 1.48rem;
-      }
-
-      p {
-        font-size: 1.12rem;
-      }
-    }
+    &__week-copy h3 { font-size: 1.6rem; }
+    &__week-copy p { font-size: 1.2rem; }
 
     &__week-meta {
       flex-direction: column-reverse;
       align-items: flex-end;
-      gap: 5px;
+      gap: 8px;
 
       span {
-        font-size: 1rem;
-        padding: 6px 9px;
+        font-size: 1.15rem;
+        padding: 6px 10px;
       }
     }
 
     &__days-list {
-      padding: 0 10px 12px;
-      gap: 10px;
+      padding: 0 16px 16px;
+      gap: 12px;
     }
 
     &__day-card {
-      border-radius: 20px;
-      padding: 12px;
+      padding: 16px;
     }
 
-    &__day-head {
-      margin-bottom: 10px;
-
-      span {
-        font-size: 1.08rem;
-      }
-
-      strong {
-        font-size: 1.38rem;
-      }
-    }
+    &__day-head strong { font-size: 1.45rem; }
 
     &__tasks-grid {
       grid-template-columns: 1fr;
-      gap: 9px;
-    }
-
-    &__task-box {
-      border-radius: 17px;
-      padding: 12px;
-      align-items: flex-start;
-
-      p {
-        font-size: 1.05rem;
-      }
-
-      h4 {
-        font-size: 1.26rem;
-      }
-
-      span {
-        font-size: 1.02rem;
-      }
-    }
-
-    &__task-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
-      font-size: 1.65rem;
-    }
-  }
-}
-
-@media (max-width: 430px) {
-  .report-show {
-    &__hero {
-      margin-inline: -14px;
-      padding-inline: 14px;
-      border-radius: 0 0 28px 28px;
-    }
-
-    &__main-title {
-      h1 {
-        font-size: 3.65rem;
-      }
-
-      p:last-child {
-        font-size: 1.18rem;
-      }
-    }
-
-    &__mini-card {
-      min-height: 68px;
-    }
-
-    &__weeks-head {
-      h2 {
-        font-size: 1.75rem;
-      }
     }
   }
 }
 
 @media (min-width: 901px) {
-  .report-show {
-    &__content {
-      max-width: 1180px;
-      margin: 0 auto;
-      width: 100%;
-    }
+  .report-show__content {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
   }
 }
 </style>
