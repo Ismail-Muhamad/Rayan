@@ -1321,7 +1321,42 @@ const pdfBaseStyles = `
     color: #64748b;
     background: #f8fafc;
   }
+
+  .val-actual {
+    font-weight: 800;
+    color: #16a34a;
+  }
+
+  .val-planned {
+    font-size: 11px;
+    color: #94a3b8;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .val-ptd {
+    font-size: 11px;
+    font-weight: 700;
+    color: #d97706;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .badge-current {
+    display: inline-block;
+    margin-inline-start: 8px;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+  }
 `;
+
+// Helper: renders a planned value with a real strikethrough line at exact center
+const plannedSpan = (text) =>
+    `<span style="position:relative;display:inline-block;color:#94a3b8;font-size:11px;margin-top:2px;">${escapeHtml(text)}<span style="position:absolute;left:0;right:0;top:70%;height:1px;background:#94a3b8;"></span></span>`;
 
 const renderTableRows = (rows, columnsCount) => {
     if (!rows.length) {
@@ -1411,21 +1446,62 @@ const downloadPdfFile = async (htmlString, fileName) => {
 };
 
 const buildMonthReportHtml = (month) => {
-    const fertilizationRows = month.fertilizationProducts.map((item) => [
-        item.name,
-        `${formatNumber(item.total)} كجم`,
-    ]);
+    const isCurrentMonth = month.isCurrentMonth;
 
-    const sprayingRows = month.sprayingProducts.map((item) => [
-        item.name,
-        `${formatNumber(item.total)} كجم`,
-    ]);
+    // Fertilization products merged
+    const fertMap = {};
+    for (const item of month.fertilizationProducts || []) {
+        fertMap[item.name] = { planned: item.total, actual: 0, ptd: 0 };
+    }
+    for (const item of month.actualFertilizationProducts || []) {
+        if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+        fertMap[item.name].actual = item.total;
+    }
+    if (isCurrentMonth) {
+        for (const item of month.plannedToDateFertilizationProducts || []) {
+            if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+            fertMap[item.name].ptd = item.total;
+        }
+    }
+
+    // Spraying products merged
+    const sprayMap = {};
+    for (const item of month.sprayingProducts || []) {
+        sprayMap[item.name] = { planned: item.total, actual: 0, ptd: 0 };
+    }
+    for (const item of month.actualSprayingProducts || []) {
+        if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+        sprayMap[item.name].actual = item.total;
+    }
+    if (isCurrentMonth) {
+        for (const item of month.plannedToDateSprayingProducts || []) {
+            if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+            sprayMap[item.name].ptd = item.total;
+        }
+    }
+
+    const fertRows = Object.entries(fertMap).map(([name, v]) => [name, v.actual, v.planned, v.ptd]);
+    const sprayRows = Object.entries(sprayMap).map(([name, v]) => [name, v.actual, v.planned, v.ptd]);
+
+    const renderProductRows = (rows) => {
+        if (!rows.length) return `<tr><td class="empty-row" colspan="4">لا توجد بيانات</td></tr>`;
+        return rows.map(([name, actual, planned, ptd]) => `
+            <tr>
+              <td>${escapeHtml(name)}</td>
+              <td><span class="val-actual">${formatNumber(actual)} كجم</span></td>
+              <td>${plannedSpan(formatNumber(planned) + ' كجم')}</td>
+              ${isCurrentMonth ? `<td><span class="val-ptd">${formatNumber(ptd)} كجم</span></td>` : ""}
+            </tr>
+        `).join("");
+    };
+
+    const ptdHeader = isCurrentMonth ? "<th>مخطط لحد اليوم</th>" : "";
 
     const subtitle = `
     المستخدم: ${escapeHtml(selectedUserName.value)}<br>
     المزرعة: ${escapeHtml(selectedFarmName.value)}<br>
-    الشهر: ${escapeHtml(month.monthLabel)}<br>
-    عدد الأسابيع: ${escapeHtml(month.weeksCount)}<br>
+    الشهر: ${escapeHtml(month.monthLabel)}${isCurrentMonth ? " <strong>(الشهر الحالي)</strong>" : ""}<br>
+    عدد الأسابيع: ${escapeHtml(String(month.weeksCount))}<br>
     تاريخ إنشاء التقرير: ${escapeHtml(new Date().toLocaleString("ar-EG"))}
   `;
 
@@ -1435,15 +1511,21 @@ const buildMonthReportHtml = (month) => {
       <div class="summary-grid">
         <div class="summary-card">
           <span class="summary-label">مياه الري</span>
-          <strong>${escapeHtml(formatNumber(month.irrigationLiters))} لتر</strong>
+          <strong class="val-actual">${escapeHtml(formatNumber(month.actualIrrigationLiters))} لتر</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(month.irrigationLiters) + ' لتر')}
+          ${isCurrentMonth && month.plannedToDateIrrigationLiters !== null ? `<span class="val-ptd">لحد اليوم: ${escapeHtml(formatNumber(month.plannedToDateIrrigationLiters))} لتر</span>` : ""}
         </div>
         <div class="summary-card">
           <span class="summary-label">التسميد</span>
-          <strong>${escapeHtml(formatNumber(month.fertilizationKg))} كجم</strong>
+          <strong class="val-actual">${escapeHtml(formatNumber(month.actualFertilizationKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(month.fertilizationKg) + ' كجم')}
+          ${isCurrentMonth && month.plannedToDateFertilizationKg !== null ? `<span class="val-ptd">لحد اليوم: ${escapeHtml(formatNumber(month.plannedToDateFertilizationKg))} كجم</span>` : ""}
         </div>
         <div class="summary-card">
           <span class="summary-label">الرش</span>
-          <strong>${escapeHtml(formatNumber(month.sprayingKg))} كجم</strong>
+          <strong class="val-actual">${escapeHtml(formatNumber(month.actualSprayingKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(month.sprayingKg) + ' كجم')}
+          ${isCurrentMonth && month.plannedToDateSprayingKg !== null ? `<span class="val-ptd">لحد اليوم: ${escapeHtml(formatNumber(month.plannedToDateSprayingKg))} كجم</span>` : ""}
         </div>
       </div>
     </div>
@@ -1454,11 +1536,13 @@ const buildMonthReportHtml = (month) => {
         <thead>
           <tr>
             <th>الصنف</th>
-            <th>الإجمالي</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
+            ${ptdHeader}
           </tr>
         </thead>
         <tbody>
-          ${renderTableRows(fertilizationRows, 2)}
+          ${renderProductRows(fertRows)}
         </tbody>
       </table>
     </div>
@@ -1469,11 +1553,13 @@ const buildMonthReportHtml = (month) => {
         <thead>
           <tr>
             <th>الصنف</th>
-            <th>الإجمالي</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
+            ${ptdHeader}
           </tr>
         </thead>
         <tbody>
-          ${renderTableRows(sprayingRows, 2)}
+          ${renderProductRows(sprayRows)}
         </tbody>
       </table>
     </div>
@@ -1488,22 +1574,48 @@ const buildMonthReportHtml = (month) => {
 
 const buildYearReportHtml = () => {
     const monthsRows = monthlyBreakdown.value.map((month) => [
-        month.monthLabel,
+        month.monthLabel + (month.isCurrentMonth ? " (الحالي)" : ""),
         `${month.weeksCount}`,
-        `${formatNumber(month.irrigationLiters)} لتر`,
-        `${formatNumber(month.fertilizationKg)} كجم`,
-        `${formatNumber(month.sprayingKg)} كجم`,
+        `${formatNumber(month.actualIrrigationLiters)} / ${formatNumber(month.irrigationLiters)} لتر`,
+        `${formatNumber(month.actualFertilizationKg)} / ${formatNumber(month.fertilizationKg)} كجم`,
+        `${formatNumber(month.actualSprayingKg)} / ${formatNumber(month.sprayingKg)} كجم`,
     ]);
 
-    const fertilizationRows = fertilizationProducts.value.map((item) => [
-        item.name,
-        `${formatNumber(item.total)} كجم`,
-    ]);
+    // Yearly merged products
+    const fertMap = {};
+    const sprayMap = {};
+    for (const month of monthlyBreakdown.value) {
+        for (const item of month.fertilizationProducts || []) {
+            if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0 };
+            fertMap[item.name].planned += item.total;
+        }
+        for (const item of month.actualFertilizationProducts || []) {
+            if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0 };
+            fertMap[item.name].actual += item.total;
+        }
+        for (const item of month.sprayingProducts || []) {
+            if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0 };
+            sprayMap[item.name].planned += item.total;
+        }
+        for (const item of month.actualSprayingProducts || []) {
+            if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0 };
+            sprayMap[item.name].actual += item.total;
+        }
+    }
 
-    const sprayingRows = sprayingProducts.value.map((item) => [
-        item.name,
-        `${formatNumber(item.total)} كجم`,
-    ]);
+    const renderYearlyProductRows = (map) => {
+        const entries = Object.entries(map);
+        if (!entries.length) return `<tr><td class="empty-row" colspan="3">لا توجد بيانات</td></tr>`;
+        return entries
+            .sort((a, b) => b[1].actual - a[1].actual)
+            .map(([name, v]) => `
+            <tr>
+              <td>${escapeHtml(name)}</td>
+              <td><span class="val-actual">${formatNumber(v.actual)} كجم</span></td>
+              <td>${plannedSpan(formatNumber(v.planned) + ' كجم')}</td>
+            </tr>
+        `).join("");
+    };
 
     const subtitle = `
     المستخدم: ${escapeHtml(selectedUserName.value)}<br>
@@ -1518,26 +1630,29 @@ const buildYearReportHtml = () => {
       <div class="summary-grid">
         <div class="summary-card">
           <span class="summary-label">مياه الري</span>
-          <strong>${escapeHtml(formatNumber(yearlyTotals.value.irrigationLiters))} لتر</strong>
+          <strong class="val-actual">${escapeHtml(formatNumber(yearlyActualTotals.value.irrigationLiters))} لتر</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(yearlyTotals.value.irrigationLiters) + ' لتر')}
         </div>
         <div class="summary-card">
           <span class="summary-label">التسميد</span>
-          <strong>${escapeHtml(formatNumber(yearlyTotals.value.fertilizationKg))} كجم</strong>
+          <strong class="val-actual">${escapeHtml(formatNumber(yearlyActualTotals.value.fertilizationKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(yearlyTotals.value.fertilizationKg) + ' كجم')}
         </div>
         <div class="summary-card">
           <span class="summary-label">الرش</span>
-          <strong>${escapeHtml(formatNumber(yearlyTotals.value.sprayingKg))} كجم</strong>
+          <strong class="val-actual">${escapeHtml(formatNumber(yearlyActualTotals.value.sprayingKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(yearlyTotals.value.sprayingKg) + ' كجم')}
         </div>
       </div>
     </div>
 
     <div class="report-section">
-      <h3>تفاصيل الشهور</h3>
+      <h3>تفاصيل الشهور (منفذ / مخطط)</h3>
       <table>
         <thead>
           <tr>
             <th>الشهر</th>
-            <th>عدد الأسابيع</th>
+            <th>أسابيع</th>
             <th>الري</th>
             <th>التسميد</th>
             <th>الرش</th>
@@ -1555,11 +1670,12 @@ const buildYearReportHtml = () => {
         <thead>
           <tr>
             <th>الصنف</th>
-            <th>الإجمالي</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
           </tr>
         </thead>
         <tbody>
-          ${renderTableRows(fertilizationRows, 2)}
+          ${renderYearlyProductRows(fertMap)}
         </tbody>
       </table>
     </div>
@@ -1570,11 +1686,12 @@ const buildYearReportHtml = () => {
         <thead>
           <tr>
             <th>الصنف</th>
-            <th>الإجمالي</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
           </tr>
         </thead>
         <tbody>
-          ${renderTableRows(sprayingRows, 2)}
+          ${renderYearlyProductRows(sprayMap)}
         </tbody>
       </table>
     </div>
