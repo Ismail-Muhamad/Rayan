@@ -35,6 +35,59 @@
           </div>
         </section>
 
+        <!-- عمليات يومية -->
+        <section class="daily-operations-section" :class="{ 'is-collapsed': !isOperationsOpen }">
+          <div class="section-header" @click="isOperationsOpen = !isOperationsOpen">
+            <div class="section-header__title">
+              <BaseIcon name="solar:clipboard-list-outline" class="section-icon" />
+              <h3 class="section-title">عمليات يومية</h3>
+            </div>
+            <BaseIcon 
+              name="solar:alt-arrow-down-outline" 
+              class="collapse-icon" 
+              :class="{ 'rotate-180': isOperationsOpen }" 
+            />
+          </div>
+          
+          <div class="operations-container" v-show="isOperationsOpen">
+            <div 
+              v-for="(op, index) in dailyOperations" 
+              :key="index" 
+              class="operation-row"
+            >
+              <div class="operation-input-group">
+                <span class="operation-number">{{ index + 1 }}</span>
+                <input 
+                  v-model="dailyOperations[index]" 
+                  type="text" 
+                  class="operation-input" 
+                  placeholder="أضف تفاصيل العملية هنا..." 
+                />
+              </div>
+              <button 
+                v-if="dailyOperations.length > 1" 
+                class="btn-remove-op" 
+                @click="removeDailyOperation(index)"
+                title="حذف العملية"
+              >
+                <BaseIcon name="solar:trash-bin-trash-outline" />
+              </button>
+            </div>
+            
+            <div class="operations-actions">
+              <button class="btn-add-op" @click="addDailyOperation">
+                <BaseIcon name="solar:add-circle-outline" />
+                إضافة عملية أخرى
+              </button>
+              <button class="btn-save-op" @click="saveDailyOperations" :disabled="dailyOperationsStore.loading">
+                <BaseIcon name="solar:diskette-outline" v-if="!dailyOperationsStore.loading" />
+                <span class="spinner" v-else></span>
+                حفظ العمليات
+              </button>
+            </div>
+          </div>
+        </section>
+
         <!-- المهام مقسمة حسب نوع النخل -->
         <div class="palm-sections">
           <div v-for="palmType in mockFarm.palmTypes" :key="palmType.id" class="palm-section">
@@ -48,42 +101,46 @@
               </div>
             </div>
 
-            <div class="tasks-grid">
-              <div
-                v-for="task in palmType.tasks"
-                :key="task.id"
-                class="task-card"
-                :class="{
-                  'task-card--completed': task.isCompleted,
-                  'task-card--future': task.isFuture
-                }"
-              >
-                <!-- يمين الكارت: حالة المهمة ومعلوماتها -->
-                <div class="task-card__main">
-                  <div class="task-card__checkbox-wrap">
-                    <button
-                      class="task-checkbox"
-                      :class="{
-                        'task-checkbox--checked': task.isCompleted,
-                        'task-checkbox--disabled': task.isFuture
-                      }"
-                      :disabled="task.isFuture"
-                      @click="toggleTaskCompletion(task)"
-                    >
-                      <BaseIcon v-if="task.isCompleted" name="solar:check-read-outline" />
-                      <BaseIcon v-else-if="task.isFuture" name="solar:lock-outline" />
-                      <div v-else class="task-checkbox__empty"></div>
-                    </button>
-                  </div>
+            <div class="task-type-groups" v-if="palmType.tasks.length">
+              <div v-for="(tasksGroup, typeKey) in groupTasksByType(palmType.tasks)" :key="typeKey" class="task-type-group">
+                <div class="task-type-group__header">
+                  <span class="task-tag" :class="`task-tag--${typeKey}`">
+                    <BaseIcon :name="getTaskIcon(typeKey)" :width="16" :height="16" />
+                    {{ getTaskTypeName(typeKey) }}
+                  </span>
+                  <span class="task-type-group__badge">{{ tasksGroup.length }} مهمة</span>
+                </div>
 
-                  <div class="task-card__info">
-                    <div class="task-card__top">
-                      <span class="task-tag" :class="`task-tag--${task.type}`">
-                        <BaseIcon :name="getTaskIcon(task.type)" :width="14" :height="14" />
-                        {{ getTaskTypeName(task.type) }}
-                      </span>
-                    </div>
-                    <h4 class="task-card__title">{{ task.title }}</h4>
+                <div class="tasks-grid">
+                  <div
+                    v-for="task in tasksGroup"
+                    :key="task.id"
+                    class="task-card"
+                    :class="{
+                      'task-card--completed': task.isCompleted,
+                      'task-card--future': task.isFuture
+                    }"
+                  >
+                    <!-- يمين الكارت: حالة المهمة ومعلوماتها -->
+                    <div class="task-card__main">
+                      <div class="task-card__checkbox-wrap">
+                        <button
+                          class="task-checkbox"
+                          :class="{
+                            'task-checkbox--checked': task.isCompleted,
+                            'task-checkbox--disabled': task.isFuture
+                          }"
+                          :disabled="task.isFuture"
+                          @click="toggleTaskCompletion(task)"
+                        >
+                          <BaseIcon v-if="task.isCompleted" name="solar:check-read-outline" />
+                          <BaseIcon v-else-if="task.isFuture" name="solar:lock-outline" />
+                          <div v-else class="task-checkbox__empty"></div>
+                        </button>
+                      </div>
+
+                      <div class="task-card__info">
+                        <h4 class="task-card__title">{{ task.title }}</h4>
                     
                     <div class="task-details" v-if="task.quantitativeData && Object.keys(task.quantitativeData).length > 0">
                       <div v-if="task.type === 'irrigation'" class="task-details__list">
@@ -153,10 +210,12 @@
                   </div>
                 </div>
               </div>
+                </div> <!-- End of tasks-grid -->
+              </div> <!-- End of task-type-group -->
+            </div> <!-- End of task-type-groups -->
               
-              <div v-if="!palmType.tasks.length" class="no-tasks">
-                لا توجد مهام لهذا النوع في هذا اليوم.
-              </div>
+            <div v-if="!palmType.tasks.length" class="no-tasks">
+              لا توجد مهام لهذا النوع في هذا اليوم.
             </div>
           </div>
         </div>
@@ -166,16 +225,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks.store';
-import { useReportsStore } from '@/stores/reports.store';
-import { mergeReportActivitiesIntoTasks } from '@/helpers/taskMerger.helper';
+import { useDailyOperationsStore } from '@/stores/dailyOperations.store';
 
 const route = useRoute();
 const router = useRouter();
 const tasksStore = useTasksStore();
-const reportsStore = useReportsStore();
+const dailyOperationsStore = useDailyOperationsStore();
 
 const dateParam = route.params.date;
 const userIdParam = route.query.userId;
@@ -185,6 +243,65 @@ const palmTypeIdParam = route.query.palmTypeId;
 const loading = ref(true);
 const mockFarm = ref(null);
 const clientName = ref('إدارة المهام');
+
+const dailyOperations = ref(['']);
+const isOperationsOpen = ref(true);
+
+const addDailyOperation = () => {
+  dailyOperations.value.push('');
+};
+
+const removeDailyOperation = (index) => {
+  dailyOperations.value.splice(index, 1);
+};
+
+const loadDailyOperations = async () => {
+  if (!farmIdParam) return;
+  const operation = await dailyOperationsStore.fetchOperation({
+    farm_id: farmIdParam,
+    level: 'day',
+    operation_key: dateParam
+  });
+  if (operation && operation.content) {
+    dailyOperations.value = operation.content.split('\n');
+  } else {
+    dailyOperations.value = [''];
+  }
+};
+
+const saveDailyOperations = async () => {
+  const content = dailyOperations.value.filter(op => op.trim() !== '').join('\n');
+  const [year, month] = dateParam.split('-');
+  await dailyOperationsStore.saveOperation({
+    farm_id: farmIdParam,
+    level: 'day',
+    operation_key: dateParam,
+    content: content,
+    date: dateParam,
+    year: parseInt(year),
+    month: parseInt(month)
+  });
+};
+
+const groupTasksByType = (tasks) => {
+  const groups = {};
+  const types = ['irrigation', 'fertilization', 'spraying', 'other'];
+  
+  types.forEach(type => {
+    const filtered = tasks.filter(t => t.type === type);
+    if (filtered.length > 0) {
+      groups[type] = filtered;
+    }
+  });
+
+  const otherTasks = tasks.filter(t => !types.includes(t.type));
+  if (otherTasks.length > 0) {
+    if (!groups['other']) groups['other'] = [];
+    groups['other'].push(...otherTasks);
+  }
+  
+  return groups;
+};
 
 const fetchTasks = async () => {
   loading.value = true;
@@ -271,11 +388,12 @@ const fetchTasks = async () => {
           notes: task.notes || '',
           isFuture: isFutureDate,
           quantitativeData: qData,
-          _raw: task // Keep original task if needed
+          _raw: task
         });
       });
       
       mockFarm.value.palmTypes = Array.from(palmTypesMap.values());
+      await loadDailyOperations();
     } else {
       mockFarm.value = null;
     }
@@ -295,21 +413,9 @@ onMounted(() => {
   }
 });
 
-// Re-fetch whenever the user navigates back to this page (e.g., after editing a report)
-onActivated(() => {
-  if (farmIdParam && dateParam) {
-    fetchTasks();
-  }
-});
-
 const formattedDate = computed(() => {
   if (!dateParam) return '';
   return new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateParam));
-});
-
-const formattedDateFull = computed(() => {
-  if (!dateParam) return '';
-  return new Intl.DateTimeFormat('ar-SA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateParam));
 });
 
 const goBack = () => {
@@ -326,15 +432,12 @@ const goBack = () => {
 const toggleTaskCompletion = async (task) => {
   if (task.isFuture) return;
   const newValue = !task.isCompleted;
-  
-  // Optimistic UI update
   task.isCompleted = newValue;
-  
   try {
     await tasksStore.updateRecord(task.id, { is_completed: newValue });
   } catch (error) {
     console.error("Error updating task status:", error);
-    task.isCompleted = !newValue; // Revert on failure
+    task.isCompleted = !newValue;
   }
 };
 
@@ -346,6 +449,11 @@ const saveTaskNotes = async (task) => {
     console.error("Error updating task notes:", error);
   }
 };
+
+const formattedDateFull = computed(() => {
+  if (!dateParam) return '';
+  return new Intl.DateTimeFormat('ar-SA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateParam));
+});
 
 const getTaskIcon = (type) => {
   const icons = {
@@ -400,12 +508,6 @@ const formatWeight = (valueInGrams) => {
   font-size: 1.4rem;
 }
 
-.empty-icon {
-  font-size: 4rem;
-  color: var(--gray-300);
-  margin-bottom: 16px;
-}
-
 .day-hero {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(255, 255, 255, 1)), var(--white);
   border: 1px solid var(--emerald-100);
@@ -418,20 +520,6 @@ const formatWeight = (valueInGrams) => {
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .client-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--emerald-50);
-    color: var(--emerald-700);
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-bottom: 4px;
-    width: fit-content;
   }
   
   &__farm-name {
@@ -485,15 +573,6 @@ const formatWeight = (valueInGrams) => {
     font-weight: 800;
     color: var(--gray-800);
   }
-
-  &__badge {
-    padding: 6px 16px;
-    background: var(--gray-100);
-    color: var(--gray-600);
-    border-radius: 999px;
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
 }
 
 .tasks-grid {
@@ -525,35 +604,11 @@ const formatWeight = (valueInGrams) => {
   box-shadow: 0 10px 20px rgba(0,0,0,0.03);
   transition: all 0.3s ease;
 
-  &:hover {
-    box-shadow: 0 15px 30px rgba(0,0,0,0.06);
-    transform: translateY(-3px);
-  }
-
-  &--completed {
-    background: linear-gradient(to right, rgba(16, 185, 129, 0.03), transparent);
-    border-color: rgba(16, 185, 129, 0.2);
-    
-    .task-card__title {
-      text-decoration: line-through;
-      color: var(--gray-400);
-    }
-  }
-
-  &--future {
-    opacity: 0.8;
-    background: var(--gray-50);
-  }
-
   &__main {
     display: flex;
     padding: 24px;
     gap: 20px;
     border-bottom: 1px solid var(--gray-100);
-  }
-
-  &__checkbox-wrap {
-    padding-top: 4px;
   }
 
   &__info {
@@ -563,27 +618,11 @@ const formatWeight = (valueInGrams) => {
     gap: 8px;
   }
 
-  &__top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 4px;
-  }
-
   &__title {
     font-size: 1.6rem;
     font-weight: 800;
     color: var(--gray-900);
     margin: 0;
-  }
-
-  &__future-notice {
-    font-size: 1.1rem;
-    color: var(--amber-600);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
   }
 
   &__notes-section {
@@ -706,11 +745,233 @@ const formatWeight = (valueInGrams) => {
   &:focus {
     outline: none;
     border-color: var(--blue-400);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
+}
+
+.daily-operations-section {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 24px;
+  padding: 24px;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+  transition: all 0.3s;
+
+  &.is-collapsed {
+    padding-bottom: 24px;
+    .section-header {
+      margin-bottom: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    border-bottom: 2px dashed var(--gray-100);
+    padding-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+
+    &__title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      font-size: 2.2rem;
+      color: var(--blue-500);
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      margin: 0;
+    }
+
+    .collapse-icon {
+      font-size: 2rem;
+      color: var(--gray-500);
+      transition: transform 0.3s ease;
+      
+      &.rotate-180 {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}
+
+.operations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.operation-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.operation-input-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 12px 20px;
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    border-color: var(--blue-400);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: var(--white);
+  }
+
+  .operation-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--blue-100);
+    color: var(--blue-700);
+    border-radius: 10px;
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+
+  .operation-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--gray-900);
+    outline: none;
+    padding: 8px 0;
+
+    &::placeholder {
+      color: var(--gray-400);
+      font-weight: 400;
+    }
+  }
+}
+
+.btn-remove-op {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--rose-50);
+  color: var(--rose-500);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 1.6rem;
+  transition: all 0.2s;
   
-  &::placeholder {
-    color: var(--gray-400);
+  &:hover {
+    background: var(--rose-100);
+    color: var(--rose-600);
+    transform: scale(1.05);
+  }
+}
+
+.operations-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn-add-op {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: transparent;
+  border: 2px dashed var(--blue-200);
+  color: var(--blue-600);
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover { background: var(--blue-50); border-color: var(--blue-300); }
+}
+
+.btn-save-op {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--blue-600);
+  color: white;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 14px 32px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover:not(:disabled) { background: var(--blue-700); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+  &:disabled { opacity: 0.7; cursor: not-allowed; }
+}
+
+.spinner {
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top: 2px solid white;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.task-type-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.task-type-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--gray-50);
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--gray-200);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__badge {
+    background: var(--white);
+    color: var(--gray-500);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: 1px solid var(--gray-200);
   }
 }
 </style>

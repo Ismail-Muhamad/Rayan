@@ -151,6 +151,59 @@
                 </div>
 
                 <div v-if="month.isOpen" class="month-body">
+                  <!-- عمليات الشهر -->
+                  <div class="level-operations-section" :class="{ 'is-collapsed': !month.isOperationsOpen }">
+                    <div class="section-header" @click="month.isOperationsOpen = !month.isOperationsOpen">
+                      <div class="section-header__title">
+                        <BaseIcon name="solar:clipboard-list-outline" class="section-icon" />
+                        <h3 class="section-title">عمليات الشهر</h3>
+                      </div>
+                      <BaseIcon 
+                        name="solar:alt-arrow-down-outline" 
+                        class="collapse-icon" 
+                        :class="{ 'rotate-180': month.isOperationsOpen }" 
+                      />
+                    </div>
+                    
+                    <div class="operations-container" v-show="month.isOperationsOpen">
+                      <div 
+                        v-for="(op, opIndex) in month.operations" 
+                        :key="opIndex" 
+                        class="operation-row"
+                      >
+                        <div class="operation-input-group">
+                          <span class="operation-number">{{ opIndex + 1 }}</span>
+                          <input 
+                            v-model="month.operations[opIndex]" 
+                            type="text" 
+                            class="operation-input" 
+                            placeholder="أضف تفاصيل العملية هنا..." 
+                          />
+                        </div>
+                        <button 
+                          v-if="month.operations.length > 1" 
+                          class="btn-remove-op" 
+                          @click="month.operations.splice(opIndex, 1)"
+                          title="حذف العملية"
+                        >
+                          <BaseIcon name="solar:trash-bin-trash-outline" />
+                        </button>
+                      </div>
+                      
+                      <div class="operations-actions">
+                        <button class="btn-add-op" @click="month.operations.push('')">
+                          <BaseIcon name="solar:add-circle-outline" />
+                          إضافة عملية أخرى
+                        </button>
+                        <button class="btn-save-op" @click="saveMonthOperations(month)" :disabled="month.isSaving || dailyOperationsStore.loading">
+                          <BaseIcon name="solar:diskette-outline" v-if="!month.isSaving && !dailyOperationsStore.loading" />
+                          <span class="spinner" v-else></span>
+                          حفظ العمليات
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div v-for="(week, index) in month.weeks" :key="index" class="week-block" :class="{ 'week-block--open': week.isOpen }">
                     <div class="week-header" @click="week.isOpen = !week.isOpen">
                       <div class="week-header__info">
@@ -164,6 +217,59 @@
                     </div>
 
                     <div v-if="week.isOpen" class="week-body">
+                      <!-- عمليات الأسبوع -->
+                      <div class="level-operations-section" :class="{ 'is-collapsed': !week.isOperationsOpen }">
+                        <div class="section-header" @click="toggleWeekOperations(month, week)">
+                          <div class="section-header__title">
+                            <BaseIcon name="solar:clipboard-list-outline" class="section-icon" />
+                            <h3 class="section-title">عمليات الأسبوع</h3>
+                          </div>
+                          <BaseIcon 
+                            name="solar:alt-arrow-down-outline" 
+                            class="collapse-icon" 
+                            :class="{ 'rotate-180': week.isOperationsOpen }" 
+                          />
+                        </div>
+                        
+                        <div class="operations-container" v-show="week.isOperationsOpen">
+                          <div 
+                            v-for="(op, opIndex) in week.operations" 
+                            :key="opIndex" 
+                            class="operation-row"
+                          >
+                            <div class="operation-input-group">
+                              <span class="operation-number">{{ opIndex + 1 }}</span>
+                              <input 
+                                v-model="week.operations[opIndex]" 
+                                type="text" 
+                                class="operation-input" 
+                                placeholder="أضف تفاصيل العملية هنا..." 
+                              />
+                            </div>
+                            <button 
+                              v-if="week.operations.length > 1" 
+                              class="btn-remove-op" 
+                              @click="week.operations.splice(opIndex, 1)"
+                              title="حذف العملية"
+                            >
+                              <BaseIcon name="solar:trash-bin-trash-outline" />
+                            </button>
+                          </div>
+                          
+                          <div class="operations-actions">
+                            <button class="btn-add-op" @click="week.operations.push('')">
+                              <BaseIcon name="solar:add-circle-outline" />
+                              إضافة عملية أخرى
+                            </button>
+                            <button class="btn-save-op" @click="saveWeekOperations(month, week)" :disabled="week.isSaving || dailyOperationsStore.loading">
+                              <BaseIcon name="solar:diskette-outline" v-if="!week.isSaving && !dailyOperationsStore.loading" />
+                              <span class="spinner" v-else></span>
+                              حفظ العمليات
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
                       <div class="days-grid">
                         <div v-for="day in week.days" :key="day.date" class="day-card" :class="{'day-card--today': isToday(day.date)}" @click="goToDay(day.date, selectedUserId, selectedFarmId, selectedPalmTypeId)">
                           <div class="day-card__top">
@@ -213,8 +319,8 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks.store';
 import { useFarmsStore } from '@/stores/farms.store';
-
 import { useReportsStore } from '@/stores/reports.store';
+import { useDailyOperationsStore } from '@/stores/dailyOperations.store';
 import { mergeReportActivitiesIntoTasks } from '@/helpers/taskMerger.helper';
 
 const router = useRouter();
@@ -222,6 +328,7 @@ const route = useRoute();
 
 const farmsStore = useFarmsStore();
 const reportsStore = useReportsStore();
+const dailyOperationsStore = useDailyOperationsStore();
 const realUsers = ref([]);
 
 onMounted(async () => {
@@ -358,6 +465,11 @@ const groupTasksIntoCalendar = (tasks) => {
         monthStr: monthStr,
         monthName: dateObj.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' }),
         isOpen: monthStr === currentMonthStr,
+        operations: [''],
+        isOperationsOpen: false,
+        isLoadingOperations: false,
+        hasLoadedOperations: false,
+        isSaving: false,
         weeksMap: new Map(),
       });
     }
@@ -379,6 +491,11 @@ const groupTasksIntoCalendar = (tasks) => {
         weekNum: weekNum,
         weekName: `الأسبوع ${weekNames[weekNum] || weekNum} (${startDay} - ${endDay})`,
         isOpen: monthStr === currentMonthStr && weekNum === currentWeekNum,
+        operations: [''],
+        isOperationsOpen: false,
+        isLoadingOperations: false,
+        hasLoadedOperations: false,
+        isSaving: false,
         daysMap: new Map()
       });
     }
@@ -404,19 +521,91 @@ const groupTasksIntoCalendar = (tasks) => {
     dayObj.tasks.push(task);
   });
 
-  const calendar = Array.from(calendarMap.values()).sort((a, b) => b.monthStr.localeCompare(a.monthStr)); 
-  
-  calendar.forEach(month => {
-    month.weeks = Array.from(month.weeksMap.values()).sort((a, b) => b.weekNum - a.weekNum);
-    delete month.weeksMap;
-    
-    month.weeks.forEach(week => {
-      week.days = Array.from(week.daysMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+  const calendar = Array.from(calendarMap.values()).map(month => {
+    month.weeks = Array.from(month.weeksMap.values()).map(week => {
+      week.days = Array.from(week.daysMap.values()).sort((a, b) => a.date.localeCompare(b.date));
       delete week.daysMap;
-    });
+      return week;
+    }).sort((a, b) => a.weekNum - b.weekNum);
+    delete month.weeksMap;
+    return month;
+  }).sort((a, b) => b.monthStr.localeCompare(a.monthStr));
+
+  // Check if we need to load current month/week operations immediately if they are open
+  calendar.forEach(month => {
+    if (month.isOpen && month.isOperationsOpen && !month.hasLoadedOperations) {
+       toggleMonthOperations(month); 
+       // Need to invert it back since toggle will invert it
+       month.isOperationsOpen = true; 
+    }
   });
 
   return calendar;
+};
+
+const toggleMonthOperations = async (month) => {
+  month.isOperationsOpen = !month.isOperationsOpen;
+  if (month.isOperationsOpen && !month.hasLoadedOperations) {
+    month.isLoadingOperations = true;
+    const op = await dailyOperationsStore.fetchOperation({
+      farm_id: selectedFarmId.value,
+      level: 'month',
+      operation_key: month.monthStr
+    });
+    if (op && op.content) month.operations = op.content.split('\n');
+    else month.operations = [''];
+    month.hasLoadedOperations = true;
+    month.isLoadingOperations = false;
+  }
+};
+
+const saveMonthOperations = async (month) => {
+  month.isSaving = true;
+  const content = month.operations.filter(op => op.trim() !== '').join('\n');
+  const [year, monthVal] = month.monthStr.split('-');
+  await dailyOperationsStore.saveOperation({
+    farm_id: selectedFarmId.value,
+    level: 'month',
+    operation_key: month.monthStr,
+    content: content,
+    year: parseInt(year),
+    month: parseInt(monthVal)
+  });
+  month.isSaving = false;
+};
+
+const toggleWeekOperations = async (month, week) => {
+  week.isOperationsOpen = !week.isOperationsOpen;
+  if (week.isOperationsOpen && !week.hasLoadedOperations) {
+    week.isLoadingOperations = true;
+    const opKey = `${month.monthStr}-week-${week.weekNum}`;
+    const op = await dailyOperationsStore.fetchOperation({
+      farm_id: selectedFarmId.value,
+      level: 'week',
+      operation_key: opKey
+    });
+    if (op && op.content) week.operations = op.content.split('\n');
+    else week.operations = [''];
+    week.hasLoadedOperations = true;
+    week.isLoadingOperations = false;
+  }
+};
+
+const saveWeekOperations = async (month, week) => {
+  week.isSaving = true;
+  const content = week.operations.filter(op => op.trim() !== '').join('\n');
+  const [year, monthVal] = month.monthStr.split('-');
+  const opKey = `${month.monthStr}-week-${week.weekNum}`;
+  await dailyOperationsStore.saveOperation({
+    farm_id: selectedFarmId.value,
+    level: 'week',
+    operation_key: opKey,
+    content: content,
+    year: parseInt(year),
+    month: parseInt(monthVal),
+    week_number: week.weekNum
+  });
+  week.isSaving = false;
 };
 
 const updateCalendar = () => {
@@ -1143,6 +1332,190 @@ const isToday = (dateStr) => {
 
 .day-card__action {
   display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding: 14px 20px; background: var(--gray-50); color: var(--gray-600); border-radius: 14px; font-weight: 800; font-size: 1.15rem; transition: all 0.3s; border: 1px solid var(--gray-100);
+}
+
+/* Level Operations UI (Month/Week) */
+.level-operations-section {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+  transition: all 0.3s;
+
+  &.is-collapsed {
+    padding-bottom: 24px;
+    .section-header {
+      margin-bottom: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    border-bottom: 2px dashed var(--gray-100);
+    padding-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+
+    &__title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      font-size: 2.2rem;
+      color: var(--blue-500);
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      margin: 0;
+    }
+
+    .collapse-icon {
+      font-size: 2rem;
+      color: var(--gray-500);
+      transition: transform 0.3s ease;
+      &.rotate-180 { transform: rotate(180deg); }
+    }
+  }
+}
+
+.operations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.operation-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.operation-input-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 12px 20px;
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    border-color: var(--blue-400);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: var(--white);
+  }
+
+  .operation-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--blue-100);
+    color: var(--blue-700);
+    border-radius: 10px;
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+
+  .operation-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--gray-900);
+    outline: none;
+    padding: 8px 0;
+    &::placeholder { color: var(--gray-400); font-weight: 400; }
+  }
+}
+
+.btn-remove-op {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--rose-50);
+  color: var(--rose-500);
+  border: none;
+  border-radius: 14px;
+  font-size: 1.6rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover { background: var(--rose-100); color: var(--rose-600); transform: scale(1.05); }
+}
+
+.operations-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn-add-op {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: transparent;
+  border: 2px dashed var(--blue-200);
+  color: var(--blue-600);
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover { background: var(--blue-50); border-color: var(--blue-300); }
+}
+
+.btn-save-op {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--blue-600);
+  color: white;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 14px 32px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover:not(:disabled) { background: var(--blue-700); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+  &:disabled { opacity: 0.7; cursor: not-allowed; }
+}
+
+.spinner {
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top: 2px solid white;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Transitions */

@@ -40,6 +40,29 @@
           </div>
         </section>
 
+        <!-- عمليات يومية -->
+        <section class="daily-operations-section" v-if="dailyOperations.length > 0 && dailyOperations[0] !== ''">
+          <div class="section-header">
+            <div class="section-header__title">
+              <BaseIcon name="solar:clipboard-list-outline" class="section-icon" />
+              <h3 class="section-title">عمليات يومية عامة</h3>
+            </div>
+          </div>
+          
+          <div class="operations-container">
+            <div 
+              v-for="(op, index) in dailyOperations" 
+              :key="index" 
+              class="operation-row readonly"
+            >
+              <div class="operation-input-group readonly">
+                <span class="operation-number">{{ index + 1 }}</span>
+                <span class="operation-text">{{ op }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- المهام مقسمة حسب نوع النخل -->
         <div class="palm-sections">
           <div v-for="palmType in currentFarm.palmTypes" :key="palmType.id" class="palm-section">
@@ -173,12 +196,13 @@ import { ref, computed, onMounted, onActivated } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks.store';
 import { useReportsStore } from '@/stores/reports.store';
-import { mergeReportActivitiesIntoTasks } from '@/helpers/taskMerger.helper';
+import { useDailyOperationsStore } from '@/stores/dailyOperations.store';
 
 const route = useRoute();
 const router = useRouter();
 const tasksStore = useTasksStore();
 const reportsStore = useReportsStore();
+const dailyOperationsStore = useDailyOperationsStore();
 
 const dateParam = route.params.date;
 const farmIdParam = route.query.farmId;
@@ -186,6 +210,21 @@ const palmTypeIdParam = route.query.palmTypeId;
 
 const loading = ref(true);
 const currentFarm = ref(null);
+const dailyOperations = ref([]);
+
+const loadDailyOperations = async () => {
+  if (!farmIdParam) return;
+  const operation = await dailyOperationsStore.fetchOperation({
+    farm_id: farmIdParam,
+    level: 'day',
+    operation_key: dateParam
+  });
+  if (operation && operation.content) {
+    dailyOperations.value = operation.content.split('\n').filter(op => op.trim() !== '');
+  } else {
+    dailyOperations.value = [];
+  }
+};
 
 const fetchTasks = async () => {
   loading.value = true;
@@ -274,6 +313,7 @@ const fetchTasks = async () => {
       });
       
       currentFarm.value.palmTypes = Array.from(palmTypesMap.values());
+      await loadDailyOperations();
     } else {
       currentFarm.value = null;
     }
@@ -456,6 +496,84 @@ const formatWeight = (valueInGrams) => {
     font-size: 1.3rem;
     color: var(--gray-600);
     font-weight: 600;
+  }
+}
+
+/* Daily Operations */
+.daily-operations-section {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 24px;
+  padding: 24px;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px dashed var(--gray-100);
+    padding-bottom: 16px;
+
+    &__title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      font-size: 2.2rem;
+      color: var(--blue-500);
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      margin: 0;
+    }
+  }
+}
+
+.operations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.operation-row {
+  display: flex;
+  align-items: center;
+}
+
+.operation-input-group.readonly {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 12px 20px;
+
+  .operation-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--blue-100);
+    color: var(--blue-700);
+    border-radius: 10px;
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+
+  .operation-text {
+    flex: 1;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--gray-900);
   }
 }
 

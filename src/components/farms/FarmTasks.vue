@@ -66,7 +66,7 @@
             
             <div v-for="month in activeCalendar" :key="month.monthStr" class="month-block" :class="{ 'month-block--open': month.isOpen }">
               
-              <div class="month-header" @click="month.isOpen = !month.isOpen">
+              <div class="month-header" @click="toggleMonth(month)">
                 <div class="month-header__info">
                   <BaseIcon name="solar:calendar-mark-bold-duotone" class="month-header__icon" />
                   <h3 class="month-header__title">{{ month.monthName }}</h3>
@@ -80,8 +80,29 @@
               </div>
 
               <div v-if="month.isOpen" class="month-body">
+                <!-- عمليات الشهر -->
+                <div v-if="month.operationsLoading" class="operations-loading">
+                  جاري تحميل عمليات الشهر...
+                </div>
+                <div v-else-if="month.operations && month.operations.length > 0" class="level-operations-section is-readonly">
+                  <div class="section-header">
+                    <div class="section-header__title">
+                      <BaseIcon name="solar:clipboard-list-bold-duotone" class="section-icon" />
+                      <h3 class="section-title">عمليات الشهر العامة</h3>
+                    </div>
+                  </div>
+                  <div class="operations-container">
+                    <div v-for="(op, opIdx) in month.operations" :key="opIdx" class="operation-row readonly">
+                      <div class="operation-input-group readonly">
+                        <span class="operation-number">{{ opIdx + 1 }}</span>
+                        <span class="operation-text">{{ op }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div v-for="(week, index) in month.weeks" :key="index" class="week-block" :class="{ 'week-block--open': week.isOpen }">
-                  <div class="week-header" @click="week.isOpen = !week.isOpen">
+                  <div class="week-header" @click="toggleWeek(month, week)">
                     <div class="week-header__info">
                       <div class="week-dot"></div>
                       <h4 class="week-header__title">{{ week.weekName }}</h4>
@@ -93,6 +114,27 @@
                   </div>
 
                   <div v-if="week.isOpen" class="week-body">
+                    <!-- عمليات الأسبوع -->
+                    <div v-if="week.operationsLoading" class="operations-loading">
+                      جاري تحميل عمليات الأسبوع...
+                    </div>
+                    <div v-else-if="week.operations && week.operations.length > 0" class="level-operations-section is-readonly">
+                      <div class="section-header">
+                        <div class="section-header__title">
+                          <BaseIcon name="solar:clipboard-list-outline" class="section-icon" />
+                          <h3 class="section-title">عمليات الأسبوع العامة</h3>
+                        </div>
+                      </div>
+                      <div class="operations-container">
+                        <div v-for="(op, opIdx) in week.operations" :key="opIdx" class="operation-row readonly">
+                          <div class="operation-input-group readonly">
+                            <span class="operation-number">{{ opIdx + 1 }}</span>
+                            <span class="operation-text">{{ op }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div class="days-grid">
                       <div v-for="day in week.days" :key="day.date" class="day-card" :class="{'day-card--today': isToday(day.date)}" @click="goToDay(day.date, selectedFarmId, selectedPalmTypeId)">
                         <div class="day-card__top">
@@ -144,6 +186,7 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks.store';
 import { useFarmsStore } from '@/stores/farms.store';
+import { useDailyOperationsStore } from '@/stores/dailyOperations.store';
 
 import { useReportsStore } from '@/stores/reports.store';
 import { mergeReportActivitiesIntoTasks } from '@/helpers/taskMerger.helper';
@@ -152,6 +195,7 @@ const router = useRouter();
 const farmsStore = useFarmsStore();
 const tasksStore = useTasksStore();
 const reportsStore = useReportsStore();
+const dailyOperationsStore = useDailyOperationsStore();
 
 const farms = ref([]);
 const loading = ref(true);
@@ -217,6 +261,9 @@ const groupTasksIntoCalendar = (tasks) => {
         monthStr: monthStr,
         monthName: dateObj.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' }),
         isOpen: monthStr === currentMonthStr,
+        operationsLoaded: false,
+        operationsLoading: false,
+        operations: [],
         weeksMap: new Map(),
       });
     }
@@ -236,6 +283,9 @@ const groupTasksIntoCalendar = (tasks) => {
         weekNum: weekNum,
         weekName: `الأسبوع ${weekNames[weekNum] || weekNum} (${startDay} - ${endDay})`,
         isOpen: monthStr === currentMonthStr && weekNum === currentWeekNum,
+        operationsLoaded: false,
+        operationsLoading: false,
+        operations: [],
         daysMap: new Map()
       });
     }
@@ -284,6 +334,14 @@ const updateCalendar = () => {
   });
   
   activeCalendar.value = groupTasksIntoCalendar(filteredTasks);
+  
+  // Pre-load operations for initially open months and weeks
+  activeCalendar.value.forEach(async (month) => {
+    if (month.isOpen) await toggleMonth(month, true);
+    month.weeks.forEach(async (week) => {
+      if (week.isOpen) await toggleWeek(month, week, true);
+    });
+  });
   
   nextTick(() => {
     setTimeout(() => {
@@ -370,6 +428,55 @@ const formatShortDate = (dateStr) => {
 
 const isToday = (dateStr) => {
   return new Date(dateStr).toDateString() === new Date().toDateString();
+};
+
+const toggleMonth = async (month, forceOpen = false) => {
+  if (!forceOpen) month.isOpen = !month.isOpen;
+  if (month.isOpen && !month.operationsLoaded) {
+    month.operationsLoading = true;
+    try {
+      const op = await dailyOperationsStore.fetchOperation({
+        farm_id: selectedFarmId.value,
+        level: 'month',
+        operation_key: month.monthStr
+      });
+      if (op && op.content) {
+        month.operations = op.content.split('\n').filter(o => o.trim() !== '');
+      } else {
+        month.operations = [];
+      }
+      month.operationsLoaded = true;
+    } catch (e) {
+      console.error(e);
+    } finally {
+      month.operationsLoading = false;
+    }
+  }
+};
+
+const toggleWeek = async (month, week, forceOpen = false) => {
+  if (!forceOpen) week.isOpen = !week.isOpen;
+  if (week.isOpen && !week.operationsLoaded) {
+    week.operationsLoading = true;
+    try {
+      const weekKey = `${month.monthStr}-week-${week.weekNum}`;
+      const op = await dailyOperationsStore.fetchOperation({
+        farm_id: selectedFarmId.value,
+        level: 'week',
+        operation_key: weekKey
+      });
+      if (op && op.content) {
+        week.operations = op.content.split('\n').filter(o => o.trim() !== '');
+      } else {
+        week.operations = [];
+      }
+      week.operationsLoaded = true;
+    } catch (e) {
+      console.error(e);
+    } finally {
+      week.operationsLoading = false;
+    }
+  }
 };
 </script>
 
@@ -739,6 +846,9 @@ const isToday = (dateStr) => {
 
 .week-body {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .days-grid {
@@ -844,7 +954,7 @@ const isToday = (dateStr) => {
   align-items: center;
   gap: 8px;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 6px 12px;
   border-radius: 8px;
 
@@ -852,11 +962,11 @@ const isToday = (dateStr) => {
   &--fertilization { background: var(--emerald-50); color: var(--emerald-700); }
   &--spraying { background: var(--rose-50); color: var(--rose-700); }
   &--other { background: var(--violet-50); color: var(--violet-700); }
-  &--empty {
-    background: var(--gray-50);
-    color: var(--gray-400);
+  &--empty { 
+    background: var(--gray-50); 
+    color: var(--gray-400); 
     justify-content: center;
-    border: 1px dashed var(--gray-300);
+    border: 1px dashed var(--gray-200);
   }
 }
 
@@ -866,12 +976,99 @@ const isToday = (dateStr) => {
   align-items: center;
   margin-top: auto;
   padding: 12px 16px;
-  background: var(--blue-50);
-  color: var(--blue-700);
+  background: var(--gray-50);
+  color: var(--gray-600);
   border-radius: 12px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  transition: all 0.3s;
+}
+
+/* Operations UI - Read Only */
+.operations-loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--gray-500);
+  font-weight: 600;
+  font-size: 1.2rem;
+  background: var(--gray-50);
+  border-radius: 16px;
+  border: 1px dashed var(--gray-200);
+  margin-bottom: 20px;
+}
+
+.level-operations-section.is-readonly {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px dashed var(--gray-100);
+    padding-bottom: 16px;
+
+    &__title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      font-size: 2.2rem;
+      color: var(--blue-500);
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      margin: 0;
+    }
+  }
+}
+
+.operations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.operation-row.readonly {
+  display: flex;
+  align-items: center;
+}
+
+.operation-input-group.readonly {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 12px 20px;
+
+  .operation-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--blue-100);
+    color: var(--blue-700);
+    border-radius: 10px;
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+
+  .operation-text {
+    flex: 1;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--gray-900);
+  }
 }
 
 .fade-enter-active,
