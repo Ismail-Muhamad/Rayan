@@ -51,9 +51,7 @@
               :key="year"
               type="button"
               class="consumptions-page__year-chip"
-              :class="{
-                'consumptions-page__year-chip--active': selectedYear === year,
-              }"
+              :class="{ 'consumptions-page__year-chip--active': selectedYear === year }"
               @click="selectedYear = year"
             >
               {{ year }}
@@ -65,11 +63,8 @@
           <div class="consumptions-page__empty-icon">
             <BaseIcon name="mdi:sprout" />
           </div>
-
           <h3 class="consumptions-page__empty-title">اختر المزرعة</h3>
-          <p class="consumptions-page__empty-text">
-            اختر المزرعة لعرض الإجماليات
-          </p>
+          <p class="consumptions-page__empty-text">اختر المزرعة لعرض الإجماليات</p>
         </section>
 
         <section
@@ -79,7 +74,6 @@
           <div class="consumptions-page__empty-icon">
             <BaseIcon name="solar:calendar-mark-outline" />
           </div>
-
           <h3 class="consumptions-page__empty-title">لا توجد بيانات</h3>
           <p class="consumptions-page__empty-text">
             لا توجد تقارير أو استهلاكات متاحة لهذه المزرعة حاليًا
@@ -87,7 +81,9 @@
         </section>
 
         <template v-else>
+          <!-- ── Yearly stat cards ── -->
           <section class="consumptions-page__stats">
+            <!-- Irrigation -->
             <article class="consumptions-page__stat-card">
               <div class="consumptions-page__stat-icon">
                 <BaseIcon name="solar:waterdrops-outline" />
@@ -95,12 +91,16 @@
               <div class="consumptions-page__stat-copy">
                 <p class="consumptions-page__stat-label">إجمالي مياه الري</p>
                 <h3 class="consumptions-page__stat-value">
-                  {{ yearlyTotals.irrigationLiters.toLocaleString() }}
+                  {{ formatNumber(yearlyActualTotals.irrigationLiters) }}
                   <span>لتر</span>
                 </h3>
+                <p class="consumptions-page__stat-planned">
+                  {{ formatNumber(yearlyTotals.irrigationLiters) }} لتر
+                </p>
               </div>
             </article>
 
+            <!-- Fertilization -->
             <article
               class="consumptions-page__stat-card consumptions-page__stat-card--clickable"
               @click="toggleExpandedCard('fertilization')"
@@ -111,24 +111,24 @@
               <div class="consumptions-page__stat-copy">
                 <p class="consumptions-page__stat-label">إجمالي التسميد</p>
                 <h3 class="consumptions-page__stat-value">
-                  {{ yearlyTotals.fertilizationKg.toLocaleString() }}
+                  {{ formatNumber(yearlyActualTotals.fertilizationKg) }}
                   <span>كجم</span>
                 </h3>
-                <p class="consumptions-page__stat-hint">
-                  اضغط لعرض أنواع الأسمدة المستخدمة
+                <p class="consumptions-page__stat-planned">
+                  {{ formatNumber(yearlyTotals.fertilizationKg) }} كجم
                 </p>
+                <p class="consumptions-page__stat-hint">اضغط لعرض أنواع الأسمدة المستخدمة</p>
               </div>
               <div class="consumptions-page__stat-arrow">
                 <BaseIcon
-                  :name="
-                    expandedCard === 'fertilization'
-                      ? 'solar:alt-arrow-up-outline'
-                      : 'solar:alt-arrow-down-outline'
-                  "
+                  :name="expandedCard === 'fertilization'
+                    ? 'solar:alt-arrow-up-outline'
+                    : 'solar:alt-arrow-down-outline'"
                 />
               </div>
             </article>
 
+            <!-- Spraying -->
             <article
               class="consumptions-page__stat-card consumptions-page__stat-card--clickable"
               @click="toggleExpandedCard('spraying')"
@@ -139,53 +139,49 @@
               <div class="consumptions-page__stat-copy">
                 <p class="consumptions-page__stat-label">إجمالي الرش</p>
                 <h3 class="consumptions-page__stat-value">
-                  {{ yearlyTotals.sprayingKg.toLocaleString() }}
+                  {{ formatNumber(yearlyActualTotals.sprayingKg) }}
                   <span>كجم</span>
                 </h3>
-                <p class="consumptions-page__stat-hint">
-                  اضغط لعرض الأصناف المستخدمة
+                <p class="consumptions-page__stat-planned">
+                  {{ formatNumber(yearlyTotals.sprayingKg) }} كجم
                 </p>
+                <p class="consumptions-page__stat-hint">اضغط لعرض الأصناف المستخدمة</p>
               </div>
               <div class="consumptions-page__stat-arrow">
                 <BaseIcon
-                  :name="
-                    expandedCard === 'spraying'
-                      ? 'solar:alt-arrow-up-outline'
-                      : 'solar:alt-arrow-down-outline'
-                  "
+                  :name="expandedCard === 'spraying'
+                    ? 'solar:alt-arrow-up-outline'
+                    : 'solar:alt-arrow-down-outline'"
                 />
               </div>
             </article>
           </section>
 
+          <!-- ── Fertilization yearly details ── -->
           <section
             v-if="expandedCard === 'fertilization'"
             class="consumptions-page__details-box"
           >
             <div class="consumptions-page__details-head">
-              <h3 class="consumptions-page__section-title">
-                تفاصيل الأسمدة المستخدمة
-              </h3>
+              <h3 class="consumptions-page__section-title">تفاصيل الأسمدة المستخدمة</h3>
               <p class="consumptions-page__section-subtitle">
                 إجمالي كل صنف تم استخدامه خلال سنة {{ selectedYear }}
               </p>
             </div>
 
-            <div
-              v-if="fertilizationProducts.length"
-              class="consumptions-page__details-list"
-            >
+            <div v-if="yearlyFertilizationMerged.length" class="consumptions-page__details-list">
               <div
-                v-for="item in fertilizationProducts"
+                v-for="item in yearlyFertilizationMerged"
                 :key="`fert-${item.name}`"
                 class="consumptions-page__details-item"
               >
                 <div class="consumptions-page__details-item-copy">
                   <strong>{{ item.name }}</strong>
-                  <span>إجمالي الاستخدام خلال السنة</span>
+                  <span>إجمالي خلال السنة</span>
                 </div>
-                <div class="consumptions-page__details-item-value">
-                  {{ item.total.toLocaleString() }} كجم
+                <div class="consumptions-page__details-item-vals">
+                  <span class="consumptions-page__details-item-value">{{ formatNumber(item.actual) }} كجم</span>
+                  <span class="consumptions-page__details-item-planned">{{ formatNumber(item.planned) }} كجم</span>
                 </div>
               </div>
             </div>
@@ -195,34 +191,31 @@
             </div>
           </section>
 
+          <!-- ── Spraying yearly details ── -->
           <section
             v-if="expandedCard === 'spraying'"
             class="consumptions-page__details-box"
           >
             <div class="consumptions-page__details-head">
-              <h3 class="consumptions-page__section-title">
-                تفاصيل أصناف الرش المستخدمة
-              </h3>
+              <h3 class="consumptions-page__section-title">تفاصيل أصناف الرش المستخدمة</h3>
               <p class="consumptions-page__section-subtitle">
                 إجمالي كل صنف تم استخدامه خلال سنة {{ selectedYear }}
               </p>
             </div>
 
-            <div
-              v-if="sprayingProducts.length"
-              class="consumptions-page__details-list"
-            >
+            <div v-if="yearlySprayingMerged.length" class="consumptions-page__details-list">
               <div
-                v-for="item in sprayingProducts"
+                v-for="item in yearlySprayingMerged"
                 :key="`spray-${item.name}`"
                 class="consumptions-page__details-item"
               >
                 <div class="consumptions-page__details-item-copy">
                   <strong>{{ item.name }}</strong>
-                  <span>إجمالي الاستخدام خلال السنة</span>
+                  <span>إجمالي خلال السنة</span>
                 </div>
-                <div class="consumptions-page__details-item-value">
-                  {{ item.total.toLocaleString() }} كجم
+                <div class="consumptions-page__details-item-vals">
+                  <span class="consumptions-page__details-item-value">{{ formatNumber(item.actual) }} كجم</span>
+                  <span class="consumptions-page__details-item-planned">{{ formatNumber(item.planned) }} كجم</span>
                 </div>
               </div>
             </div>
@@ -232,11 +225,10 @@
             </div>
           </section>
 
+          <!-- ── Monthly breakdown ── -->
           <section class="consumptions-page__months">
             <div class="consumptions-page__months-head">
-              <h3 class="consumptions-page__section-title">
-                إجماليات سنة {{ selectedYear }}
-              </h3>
+              <h3 class="consumptions-page__section-title">إجماليات سنة {{ selectedYear }}</h3>
               <p class="consumptions-page__section-subtitle">
                 ملخص الاستهلاك الشهري للمزرعة المختارة
               </p>
@@ -247,53 +239,198 @@
                 v-for="month in monthlyBreakdown"
                 :key="month.monthKey"
                 class="consumptions-page__month-card"
+                :class="{ 'consumptions-page__month-card--current': month.isCurrentMonth }"
               >
                 <div class="consumptions-page__month-head">
-                  <h4 class="consumptions-page__month-title">
-                    {{ month.monthLabel }}
-                  </h4>
-                  <span class="consumptions-page__month-badge">
-                    {{ month.weeksCount }} أسبوع
-                  </span>
+                  <h4 class="consumptions-page__month-title">{{ month.monthLabel }}</h4>
+                  <span class="consumptions-page__month-badge">{{ month.weeksCount }} أسبوع</span>
                 </div>
 
+                <!-- Metric tiles: actual main, planned strikethrough -->
                 <div class="consumptions-page__month-metrics">
-                  <div class="consumptions-page__metric">
+                  <div
+                    v-if="month.irrigationLiters > 0 || month.actualIrrigationLiters > 0"
+                    class="consumptions-page__metric"
+                  >
                     <span class="consumptions-page__metric-label">مياه الري</span>
                     <strong class="consumptions-page__metric-value">
-                      {{ month.irrigationLiters.toLocaleString() }} لتر
+                      {{ formatNumber(month.actualIrrigationLiters) }} لتر
                     </strong>
+                    <span class="consumptions-page__metric-planned">
+                      {{ formatNumber(month.irrigationLiters) }} لتر
+                    </span>
                   </div>
 
                   <button
+                    v-if="month.fertilizationKg > 0 || month.actualFertilizationKg > 0"
                     type="button"
                     class="consumptions-page__metric consumptions-page__metric--clickable"
                     @click="toggleMonthExpanded(month.monthKey, 'fertilization')"
                   >
                     <span class="consumptions-page__metric-label">التسميد</span>
                     <strong class="consumptions-page__metric-value">
-                      {{ month.fertilizationKg.toLocaleString() }} كجم
+                      {{ formatNumber(month.actualFertilizationKg) }} كجم
                     </strong>
-                    <small class="consumptions-page__metric-hint">
-                      اضغط لعرض التفاصيل
-                    </small>
+                    <span class="consumptions-page__metric-planned">
+                      {{ formatNumber(month.fertilizationKg) }} كجم
+                    </span>
+                    <small class="consumptions-page__metric-hint">اضغط لعرض التفاصيل</small>
                   </button>
 
                   <button
+                    v-if="month.sprayingKg > 0 || month.actualSprayingKg > 0"
                     type="button"
                     class="consumptions-page__metric consumptions-page__metric--clickable"
                     @click="toggleMonthExpanded(month.monthKey, 'spraying')"
                   >
                     <span class="consumptions-page__metric-label">الرش</span>
                     <strong class="consumptions-page__metric-value">
-                      {{ month.sprayingKg.toLocaleString() }} كجم
+                      {{ formatNumber(month.actualSprayingKg) }} كجم
                     </strong>
-                    <small class="consumptions-page__metric-hint">
-                      اضغط لعرض التفاصيل
-                    </small>
+                    <span class="consumptions-page__metric-planned">
+                      {{ formatNumber(month.sprayingKg) }} كجم
+                    </span>
+                    <small class="consumptions-page__metric-hint">اضغط لعرض التفاصيل</small>
                   </button>
                 </div>
 
+                <!-- Comparison bars -->
+                <div class="consumptions-page__comparison">
+                  <!-- Irrigation bar -->
+                  <div
+                    v-if="month.irrigationLiters > 0 || month.actualIrrigationLiters > 0"
+                    class="consumptions-page__comparison-row"
+                  >
+                    <div class="consumptions-page__comparison-label">
+                      <BaseIcon name="solar:waterdrops-outline" class="consumptions-page__comparison-icon consumptions-page__comparison-icon--irr" />
+                      <span>الري</span>
+                    </div>
+                    <div class="consumptions-page__comparison-bar-wrap">
+                      <div class="consumptions-page__comparison-bar-track">
+                        <div
+                          class="consumptions-page__comparison-bar-fill consumptions-page__comparison-bar-fill--actual"
+                          :style="{ width: month.irrigationLiters > 0 ? Math.min(100, (month.actualIrrigationLiters / month.irrigationLiters) * 100) + '%' : (month.actualIrrigationLiters > 0 ? '100%' : '0%') }"
+                        />
+                        <div
+                          v-if="month.isCurrentMonth && month.plannedToDateIrrigationLiters !== null && month.irrigationLiters > 0"
+                          class="consumptions-page__comparison-bar-marker"
+                          :style="{ left: (100 - Math.min(100, (month.plannedToDateIrrigationLiters / month.irrigationLiters) * 100)) + '%' }"
+                        />
+                      </div>
+                      <div class="consumptions-page__comparison-vals">
+                        <span class="consumptions-page__comparison-val consumptions-page__comparison-val--actual">
+                          {{ formatNumber(month.actualIrrigationLiters) }} لتر
+                        </span>
+                        <span
+                          v-if="month.isCurrentMonth && month.plannedToDateIrrigationLiters !== null"
+                          class="consumptions-page__comparison-val consumptions-page__comparison-val--ptd"
+                        >
+                          مخطط لحد اليوم: {{ formatNumber(month.plannedToDateIrrigationLiters) }} لتر
+                        </span>
+                        <span class="consumptions-page__comparison-val consumptions-page__comparison-val--planned">
+                          {{ formatNumber(month.irrigationLiters) }} لتر
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Fertilization bar -->
+                  <div
+                    v-if="month.fertilizationKg > 0 || month.actualFertilizationKg > 0"
+                    class="consumptions-page__comparison-row"
+                  >
+                    <div class="consumptions-page__comparison-label">
+                      <BaseIcon name="solar:leaf-outline" class="consumptions-page__comparison-icon consumptions-page__comparison-icon--fert" />
+                      <span>التسميد</span>
+                    </div>
+                    <div class="consumptions-page__comparison-bar-wrap">
+                      <div class="consumptions-page__comparison-bar-track">
+                        <div
+                          class="consumptions-page__comparison-bar-fill consumptions-page__comparison-bar-fill--actual"
+                          :style="{ width: month.fertilizationKg > 0 ? Math.min(100, (month.actualFertilizationKg / month.fertilizationKg) * 100) + '%' : (month.actualFertilizationKg > 0 ? '100%' : '0%') }"
+                        />
+                        <div
+                          v-if="month.isCurrentMonth && month.plannedToDateFertilizationKg !== null && month.fertilizationKg > 0"
+                          class="consumptions-page__comparison-bar-marker"
+                          :style="{ left: (100 - Math.min(100, (month.plannedToDateFertilizationKg / month.fertilizationKg) * 100)) + '%' }"
+                        />
+                      </div>
+                      <div class="consumptions-page__comparison-vals">
+                        <span class="consumptions-page__comparison-val consumptions-page__comparison-val--actual">
+                          {{ formatNumber(month.actualFertilizationKg) }} كجم
+                        </span>
+                        <span
+                          v-if="month.isCurrentMonth && month.plannedToDateFertilizationKg !== null"
+                          class="consumptions-page__comparison-val consumptions-page__comparison-val--ptd"
+                        >
+                          مخطط لحد اليوم: {{ formatNumber(month.plannedToDateFertilizationKg) }} كجم
+                        </span>
+                        <span class="consumptions-page__comparison-val consumptions-page__comparison-val--planned">
+                          {{ formatNumber(month.fertilizationKg) }} كجم
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Spraying bar -->
+                  <div
+                    v-if="month.sprayingKg > 0 || month.actualSprayingKg > 0"
+                    class="consumptions-page__comparison-row"
+                  >
+                    <div class="consumptions-page__comparison-label">
+                      <BaseIcon name="solar:magic-stick-3-outline" class="consumptions-page__comparison-icon consumptions-page__comparison-icon--spray" />
+                      <span>الرش</span>
+                    </div>
+                    <div class="consumptions-page__comparison-bar-wrap">
+                      <div class="consumptions-page__comparison-bar-track">
+                        <div
+                          class="consumptions-page__comparison-bar-fill consumptions-page__comparison-bar-fill--actual"
+                          :style="{ width: month.sprayingKg > 0 ? Math.min(100, (month.actualSprayingKg / month.sprayingKg) * 100) + '%' : (month.actualSprayingKg > 0 ? '100%' : '0%') }"
+                        />
+                        <div
+                          v-if="month.isCurrentMonth && month.plannedToDateSprayingKg !== null && month.sprayingKg > 0"
+                          class="consumptions-page__comparison-bar-marker"
+                          :style="{ left: (100 - Math.min(100, (month.plannedToDateSprayingKg / month.sprayingKg) * 100)) + '%' }"
+                        />
+                      </div>
+                      <div class="consumptions-page__comparison-vals">
+                        <span class="consumptions-page__comparison-val consumptions-page__comparison-val--actual">
+                          {{ formatNumber(month.actualSprayingKg) }} كجم
+                        </span>
+                        <span
+                          v-if="month.isCurrentMonth && month.plannedToDateSprayingKg !== null"
+                          class="consumptions-page__comparison-val consumptions-page__comparison-val--ptd"
+                        >
+                          مخطط لحد اليوم: {{ formatNumber(month.plannedToDateSprayingKg) }} كجم
+                        </span>
+                        <span class="consumptions-page__comparison-val consumptions-page__comparison-val--planned">
+                          {{ formatNumber(month.sprayingKg) }} كجم
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Legend -->
+                  <div class="consumptions-page__comparison-legend">
+                    <span class="consumptions-page__comparison-legend-item consumptions-page__comparison-legend-item--actual">
+                      <span class="consumptions-page__comparison-legend-dot" />
+                      منفذ فعلاً
+                    </span>
+                    <span
+                      v-if="month.isCurrentMonth"
+                      class="consumptions-page__comparison-legend-item consumptions-page__comparison-legend-item--ptd"
+                    >
+                      <span class="consumptions-page__comparison-legend-dash" />
+                      مخطط لحد اليوم
+                    </span>
+                    <span class="consumptions-page__comparison-legend-item consumptions-page__comparison-legend-item--planned">
+                      <span class="consumptions-page__comparison-legend-dot consumptions-page__comparison-legend-dot--planned" />
+                      مخطط الشهر
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Fertilization details dropdown -->
                 <div
                   v-if="monthExpandedMap[month.monthKey] === 'fertilization'"
                   class="consumptions-page__month-details"
@@ -303,20 +440,26 @@
                   </h5>
 
                   <div
-                    v-if="month.fertilizationProducts.length"
+                    v-if="mergeProducts(month.actualFertilizationProducts, month.fertilizationProducts, month.plannedToDateFertilizationProducts, month.isCurrentMonth).length"
                     class="consumptions-page__details-list"
                   >
                     <div
-                      v-for="item in month.fertilizationProducts"
+                      v-for="item in mergeProducts(month.actualFertilizationProducts, month.fertilizationProducts, month.plannedToDateFertilizationProducts, month.isCurrentMonth)"
                       :key="`${month.monthKey}-fert-${item.name}`"
                       class="consumptions-page__details-item"
                     >
                       <div class="consumptions-page__details-item-copy">
                         <strong>{{ item.name }}</strong>
-                        <span>إجمالي الاستخدام خلال الشهر</span>
+                        <span>خلال الشهر</span>
                       </div>
-                      <div class="consumptions-page__details-item-value">
-                        {{ item.total.toLocaleString() }} كجم
+                      <div class="consumptions-page__details-item-vals">
+                        <span class="consumptions-page__details-item-value">{{ formatNumber(item.actual) }} كجم</span>
+                        <span v-if="month.isCurrentMonth" class="consumptions-page__details-item-ptd">
+                          لحد اليوم: {{ formatNumber(item.ptd) }} كجم
+                        </span>
+                        <span v-else class="consumptions-page__details-item-planned">
+                          {{ formatNumber(item.planned) }} كجم
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -326,6 +469,7 @@
                   </div>
                 </div>
 
+                <!-- Spraying details dropdown -->
                 <div
                   v-if="monthExpandedMap[month.monthKey] === 'spraying'"
                   class="consumptions-page__month-details"
@@ -335,20 +479,26 @@
                   </h5>
 
                   <div
-                    v-if="month.sprayingProducts.length"
+                    v-if="mergeProducts(month.actualSprayingProducts, month.sprayingProducts, month.plannedToDateSprayingProducts, month.isCurrentMonth).length"
                     class="consumptions-page__details-list"
                   >
                     <div
-                      v-for="item in month.sprayingProducts"
+                      v-for="item in mergeProducts(month.actualSprayingProducts, month.sprayingProducts, month.plannedToDateSprayingProducts, month.isCurrentMonth)"
                       :key="`${month.monthKey}-spray-${item.name}`"
                       class="consumptions-page__details-item"
                     >
                       <div class="consumptions-page__details-item-copy">
                         <strong>{{ item.name }}</strong>
-                        <span>إجمالي الاستخدام خلال الشهر</span>
+                        <span>خلال الشهر</span>
                       </div>
-                      <div class="consumptions-page__details-item-value">
-                        {{ item.total.toLocaleString() }} كجم
+                      <div class="consumptions-page__details-item-vals">
+                        <span class="consumptions-page__details-item-value">{{ formatNumber(item.actual) }} كجم</span>
+                        <span v-if="month.isCurrentMonth" class="consumptions-page__details-item-ptd">
+                          لحد اليوم: {{ formatNumber(item.ptd) }} كجم
+                        </span>
+                        <span v-else class="consumptions-page__details-item-planned">
+                          {{ formatNumber(item.planned) }} كجم
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -372,6 +522,7 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useFarmsStore } from "@/stores/farms.store";
 import { useReportsStore } from "@/stores/reports.store";
+import { useTasksStore } from "@/stores/tasks.store";
 import FertilizerTypesServices from "@/services/fertilizerTypes.services";
 import PesticideTypesServices from "@/services/pesticideTypes.services";
 
@@ -379,10 +530,11 @@ const { locale } = useI18n();
 
 const farmsStore = useFarmsStore();
 const reportsStore = useReportsStore();
+const tasksStore = useTasksStore();
 
 const { records: farmsRecords, uiFlags: farmsUiFlags } = storeToRefs(farmsStore);
-const { records: reportsRecords, uiFlags: reportsUiFlags } =
-  storeToRefs(reportsStore);
+const { records: reportsRecords, uiFlags: reportsUiFlags } = storeToRefs(reportsStore);
+const { records: tasksRecords } = storeToRefs(tasksStore);
 
 const selectedFarmId = ref("");
 const selectedYear = ref("");
@@ -392,9 +544,7 @@ const fertilizerTypesRecords = ref([]);
 const pesticideTypesRecords = ref([]);
 
 const isPageLoading = computed(() => {
-  return (
-    farmsUiFlags.value?.isFetchingList || reportsUiFlags.value?.isFetchingList
-  );
+  return farmsUiFlags.value?.isFetchingList || reportsUiFlags.value?.isFetchingList;
 });
 
 const farmsOptions = computed(() => {
@@ -404,54 +554,43 @@ const farmsOptions = computed(() => {
   }));
 });
 
+// ─── Helpers ───────────────────────────────────────────────────────────────
 const roundNumber = (value) => Number(Number(value || 0).toFixed(2));
 
-const reportDate = (report) => {
-  return report?.report_weeks?.[0]?.date || null;
+const formatNumber = (value) => {
+  const n = Number(value || 0);
+  return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 };
 
-const numberOfTreesFor = (report) => {
-  return Number(
+const reportDate = (report) => report?.report_weeks?.[0]?.date || null;
+
+const numberOfTreesFor = (report) =>
+  Number(
     report?.palm_type?.number_of_trees ||
       report?.farm?.palm_type?.number_of_trees ||
       report?.number_of_trees ||
       0
   );
-};
 
-const normalizeProductName = (value) => {
-  return String(value || "")
-    .trim()
-    .replace(/\s+/g, " ");
-};
+const normalizeProductName = (value) => String(value || "").trim().replace(/\s+/g, " ");
 
 const addToMap = (map, name, amount) => {
   const cleanName = normalizeProductName(name);
   const cleanAmount = Number(amount || 0);
-
   if (!cleanName || !cleanAmount) return;
-
-  if (!map[cleanName]) {
-    map[cleanName] = 0;
-  }
-
+  if (!map[cleanName]) map[cleanName] = 0;
   map[cleanName] += cleanAmount;
 };
 
-const mapToSortedArray = (map) => {
-  return Object.entries(map)
-    .map(([name, total]) => ({
-      name,
-      total: roundNumber(total),
-    }))
+const mapToSortedArray = (map) =>
+  Object.entries(map)
+    .map(([name, total]) => ({ name, total: roundNumber(total) }))
     .sort((a, b) => b.total - a.total);
-};
 
 const getFertilizerTypeName = (fertilization) => {
   const matched = (fertilizerTypesRecords.value || []).find(
     (item) => item.id === fertilization?.fertilizer_type_id
   );
-
   return normalizeProductName(
     matched?.name ||
       fertilization?.type_of_fertilization ||
@@ -468,11 +607,9 @@ const getFertilizerTypeName = (fertilization) => {
 
 const getPesticideTypeName = (day, item = null) => {
   const pesticideTypeId = item?.pesticide_type_id || day?.pesticide_type_id;
-
   const matched = (pesticideTypesRecords.value || []).find(
     (record) => record.id === pesticideTypeId
   );
-
   return normalizeProductName(
     matched?.name ||
       item?.name ||
@@ -493,72 +630,39 @@ const fetchTypesLookups = async () => {
     FertilizerTypesServices.get(),
     PesticideTypesServices.get(),
   ]);
-
   fertilizerTypesRecords.value = fertilizerTypesResponse?.data || [];
   pesticideTypesRecords.value = pesticideTypesResponse?.data || [];
 };
 
 const extractFertilizationEntries = (day, treesCount) => {
   const result = [];
-
   for (const item of day?.fertilizations || []) {
     const name = getFertilizerTypeName(item);
-
     const quantityPerPalm =
       Number(item?.fertilizer_quantity_per_palm_tree || 0) ||
       Number(item?.quantity_per_palm_tree || 0) ||
       Number(item?.quantity || 0);
-
     const totalKg = (quantityPerPalm * treesCount) / 1000;
-
-    if (name && totalKg > 0) {
-      result.push({
-        name,
-        totalKg,
-      });
-    }
+    if (name && totalKg > 0) result.push({ name, totalKg });
   }
-
   return result;
 };
 
 const extractSprayingEntries = (day, treesCount) => {
   const result = [];
-
   const name = getPesticideTypeName(day);
+  const totalKg = (Number(day?.amount_of_spray || 0) * Number(treesCount || 0)) / 1000;
+  if (name && totalKg > 0) result.push({ name, totalKg });
 
-  const totalKg =
-    (Number(day?.amount_of_spray || 0) * Number(treesCount || 0)) / 1000;
-
-  if (name && totalKg > 0) {
-    result.push({
-      name,
-      totalKg,
-    });
-  }
-
-  const sprayingItems = Array.isArray(day?.spraying_items)
-    ? day.spraying_items
-    : [];
-
-  for (const item of sprayingItems) {
+  for (const item of Array.isArray(day?.spraying_items) ? day.spraying_items : []) {
     const itemName = getPesticideTypeName(day, item);
-
     const quantityPerPalm =
       Number(item?.quantity_per_palm_tree || 0) ||
       Number(item?.amount_per_palm_tree || 0) ||
       Number(item?.quantity || 0);
-
     const itemTotalKg = (quantityPerPalm * treesCount) / 1000;
-
-    if (itemName && itemTotalKg > 0) {
-      result.push({
-        name: itemName,
-        totalKg: itemTotalKg,
-      });
-    }
+    if (itemName && itemTotalKg > 0) result.push({ name: itemName, totalKg: itemTotalKg });
   }
-
   return result;
 };
 
@@ -566,38 +670,33 @@ const hasRealTaskForDay = (day) => {
   const hasFertilization =
     Array.isArray(day?.fertilizations) &&
     day.fertilizations.some(
-      (fertilization) =>
-        !!fertilization?.fertilizer_type_id ||
-        (
-          String(fertilization?.type_of_fertilization || "").trim() !== "" &&
-          String(fertilization?.type_of_fertilization || "") !== "0"
-        ) ||
-        Number(fertilization?.fertilizer_quantity_per_palm_tree || 0) > 0
+      (f) =>
+        !!f?.fertilizer_type_id ||
+        (String(f?.type_of_fertilization || "").trim() !== "" &&
+          String(f?.type_of_fertilization || "") !== "0") ||
+        Number(f?.fertilizer_quantity_per_palm_tree || 0) > 0
     );
-
   const irrigationPerTree = Number(day?.irrigation_amount_per_palm_tree || 0);
   const sprayAmount = Number(day?.amount_of_spray || 0);
-  const hasSprayingName =
-    !!day?.pesticide_type_id || String(day?.spraying || "").trim() !== "";
-
+  const hasSprayingName = !!day?.pesticide_type_id || String(day?.spraying || "").trim() !== "";
   return hasFertilization || irrigationPerTree > 0 || sprayAmount > 0 || hasSprayingName;
 };
 
+// ─── Available years (reports + tasks) ───────────────────────────────────
 const availableYears = computed(() => {
-  const years = (reportsRecords.value || [])
-    .map((report) => {
-      const date = reportDate(report);
-      if (!date) return null;
-      return new Date(date).getFullYear();
-    })
+  const fromReports = (reportsRecords.value || [])
+    .map((r) => { const d = reportDate(r); return d ? new Date(d).getFullYear() : null; })
     .filter(Boolean);
 
-  return [...new Set(years)].sort((a, b) => b - a);
+  const fromTasks = (tasksRecords.value || [])
+    .filter((t) => t.is_completed && t.date)
+    .map((t) => new Date(t.date.slice(0, 10)).getFullYear());
+
+  return [...new Set([...fromReports, ...fromTasks])].sort((a, b) => b - a);
 });
 
 const filteredReportsByYear = computed(() => {
   if (!selectedYear.value) return [];
-
   return (reportsRecords.value || []).filter((report) => {
     const date = reportDate(report);
     if (!date) return false;
@@ -605,9 +704,121 @@ const filteredReportsByYear = computed(() => {
   });
 });
 
+// ─── Actual data from completed tasks ────────────────────────────────────
+const actualMonthlyData = computed(() => {
+  const grouped = {};
+  for (const task of tasksRecords.value || []) {
+    if (!task.is_completed) continue;
+    const dateStr = task.date?.slice(0, 10);
+    if (!dateStr) continue;
+
+    const dateObj = new Date(dateStr);
+    const year = dateObj.getFullYear();
+    const monthIndex = dateObj.getMonth();
+    const monthKey = `${year}-${monthIndex + 1}`;
+
+    if (!grouped[monthKey]) {
+      grouped[monthKey] = {
+        irrigationLiters: 0,
+        fertilizationKg: 0,
+        sprayingKg: 0,
+        fertilizationProductsMap: {},
+        sprayingProductsMap: {},
+      };
+    }
+
+    const qd = task.quantitative_data || {};
+    const palmType = task.palm_type || {};
+    const treesCount = Number(palmType?.number_of_trees || task.trees_count || 0);
+
+    if (task.task_type === "irrigation") {
+      grouped[monthKey].irrigationLiters +=
+        Number(qd.irrigation_amount_per_palm_tree || 0) * treesCount;
+    } else if (task.task_type === "spraying") {
+      const totalKg = (Number(qd.amount_of_spray || 0) * treesCount) / 1000;
+      grouped[monthKey].sprayingKg += totalKg;
+      const name = normalizeProductName(qd.pesticide_type_name || qd.spraying || "");
+      if (name && totalKg > 0) addToMap(grouped[monthKey].sprayingProductsMap, name, totalKg);
+    } else if (task.task_type === "fertilization") {
+      const totalKg = (Number(qd.fertilizer_quantity_per_palm_tree || 0) * treesCount) / 1000;
+      grouped[monthKey].fertilizationKg += totalKg;
+      const name = normalizeProductName(qd.fertilizer_type_name || qd.type_of_fertilization || "");
+      if (name && totalKg > 0) addToMap(grouped[monthKey].fertilizationProductsMap, name, totalKg);
+    }
+  }
+
+  for (const key of Object.keys(grouped)) {
+    grouped[key].irrigationLiters = roundNumber(grouped[key].irrigationLiters);
+    grouped[key].fertilizationKg = roundNumber(grouped[key].fertilizationKg);
+    grouped[key].sprayingKg = roundNumber(grouped[key].sprayingKg);
+  }
+  return grouped;
+});
+
+// ─── Planned-to-date for current month ───────────────────────────────────
+const plannedToDateMonthData = computed(() => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentMonthKey = `${currentYear}-${currentMonth + 1}`;
+  const todayDate = now.toISOString().slice(0, 10);
+
+  const result = {
+    irrigationLiters: 0,
+    fertilizationKg: 0,
+    sprayingKg: 0,
+    fertilizationProductsMap: {},
+    sprayingProductsMap: {},
+  };
+
+  for (const report of filteredReportsByYear.value) {
+    const dateForReport = reportDate(report);
+    if (!dateForReport) continue;
+    const reportDateObj = new Date(dateForReport);
+    if (reportDateObj.getFullYear() !== currentYear || reportDateObj.getMonth() !== currentMonth)
+      continue;
+
+    const treesCount = numberOfTreesFor(report);
+    for (const week of report?.report_weeks || []) {
+      for (const day of week?.days || []) {
+        if (!hasRealTaskForDay(day)) continue;
+        const dayDate = day?.date?.slice(0, 10) || "";
+        if (dayDate > todayDate) continue;
+
+        result.irrigationLiters +=
+          Number(day?.irrigation_amount_per_palm_tree || 0) * treesCount;
+
+        for (const item of extractFertilizationEntries(day, treesCount)) {
+          result.fertilizationKg += item.totalKg;
+          addToMap(result.fertilizationProductsMap, item.name, item.totalKg);
+        }
+        for (const item of extractSprayingEntries(day, treesCount)) {
+          result.sprayingKg += item.totalKg;
+          addToMap(result.sprayingProductsMap, item.name, item.totalKg);
+        }
+      }
+    }
+  }
+
+  return {
+    [currentMonthKey]: {
+      irrigationLiters: roundNumber(result.irrigationLiters),
+      fertilizationKg: roundNumber(result.fertilizationKg),
+      sprayingKg: roundNumber(result.sprayingKg),
+      fertilizationProductsMap: result.fertilizationProductsMap,
+      sprayingProductsMap: result.sprayingProductsMap,
+    },
+  };
+});
+
+// ─── Monthly breakdown (reports + actuals merged) ────────────────────────
 const monthlyBreakdown = computed(() => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
   const grouped = {};
 
+  // From reports (planned)
   for (const report of filteredReportsByYear.value) {
     const date = reportDate(report);
     if (!date) continue;
@@ -619,19 +830,21 @@ const monthlyBreakdown = computed(() => {
 
     if (!grouped[monthKey]) {
       grouped[monthKey] = {
-        monthKey,
-        monthIndex,
-        year,
+        monthKey, monthIndex, monthNumber: monthIndex + 1, year,
+        isCurrentMonth: year === currentYear && monthIndex === currentMonth,
         monthLabel: new Intl.DateTimeFormat(locale.value || "ar", {
-          month: "long",
-          year: "numeric",
+          month: "long", year: "numeric",
         }).format(dateObject),
         weeksCount: 0,
-        irrigationLiters: 0,
-        fertilizationKg: 0,
-        sprayingKg: 0,
-        fertilizationProductsMap: {},
-        sprayingProductsMap: {},
+        irrigationLiters: 0, fertilizationKg: 0, sprayingKg: 0,
+        fertilizationProductsMap: {}, sprayingProductsMap: {},
+        actualIrrigationLiters: 0, actualFertilizationKg: 0, actualSprayingKg: 0,
+        actualFertilizationProductsMap: {}, actualSprayingProductsMap: {},
+        plannedToDateIrrigationLiters: null,
+        plannedToDateFertilizationKg: null,
+        plannedToDateSprayingKg: null,
+        plannedToDateFertilizationProductsMap: {},
+        plannedToDateSprayingProductsMap: {},
       };
     }
 
@@ -642,30 +855,68 @@ const monthlyBreakdown = computed(() => {
     for (const week of weeks) {
       for (const day of week?.days || []) {
         if (!hasRealTaskForDay(day)) continue;
-
         grouped[monthKey].irrigationLiters +=
           Number(day?.irrigation_amount_per_palm_tree || 0) * treesCount;
 
-        const fertEntries = extractFertilizationEntries(day, treesCount);
-        for (const item of fertEntries) {
+        for (const item of extractFertilizationEntries(day, treesCount)) {
           grouped[monthKey].fertilizationKg += item.totalKg;
-          addToMap(
-            grouped[monthKey].fertilizationProductsMap,
-            item.name,
-            item.totalKg
-          );
+          addToMap(grouped[monthKey].fertilizationProductsMap, item.name, item.totalKg);
         }
-
-        const sprayEntries = extractSprayingEntries(day, treesCount);
-        for (const item of sprayEntries) {
+        for (const item of extractSprayingEntries(day, treesCount)) {
           grouped[monthKey].sprayingKg += item.totalKg;
-          addToMap(
-            grouped[monthKey].sprayingProductsMap,
-            item.name,
-            item.totalKg
-          );
+          addToMap(grouped[monthKey].sprayingProductsMap, item.name, item.totalKg);
         }
       }
+    }
+  }
+
+  // Merge actual data
+  const actualData = actualMonthlyData.value;
+  for (const monthKey of Object.keys(actualData)) {
+    if (grouped[monthKey]) {
+      grouped[monthKey].actualIrrigationLiters = actualData[monthKey].irrigationLiters;
+      grouped[monthKey].actualFertilizationKg = actualData[monthKey].fertilizationKg;
+      grouped[monthKey].actualSprayingKg = actualData[monthKey].sprayingKg;
+      grouped[monthKey].actualFertilizationProductsMap = actualData[monthKey].fertilizationProductsMap || {};
+      grouped[monthKey].actualSprayingProductsMap = actualData[monthKey].sprayingProductsMap || {};
+    } else {
+      const parts = monthKey.split("-");
+      const year = Number(parts[0]);
+      const monthNumber = Number(parts[1]);
+      const monthIndex = monthNumber - 1;
+      const dateObject = new Date(year, monthIndex, 1);
+      grouped[monthKey] = {
+        monthKey, monthIndex, monthNumber, year,
+        isCurrentMonth: year === currentYear && monthIndex === currentMonth,
+        monthLabel: new Intl.DateTimeFormat(locale.value || "ar", {
+          month: "long", year: "numeric",
+        }).format(dateObject),
+        weeksCount: 0,
+        irrigationLiters: 0, fertilizationKg: 0, sprayingKg: 0,
+        fertilizationProductsMap: {}, sprayingProductsMap: {},
+        actualIrrigationLiters: actualData[monthKey].irrigationLiters,
+        actualFertilizationKg: actualData[monthKey].fertilizationKg,
+        actualSprayingKg: actualData[monthKey].sprayingKg,
+        actualFertilizationProductsMap: actualData[monthKey].fertilizationProductsMap || {},
+        actualSprayingProductsMap: actualData[monthKey].sprayingProductsMap || {},
+        plannedToDateIrrigationLiters: null,
+        plannedToDateFertilizationKg: null,
+        plannedToDateSprayingKg: null,
+        plannedToDateFertilizationProductsMap: {},
+        plannedToDateSprayingProductsMap: {},
+      };
+    }
+  }
+
+  // Merge planned-to-date
+  const ptd = plannedToDateMonthData.value;
+  for (const monthKey of Object.keys(ptd)) {
+    if (grouped[monthKey]) {
+      grouped[monthKey].plannedToDateIrrigationLiters = ptd[monthKey].irrigationLiters;
+      grouped[monthKey].plannedToDateFertilizationKg = ptd[monthKey].fertilizationKg;
+      grouped[monthKey].plannedToDateSprayingKg = ptd[monthKey].sprayingKg;
+      grouped[monthKey].plannedToDateFertilizationProductsMap = ptd[monthKey].fertilizationProductsMap || {};
+      grouped[monthKey].plannedToDateSprayingProductsMap = ptd[monthKey].sprayingProductsMap || {};
     }
   }
 
@@ -677,53 +928,87 @@ const monthlyBreakdown = computed(() => {
       sprayingKg: roundNumber(item.sprayingKg),
       fertilizationProducts: mapToSortedArray(item.fertilizationProductsMap),
       sprayingProducts: mapToSortedArray(item.sprayingProductsMap),
+      actualFertilizationProducts: mapToSortedArray(item.actualFertilizationProductsMap || {}),
+      actualSprayingProducts: mapToSortedArray(item.actualSprayingProductsMap || {}),
+      plannedToDateFertilizationProducts: mapToSortedArray(item.plannedToDateFertilizationProductsMap || {}),
+      plannedToDateSprayingProducts: mapToSortedArray(item.plannedToDateSprayingProductsMap || {}),
     }))
+    .filter((item) => {
+      const hasPlanned = item.irrigationLiters > 0 || item.fertilizationKg > 0 || item.sprayingKg > 0;
+      const hasActual = item.actualIrrigationLiters > 0 || item.actualFertilizationKg > 0 || item.actualSprayingKg > 0;
+      return hasPlanned || hasActual;
+    })
     .sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return b.monthIndex - a.monthIndex;
     });
 });
 
-const yearlyTotals = computed(() => {
-  return monthlyBreakdown.value.reduce(
+// ─── Yearly totals ────────────────────────────────────────────────────────
+const yearlyTotals = computed(() =>
+  monthlyBreakdown.value.reduce(
     (sum, month) => {
       sum.irrigationLiters += Number(month.irrigationLiters || 0);
       sum.fertilizationKg += Number(month.fertilizationKg || 0);
       sum.sprayingKg += Number(month.sprayingKg || 0);
       return sum;
     },
-    {
-      irrigationLiters: 0,
-      fertilizationKg: 0,
-      sprayingKg: 0,
-    }
-  );
-});
+    { irrigationLiters: 0, fertilizationKg: 0, sprayingKg: 0 }
+  )
+);
 
-const fertilizationProducts = computed(() => {
+const yearlyActualTotals = computed(() =>
+  monthlyBreakdown.value.reduce(
+    (sum, month) => {
+      sum.irrigationLiters += Number(month.actualIrrigationLiters || 0);
+      sum.fertilizationKg += Number(month.actualFertilizationKg || 0);
+      sum.sprayingKg += Number(month.actualSprayingKg || 0);
+      return sum;
+    },
+    { irrigationLiters: 0, fertilizationKg: 0, sprayingKg: 0 }
+  )
+);
+
+// ─── Merge products helper ────────────────────────────────────────────────
+const mergeProducts = (actualProducts, plannedProducts, ptdProducts, isCurrentMonth) => {
   const map = {};
-
-  for (const month of monthlyBreakdown.value) {
-    for (const item of month.fertilizationProducts) {
-      addToMap(map, item.name, item.total);
+  for (const item of actualProducts || []) {
+    if (!map[item.name]) map[item.name] = { name: item.name, actual: 0, planned: 0, ptd: 0 };
+    map[item.name].actual = roundNumber(item.total);
+  }
+  for (const item of plannedProducts || []) {
+    if (!map[item.name]) map[item.name] = { name: item.name, actual: 0, planned: 0, ptd: 0 };
+    map[item.name].planned = roundNumber(item.total);
+  }
+  if (isCurrentMonth) {
+    for (const item of ptdProducts || []) {
+      if (!map[item.name]) map[item.name] = { name: item.name, actual: 0, planned: 0, ptd: 0 };
+      map[item.name].ptd = roundNumber(item.total);
     }
   }
+  return Object.values(map).sort((a, b) => b.actual - a.actual || b.planned - a.planned);
+};
 
-  return mapToSortedArray(map);
-});
-
-const sprayingProducts = computed(() => {
-  const map = {};
-
+// ─── Yearly merged lists ──────────────────────────────────────────────────
+const yearlyFertilizationMerged = computed(() => {
+  const plannedMap = {}, actualMap = {};
   for (const month of monthlyBreakdown.value) {
-    for (const item of month.sprayingProducts) {
-      addToMap(map, item.name, item.total);
-    }
+    for (const item of month.fertilizationProducts || []) addToMap(plannedMap, item.name, item.total);
+    for (const item of month.actualFertilizationProducts || []) addToMap(actualMap, item.name, item.total);
   }
-
-  return mapToSortedArray(map);
+  return mergeProducts(mapToSortedArray(actualMap), mapToSortedArray(plannedMap), [], false);
 });
 
+const yearlySprayingMerged = computed(() => {
+  const plannedMap = {}, actualMap = {};
+  for (const month of monthlyBreakdown.value) {
+    for (const item of month.sprayingProducts || []) addToMap(plannedMap, item.name, item.total);
+    for (const item of month.actualSprayingProducts || []) addToMap(actualMap, item.name, item.total);
+  }
+  return mergeProducts(mapToSortedArray(actualMap), mapToSortedArray(plannedMap), [], false);
+});
+
+// ─── UI helpers ──────────────────────────────────────────────────────────
 const toggleExpandedCard = (cardName) => {
   expandedCard.value = expandedCard.value === cardName ? "" : cardName;
 };
@@ -735,29 +1020,28 @@ const toggleMonthExpanded = (monthKey, type) => {
   };
 };
 
+// ─── Data fetching ────────────────────────────────────────────────────────
 const fetchFarms = async () => {
-  await farmsStore.fetchRecords({
-    page: 1,
-    per_page: 1000,
-  });
+  await farmsStore.fetchRecords({ page: 1, per_page: 1000 });
 };
 
 const fetchFarmReports = async (farmId) => {
   if (!farmId) return;
+  await reportsStore.fetchRecords({ farm_id: farmId });
+};
 
-  await reportsStore.fetchRecords({
-    farm_id: farmId,
-  });
+const fetchFarmTasks = async (farmId) => {
+  if (!farmId) return;
+  await tasksStore.fetchRecords({ farm_id: farmId, per_page: 10000 });
 };
 
 watch(selectedFarmId, async (farmId) => {
   selectedYear.value = "";
   expandedCard.value = "";
   monthExpandedMap.value = {};
-
   if (!farmId) return;
 
-  await fetchFarmReports(farmId);
+  await Promise.all([fetchFarmReports(farmId), fetchFarmTasks(farmId)]);
 
   if (availableYears.value.length) {
     selectedYear.value = availableYears.value[0];
@@ -842,11 +1126,11 @@ onMounted(async () => {
     font-size: 15px;
     outline: none;
     color: #0f172a;
-  }
 
-  &__select:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    &:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    }
   }
 
   &__years,
@@ -893,17 +1177,9 @@ onMounted(async () => {
     font-weight: 700;
     cursor: pointer;
     transition: 0.2s ease;
-  }
 
-  &__year-chip:hover {
-    transform: translateY(-1px);
-    border-color: #93c5fd;
-  }
-
-  &__year-chip--active {
-    background: linear-gradient(135deg, #2563eb, #22c55e);
-    color: #fff;
-    border-color: transparent;
+    &:hover { transform: translateY(-1px); border-color: #93c5fd; }
+    &--active { background: linear-gradient(135deg, #2563eb, #22c55e); color: #fff; border-color: transparent; }
   }
 
   &__stats {
@@ -920,16 +1196,12 @@ onMounted(async () => {
     border-radius: 22px;
     background: #fff;
     border: 1px solid rgba(148, 163, 184, 0.16);
-  }
 
-  &__stat-card--clickable {
-    cursor: pointer;
-    transition: 0.2s ease;
-  }
-
-  &__stat-card--clickable:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+    &--clickable {
+      cursor: pointer;
+      transition: 0.2s ease;
+      &:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06); }
+    }
   }
 
   &__stat-icon {
@@ -945,10 +1217,7 @@ onMounted(async () => {
     flex-shrink: 0;
   }
 
-  &__stat-copy {
-    min-width: 0;
-    flex: 1;
-  }
+  &__stat-copy { min-width: 0; flex: 1; }
 
   &__stat-label {
     margin: 0 0 6px;
@@ -963,12 +1232,16 @@ onMounted(async () => {
     font-weight: 800;
     line-height: 1.3;
     color: #0f172a;
+
+    span { font-size: 14px; color: #64748b; margin-inline-start: 4px; }
   }
 
-  &__stat-value span {
-    font-size: 14px;
-    color: #64748b;
-    margin-inline-start: 4px;
+  &__stat-planned {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-decoration: line-through;
   }
 
   &__stat-hint {
@@ -978,16 +1251,9 @@ onMounted(async () => {
     font-weight: 700;
   }
 
-  &__stat-arrow {
-    flex-shrink: 0;
-    font-size: 22px;
-    color: #64748b;
-  }
+  &__stat-arrow { flex-shrink: 0; font-size: 22px; color: #64748b; }
 
-  &__details-list {
-    display: grid;
-    gap: 12px;
-  }
+  &__details-list { display: grid; gap: 12px; }
 
   &__details-item {
     display: flex;
@@ -1004,22 +1270,38 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     gap: 4px;
+
+    strong { font-size: 15px; color: #0f172a; }
+    span { font-size: 12px; color: #64748b; }
   }
 
-  &__details-item-copy strong {
-    font-size: 15px;
-    color: #0f172a;
-  }
-
-  &__details-item-copy span {
-    font-size: 12px;
-    color: #64748b;
+  &__details-item-vals {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
   }
 
   &__details-item-value {
     font-size: 16px;
     font-weight: 800;
     color: #2563eb;
+    white-space: nowrap;
+  }
+
+  &__details-item-planned {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-decoration: line-through;
+    white-space: nowrap;
+  }
+
+  &__details-item-ptd {
+    font-size: 11px;
+    font-weight: 700;
+    color: #d97706;
     white-space: nowrap;
   }
 
@@ -1043,6 +1325,8 @@ onMounted(async () => {
     border-radius: 20px;
     background: linear-gradient(180deg, #ffffff, #f8fbff);
     border: 1px solid rgba(148, 163, 184, 0.16);
+
+    &--current { border-color: rgba(37, 99, 235, 0.25); }
   }
 
   &__month-head {
@@ -1053,12 +1337,7 @@ onMounted(async () => {
     margin-bottom: 14px;
   }
 
-  &__month-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 800;
-    color: #0f172a;
-  }
+  &__month-title { margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; }
 
   &__month-badge {
     display: inline-flex;
@@ -1076,6 +1355,7 @@ onMounted(async () => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    margin-bottom: 16px;
   }
 
   &__metric {
@@ -1084,56 +1364,151 @@ onMounted(async () => {
     background: #fff;
     border: 1px solid rgba(226, 232, 240, 0.95);
     text-align: start;
+
+    &--clickable {
+      cursor: pointer;
+      transition: 0.2s ease;
+      width: 100%;
+      &:hover { transform: translateY(-1px); border-color: #93c5fd; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04); }
+    }
   }
 
-  &__metric--clickable {
-    cursor: pointer;
-    transition: 0.2s ease;
-    width: 100%;
-  }
+  &__metric-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #64748b; }
+  &__metric-value { display: block; font-size: 16px; font-weight: 800; color: #0f172a; }
 
-  &__metric--clickable:hover {
-    transform: translateY(-1px);
-    border-color: #93c5fd;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
-  }
-
-  &__metric-label {
+  &__metric-planned {
     display: block;
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-decoration: line-through;
+    margin-top: 3px;
   }
 
-  &__metric-value {
-    display: block;
-    font-size: 16px;
-    font-weight: 800;
-    color: #0f172a;
-  }
+  &__metric-hint { display: block; margin-top: 8px; font-size: 12px; color: #2563eb; font-weight: 700; }
 
-  &__metric-hint {
-    display: block;
-    margin-top: 8px;
+  // ── Comparison bars ────────────────────────────────────────────────────
+  &__comparison { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+
+  &__comparison-row { display: flex; align-items: center; gap: 12px; }
+
+  &__comparison-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    width: 60px;
     font-size: 12px;
-    color: #2563eb;
     font-weight: 700;
+    color: #475569;
+    justify-content: flex-end;
   }
 
+  &__comparison-icon { font-size: 16px; }
+  &__comparison-icon--irr { color: #2563eb; }
+  &__comparison-icon--fert { color: #16a34a; }
+  &__comparison-icon--spray { color: #9333ea; }
+
+  &__comparison-bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+
+  &__comparison-bar-track {
+    position: relative;
+    height: 10px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: visible;
+  }
+
+  &__comparison-bar-fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    border-radius: 999px;
+    transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &--actual {
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
+    }
+  }
+
+  &__comparison-bar-marker {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    border-radius: 999px;
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+    z-index: 2;
+  }
+
+  &__comparison-vals {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  &__comparison-val {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &--actual { color: #16a34a; }
+    &--ptd { color: #d97706; }
+    &--planned { color: #94a3b8; }
+  }
+
+  &__comparison-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(148, 163, 184, 0.25);
+  }
+
+  &__comparison-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+
+    &--actual { color: #16a34a; }
+    &--ptd { color: #d97706; }
+    &--planned { color: #94a3b8; }
+  }
+
+  &__comparison-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+
+    &--planned { background: #cbd5e1; }
+  }
+
+  &__comparison-legend-dash {
+    width: 14px;
+    height: 3px;
+    border-radius: 999px;
+    background: #f59e0b;
+  }
+
+  // ── Month details dropdown ────────────────────────────────────────────
   &__month-details {
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px dashed rgba(148, 163, 184, 0.35);
   }
 
-  &__month-details-title {
-    margin: 0 0 12px;
-    font-size: 16px;
-    font-weight: 800;
-    color: #0f172a;
-  }
+  &__month-details-title { margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #0f172a; }
 
+  // ── Empty state ───────────────────────────────────────────────────────
   &__empty-state {
     display: flex;
     flex-direction: column;
@@ -1160,70 +1535,33 @@ onMounted(async () => {
     background: rgba(37, 99, 235, 0.08);
   }
 
-  &__empty-title {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 800;
-    color: #0f172a;
-  }
-
-  &__empty-text {
-    margin: 0;
-    font-size: 15px;
-    color: #64748b;
-  }
+  &__empty-title { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; }
+  &__empty-text { margin: 0; font-size: 15px; color: #64748b; }
 }
 
 @media (max-width: 1200px) {
   .consumptions-page {
-    &__stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    &__months-grid {
-      grid-template-columns: 1fr;
-    }
+    &__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    &__months-grid { grid-template-columns: 1fr; }
   }
 }
 
 @media (max-width: 900px) {
   .consumptions-page {
-    &__hero {
-      grid-template-columns: 1fr;
-    }
+    &__hero { grid-template-columns: 1fr; }
   }
 }
 
 @media (max-width: 640px) {
   .consumptions-page {
-    &__stats {
-      grid-template-columns: 1fr;
-    }
-
-    &__month-metrics {
-      grid-template-columns: 1fr;
-    }
-
-    &__hero-title {
-      font-size: 24px;
-    }
-
-    &__section-title {
-      font-size: 18px;
-    }
-
-    &__stat-value {
-      font-size: 20px;
-    }
-
-    &__details-item {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    &__details-item-value {
-      white-space: normal;
-    }
+    &__stats { grid-template-columns: 1fr; }
+    &__month-metrics { grid-template-columns: 1fr; }
+    &__hero-title { font-size: 24px; }
+    &__section-title { font-size: 18px; }
+    &__stat-value { font-size: 20px; }
+    &__details-item { flex-direction: column; align-items: flex-start; }
+    &__details-item-value { white-space: normal; }
+    &__comparison-label { width: 48px; }
   }
 }
 </style>
