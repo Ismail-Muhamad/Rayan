@@ -66,28 +66,7 @@
 
     <!-- Content Body Slot -->
     <div class="report-item__body">
-      <div class="report-item__rich-grid">
-        <!-- Review Section -->
-        <div class="report-item__rich-card report-item__rich-card--review">
-          <div class="report-item__card-header">
-            <div class="report-item__card-icon report-item__card-icon--review">
-              <BaseIcon name="solar:clipboard-list-outline" width="20" height="20" />
-            </div>
-            <h4 class="report-item__card-title">{{ t('farms.table.headers.review') }}</h4>
-          </div>
-          <div class="report-item__card-content v-html-content" v-html="report.review"></div>
-        </div>
-
-        <!-- Recommendations Section -->
-        <div class="report-item__rich-card report-item__rich-card--recommendations">
-          <div class="report-item__card-header">
-            <div class="report-item__card-icon report-item__card-icon--recommendations">
-              <BaseIcon name="solar:like-outline" width="20" height="20" />
-            </div>
-            <h4 class="report-item__card-title">{{ t('farms.table.headers.recommendations') }}</h4>
-          </div>
-          <div class="report-item__card-content v-html-content" v-html="report.recommendations"></div>
-        </div>
+      <div class="report-item__rich-grid" style="display: none;">
       </div>
 
       <!-- Weekly Stats Loop -->

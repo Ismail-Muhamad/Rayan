@@ -88,35 +88,7 @@
       </div>
     </section>
 
-    <section class="report-create__section">
-      <div class="report-create__section-head">
-        <h2 class="report-create__section-title">محتوى التقرير</h2>
-      </div>
 
-      <div class="report-create__stack">
-        <div class="report-create__field-card">
-          <BaseTextEditor
-            :label="t('reports.form.labels.review')"
-            :placeholder="t('reports.form.placeholders.review')"
-            required
-            v-model="report.review"
-            :error-text="getFieldErrorMessage(v$.report.review)"
-            :error="v$.report.review.$error"
-          />
-        </div>
-
-        <div class="report-create__field-card">
-          <BaseTextEditor
-            :label="t('reports.form.labels.recommendations')"
-            :placeholder="t('reports.form.placeholders.recommendations')"
-            required
-            v-model="report.recommendations"
-            :error-text="getFieldErrorMessage(v$.report.recommendations)"
-            :error="v$.report.recommendations.$error"
-          />
-        </div>
-      </div>
-    </section>
 
     <section
       v-if="report.report_weeks.length > 0"
@@ -423,8 +395,6 @@ const report = ref({
   farm_id: null,
   palm_type_id: null,
   month: null,
-  review: null,
-  recommendations: null,
   report_weeks: [],
 });
 
@@ -473,12 +443,6 @@ const rules = computed(() => ({
       required,
     },
     month: {
-      required,
-    },
-    review: {
-      required,
-    },
-    recommendations: {
       required,
     },
     report_weeks: {
@@ -723,8 +687,6 @@ const resetForm = () => {
     farm_id: null,
     palm_type_id: null,
     month: null,
-    review: null,
-    recommendations: null,
     report_weeks: [],
   };
 

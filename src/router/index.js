@@ -8,6 +8,7 @@ import authRoutes from "./auth.route";
 import { authGuard } from "@/helpers/router.helper";
 import settingsRoutes from "./settings.route";
 import requestsRoutes from "./requests.route";
+import inspectionsRecommendationsRoutes from "./inspectionsRecommendations.route";
 
 const routes = [
   {
@@ -23,6 +24,7 @@ const routes = [
       farmsRoutes,
       settingsRoutes,
       requestsRoutes,
+      inspectionsRecommendationsRoutes,
     ],
   },
   {

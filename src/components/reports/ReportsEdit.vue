@@ -91,36 +91,6 @@
         </div>
       </section>
 
-      <section class="report-edit__section">
-        <div class="report-edit__section-head">
-          <h2 class="report-edit__section-title">محتوى التقرير</h2>
-        </div>
-
-        <div class="report-edit__stack">
-          <div class="report-edit__field-card">
-            <BaseTextEditor
-              :label="t('reports.form.labels.review')"
-              :placeholder="t('reports.form.placeholders.review')"
-              required
-              v-model="report.review"
-              :error-text="getFieldErrorMessage(v$.report.review)"
-              :error="v$.report.review.$error"
-            />
-          </div>
-
-          <div class="report-edit__field-card">
-            <BaseTextEditor
-              :label="t('reports.form.labels.recommendations')"
-              :placeholder="t('reports.form.placeholders.recommendations')"
-              required
-              v-model="report.recommendations"
-              :error-text="getFieldErrorMessage(v$.report.recommendations)"
-              :error="v$.report.recommendations.$error"
-            />
-          </div>
-        </div>
-      </section>
-
       <section
         v-if="report.report_weeks.length > 0"
         class="report-edit__section"
@@ -424,8 +394,6 @@ const report = ref({
   farm_id: null,
   palm_type_id: null,
   month: null,
-  review: null,
-  recommendations: null,
   report_weeks: [],
 });
 
@@ -473,12 +441,6 @@ const rules = computed(() => ({
       required,
     },
     month: {
-      required,
-    },
-    review: {
-      required,
-    },
-    recommendations: {
       required,
     },
     report_weeks: {
@@ -572,25 +534,19 @@ onMounted(async () => {
   fertilizerTypesRecords.value = fertilizerTypesResponse?.data || [];
   pesticideTypesRecords.value = pesticideTypesResponse?.data || [];
 
-  const ownerId = reportsRecord.value?.farm?.owner_id;
+  const responseData = reportsRecord.value;
+  const ownerId = responseData?.farm?.owner_id;
   await fetchOwnerFarms(ownerId);
 
   report.value = {
     owner: ownerId,
-    farm_id: reportsRecord.value?.farm?.id ?? null,
-    palm_type_id:
-      reportsRecord.value?.palm_type_id ??
-      reportsRecord.value?.palm_type?.id ??
-      null,
-    month: (() => {
-      const dateStr = reportsRecord.value?.report_weeks?.[0]?.days?.[0]?.date;
-      if (!dateStr) return null;
-      const m = moment(dateStr);
-      return { month: m.month(), year: m.year() };
-    })(),
-    review: reportsRecord.value?.review,
-    recommendations: reportsRecord.value?.recommendations,
-    report_weeks: reportsRecord.value?.report_weeks || [],
+    farm_id: responseData?.farm?.id ?? null,
+    palm_type_id: responseData.palm_type_id,
+    month: {
+      month: new Date(responseData.month).getMonth(),
+      year: new Date(responseData.month).getFullYear(),
+    },
+    report_weeks: responseData.report_weeks || [],
   };
 
   await nextTick();
@@ -669,8 +625,6 @@ const resetForm = () => {
     farm_id: null,
     palm_type_id: null,
     month: null,
-    review: null,
-    recommendations: null,
     report_weeks: [],
   };
 

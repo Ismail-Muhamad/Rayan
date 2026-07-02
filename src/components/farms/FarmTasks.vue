@@ -72,6 +72,10 @@
                   <h3 class="month-header__title">{{ month.monthName }}</h3>
                 </div>
                 <div class="month-header__actions">
+                  <BaseButton size="sm" variant="outline" class="print-month-btn" @click.stop="downloadMonthReport(month)" :disabled="downloadingMonthStr === month.monthStr" style="border-radius: 8px;">
+                    <BaseIcon name="solar:download-minimalistic-outline" />
+                    {{ downloadingMonthStr === month.monthStr ? 'جاري التحميل...' : 'تحميل التقرير' }}
+                  </BaseButton>
                   <span class="tasks-count-badge">{{ getMonthTasksCount(month) }} مهام</span>
                   <div class="toggle-circle">
                     <BaseIcon name="solar:alt-arrow-down-outline" class="toggle-icon" />
@@ -84,20 +88,23 @@
                 <div v-if="month.operationsLoading" class="operations-loading">
                   جاري تحميل عمليات الشهر...
                 </div>
-                <div v-else-if="month.operations && month.operations.length > 0" class="level-operations-section is-readonly">
+                <div v-else class="level-operations-section is-readonly">
                   <div class="section-header">
                     <div class="section-header__title">
                       <BaseIcon name="solar:clipboard-list-bold-duotone" class="section-icon" />
                       <h3 class="section-title">عمليات الشهر العامة</h3>
                     </div>
                   </div>
-                  <div class="operations-container">
+                  <div class="operations-container" v-if="month.operations && month.operations.length > 0">
                     <div v-for="(op, opIdx) in month.operations" :key="opIdx" class="operation-row readonly">
                       <div class="operation-input-group readonly">
                         <span class="operation-number">{{ opIdx + 1 }}</span>
                         <span class="operation-text">{{ op }}</span>
                       </div>
                     </div>
+                  </div>
+                  <div class="empty-operations" style="color: var(--gray-500); font-size: 0.95rem; font-style: italic; padding: 10px;" v-else>
+                    لا توجد عمليات عامة مسجلة لهذا الشهر.
                   </div>
                 </div>
 
@@ -178,6 +185,7 @@
         </transition>
       </div>
     </div>
+    <MonthlyTasksPrintReport :reportData="currentReportData" />
   </BasePageWrapper>
 </template>
 
@@ -190,12 +198,16 @@ import { useDailyOperationsStore } from '@/stores/dailyOperations.store';
 
 import { useReportsStore } from '@/stores/reports.store';
 import { mergeReportActivitiesIntoTasks } from '@/helpers/taskMerger.helper';
+import MonthlyTasksPrintReport from '@/components/reports/MonthlyTasksPrintReport.vue';
+import { useAuthStore } from '@/stores/auth.store';
+import html2pdf from 'html2pdf.js';
 
 const router = useRouter();
 const farmsStore = useFarmsStore();
 const tasksStore = useTasksStore();
 const reportsStore = useReportsStore();
 const dailyOperationsStore = useDailyOperationsStore();
+const authStore = useAuthStore();
 
 const farms = ref([]);
 const loading = ref(true);
@@ -477,6 +489,161 @@ const toggleWeek = async (month, week, forceOpen = false) => {
       week.operationsLoading = false;
     }
   }
+};
+
+const currentReportData = ref(null);
+const downloadingMonthStr = ref(null);
+
+const downloadMonthReport = async (month) => {
+  if (downloadingMonthStr.value) return;
+  downloadingMonthStr.value = month.monthStr;
+
+  const farm = selectedFarm.value;
+  if (!farm) {
+    downloadingMonthStr.value = null;
+    return;
+  }
+  
+  const palmType = farm.palm_types.find(p => p.id === selectedPalmTypeId.value) || {};
+  
+  // Ensure month operations are loaded
+  if (!month.operationsLoaded) {
+    await toggleMonth(month, true);
+  }
+  
+  const allTasks = [];
+  const pendingTasks = [];
+  const sprayingTasks = [];
+  const fertilizationTasks = [];
+  let irrigationAmount = 0;
+  let irrigationTotal = 0;
+  let irrigationDuration = 0;
+  let totalTasksCount = 0;
+  let completedTasksCount = 0;
+  
+  // Ensure all week operations are loaded
+  for (const week of month.weeks) {
+    if (!week.operationsLoaded) {
+      await toggleWeek(month, week, true);
+    }
+  }
+
+  const weeksSummary = month.weeks.map(week => {
+    let wTotal = 0;
+    let wCompleted = 0;
+    
+    const daysSummary = week.days.map(day => {
+      const dayTasks = day.tasks.map(task => {
+        wTotal++;
+        totalTasksCount++;
+        const isDone = 
+          task.isCompleted === true || task.isCompleted === 1 || task.isCompleted === '1' ||
+          task.is_completed === true || task.is_completed === 1 || task.is_completed === '1' ||
+          task.status === 'completed';
+        if (isDone) {
+          wCompleted++;
+          completedTasksCount++;
+        }
+        
+        return {
+          ...task,
+          isDone: isDone,
+          quantitativeData: task.quantitative_data || task.quantitativeData || {}
+        };
+      });
+      
+      return {
+        dayName: day.dayName,
+        date: day.date,
+        tasks: dayTasks
+      };
+    });
+    
+    return {
+      weekName: week.weekName,
+      days: daysSummary
+    };
+  });
+  
+  const percentage = totalTasksCount === 0 ? 0 : Math.round((completedTasksCount / totalTasksCount) * 100);
+
+  currentReportData.value = {
+    customerName: authStore.userData?.name || '',
+    farm: farm,
+    palmType: palmType,
+    month: {
+      monthName: month.monthName,
+      monthStr: month.monthStr,
+      operations: month.operations || []
+    },
+    weeks: weeksSummary,
+    stats: {
+      total: totalTasksCount,
+      completed: completedTasksCount,
+      remaining: totalTasksCount - completedTasksCount,
+      percentage: percentage
+    },
+    irrigationTotals: {
+      amountPerTree: irrigationAmount,
+      totalAmount: irrigationTotal,
+      totalDuration: irrigationDuration
+    },
+    fertilizationTasks: fertilizationTasks,
+    sprayingTasks: sprayingTasks,
+    pendingTasks: pendingTasks
+  };
+  
+await nextTick();
+
+if (document.fonts?.ready) {
+  await document.fonts.ready;
+}
+
+await new Promise((resolve) => setTimeout(resolve, 800));
+
+const element = document.getElementById('monthly-print-report');
+
+if (!element) {
+  downloadingMonthStr.value = null;
+  return;
+}
+
+const opt = {
+  margin: [8, 8, 8, 8],
+  filename: `تقرير_شهر_${month.monthName}_${authStore.userData?.name || farm.name}.pdf`,
+  image: {
+    type: 'jpeg',
+    quality: 1,
+  },
+  html2canvas: {
+    scale: window.devicePixelRatio > 1 ? 3 : 2,
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: '#ffffff',
+    logging: false,
+  },
+  jsPDF: {
+    unit: 'mm',
+    format: 'a4',
+    orientation: 'portrait',
+    compress: true,
+  },
+  pagebreak: {
+    mode: ['avoid-all', 'css', 'legacy'],
+  },
+};
+
+html2pdf()
+  .set(opt)
+  .from(element)
+  .save()
+  .then(() => {
+    downloadingMonthStr.value = null;
+  })
+  .catch((err) => {
+    console.error('PDF generation error', err);
+    downloadingMonthStr.value = null;
+  });
 };
 </script>
 

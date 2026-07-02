@@ -50,9 +50,17 @@ export default [
   {
     icon: "solar:clipboard-list-outline",
     key: "reports",
-    label: "reports.title",
+    label: "الري والتسميد والرش",
     path: "/reports",
     routeName: "reports",
+    roles: ["admin", "admin_assistant"],
+  },
+  {
+    icon: "solar:document-text-outline",
+    key: "inspections_recommendations",
+    label: "المعاينة والتوصيات",
+    path: "/inspections-recommendations",
+    routeName: "inspections_recommendations",
     roles: ["admin", "admin_assistant"],
   },
   {

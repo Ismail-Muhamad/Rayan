@@ -55,23 +55,51 @@
               :key="index" 
               class="operation-row"
             >
-              <div class="operation-input-group">
-                <span class="operation-number">{{ index + 1 }}</span>
-                <input 
-                  v-model="dailyOperations[index]" 
-                  type="text" 
-                  class="operation-input" 
-                  placeholder="أضف تفاصيل العملية هنا..." 
-                />
-              </div>
-              <button 
-                v-if="dailyOperations.length > 1" 
-                class="btn-remove-op" 
-                @click="removeDailyOperation(index)"
-                title="حذف العملية"
-              >
-                <BaseIcon name="solar:trash-bin-trash-outline" />
-              </button>
+              <template v-if="editingOpIndices.includes(index)">
+                <div class="operation-input-group">
+                  <span class="operation-number">{{ index + 1 }}</span>
+                  <input 
+                    v-model="dailyOperations[index]" 
+                    type="text" 
+                    class="operation-input" 
+                    placeholder="أضف تفاصيل العملية هنا..." 
+                    @keyup.enter="onDailyOpBlur(index)"
+                    @blur="onDailyOpBlur(index)"
+                  />
+                </div>
+                <button 
+                  v-if="dailyOperations.length > 1" 
+                  class="btn-remove-op" 
+                  @click="removeDailyOperation(index)"
+                  title="حذف العملية"
+                >
+                  <BaseIcon name="solar:trash-bin-trash-outline" />
+                </button>
+              </template>
+              
+              <template v-else>
+                <div class="operation-input-group is-readonly-look">
+                  <span class="operation-number">{{ index + 1 }}</span>
+                  <span class="operation-text">{{ op }}</span>
+                </div>
+                
+                <div class="operation-actions-icons">
+                  <button 
+                    class="btn-icon-op edit-icon" 
+                    @click="editDailyOperation(index)"
+                    title="تعديل العملية"
+                  >
+                    <BaseIcon name="solar:pen-new-square-outline" />
+                  </button>
+                  <button 
+                    class="btn-icon-op delete-icon" 
+                    @click="removeDailyOperation(index)"
+                    title="حذف العملية"
+                  >
+                    <BaseIcon name="solar:trash-bin-trash-outline" />
+                  </button>
+                </div>
+              </template>
             </div>
             
             <div class="operations-actions">
@@ -245,14 +273,43 @@ const mockFarm = ref(null);
 const clientName = ref('إدارة المهام');
 
 const dailyOperations = ref(['']);
+const editingOpIndices = ref([0]);
+const isNewOp = ref([true]);
 const isOperationsOpen = ref(true);
+const isSavingOperations = ref(false);
 
 const addDailyOperation = () => {
   dailyOperations.value.push('');
+  editingOpIndices.value.push(dailyOperations.value.length - 1);
+  isNewOp.value.push(true);
 };
 
-const removeDailyOperation = (index) => {
+const removeDailyOperation = async (index) => {
+  const wasNew = isNewOp.value[index];
   dailyOperations.value.splice(index, 1);
+  isNewOp.value.splice(index, 1);
+  editingOpIndices.value = editingOpIndices.value
+    .filter(i => i !== index)
+    .map(i => (i > index ? i - 1 : i));
+  if (dailyOperations.value.length === 0) {
+    addDailyOperation();
+  }
+  if (!wasNew) {
+    await saveDailyOperations();
+  }
+};
+
+const onDailyOpBlur = async (index) => {
+  if (isNewOp.value[index]) {
+    return;
+  }
+  await saveDailyOperations();
+};
+
+const editDailyOperation = (index) => {
+  if (!editingOpIndices.value.includes(index)) {
+    editingOpIndices.value.push(index);
+  }
 };
 
 const loadDailyOperations = async () => {
@@ -264,12 +321,18 @@ const loadDailyOperations = async () => {
   });
   if (operation && operation.content) {
     dailyOperations.value = operation.content.split('\n');
+    editingOpIndices.value = [];
+    isNewOp.value = dailyOperations.value.map(() => false);
   } else {
     dailyOperations.value = [''];
+    editingOpIndices.value = [0];
+    isNewOp.value = [true];
   }
 };
 
 const saveDailyOperations = async () => {
+  if (isSavingOperations.value) return;
+  isSavingOperations.value = true;
   const content = dailyOperations.value.filter(op => op.trim() !== '').join('\n');
   const [year, month] = dateParam.split('-');
   await dailyOperationsStore.saveOperation({
@@ -281,6 +344,9 @@ const saveDailyOperations = async () => {
     year: parseInt(year),
     month: parseInt(month)
   });
+  
+  await loadDailyOperations();
+  isSavingOperations.value = false;
 };
 
 const groupTasksByType = (tasks) => {
@@ -862,6 +928,56 @@ const formatWeight = (valueInGrams) => {
       color: var(--gray-400);
       font-weight: 400;
     }
+  }
+
+  &.is-readonly-look {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    padding: 12px 10px;
+    
+    .operation-number {
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+  }
+
+  .operation-text {
+    flex: 1;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--gray-900);
+    padding: 8px 0;
+  }
+}
+
+.operation-actions-icons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon-op {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &.edit-icon {
+    background: var(--blue-50);
+    color: var(--blue-600);
+    &:hover { background: var(--blue-100); transform: scale(1.05); }
+  }
+  
+  &.delete-icon {
+    background: var(--rose-50);
+    color: var(--rose-500);
+    &:hover { background: var(--rose-100); transform: scale(1.05); }
   }
 }
 
