@@ -62,10 +62,17 @@
       </section>
 
       <section class="user__section">
-        <div class="user__section-head">
+        <div class="user__section-head" style="display: flex; justify-content: space-between; align-items: center;">
           <h2 class="user__section-title">
             {{ t("users.table.headers.farms_info") }}
           </h2>
+          <button
+            type="button"
+            class="user__add-palm-btn"
+            @click="openCreateFarmModal"
+          >
+            + إضافة مزرعة
+          </button>
         </div>
 
         <div v-if="farmsInfo.length" class="user__farms">
@@ -220,6 +227,53 @@
             <button type="button" class="user__dialog-btn user__dialog-btn--submit"
               :disabled="isSubmittingPalm" @click="submitEditPalm">
               {{ isSubmittingPalm ? "جاري الحفظ..." : "حفظ" }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Farm Modal -->
+      <div v-if="isCreateFarmModalOpen" class="user__dialog-backdrop" @click.self="closeCreateFarmModal">
+        <div class="user__dialog">
+          <h3 class="user__dialog-title">إضافة مزرعة جديدة</h3>
+
+          <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">اسم المزرعة</label>
+              <input v-model="farmForm.name" type="text" class="user__dialog-input" placeholder="مثال: مزرعة الريان" />
+            </div>
+
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">موقع المزرعة</label>
+              <input v-model="farmForm.location" type="text" class="user__dialog-input" placeholder="مثال: الرياض" />
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--slate-200); margin: 8px 0;" />
+            <h4 style="margin: 0; font-size: 1rem; color: var(--blue-800);">النوع الأول من النخيل (مطلوب)</h4>
+
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">نوع النخيل</label>
+              <input v-model="farmForm.palm_type_name" type="text" class="user__dialog-input" placeholder="مثال: صعيدي" />
+            </div>
+
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">العدد</label>
+              <input v-model.number="farmForm.number_of_trees" type="number" min="1" class="user__dialog-input" placeholder="مثال: 100" />
+            </div>
+
+            <div>
+              <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: var(--slate-700);">العمر</label>
+              <input v-model.number="farmForm.palm_age" type="number" min="0" class="user__dialog-input" placeholder="مثال: 5" />
+            </div>
+          </div>
+
+          <div class="user__dialog-actions">
+            <button type="button" class="user__dialog-btn user__dialog-btn--cancel" @click="closeCreateFarmModal">
+              إلغاء
+            </button>
+            <button type="button" class="user__dialog-btn user__dialog-btn--submit"
+              :disabled="isSubmittingFarm" @click="submitCreateFarm">
+              {{ isSubmittingFarm ? "جاري الحفظ..." : "إضافة" }}
             </button>
           </div>
         </div>
@@ -427,6 +481,63 @@ const submitResetPassword = async () => {
     );
   } finally {
     isSubmittingResetPassword.value = false;
+  }
+};
+
+const isCreateFarmModalOpen = ref(false);
+const isSubmittingFarm = ref(false);
+const farmForm = ref({
+  name: "",
+  location: "",
+  palm_type_name: "",
+  number_of_trees: "",
+  palm_age: "",
+});
+
+const openCreateFarmModal = () => {
+  farmForm.value = {
+    name: "",
+    location: "",
+    palm_type_name: "",
+    number_of_trees: "",
+    palm_age: "",
+  };
+  isCreateFarmModalOpen.value = true;
+};
+
+const closeCreateFarmModal = () => {
+  isCreateFarmModalOpen.value = false;
+};
+
+const submitCreateFarm = async () => {
+  if (!farmForm.value.name || !farmForm.value.location || !farmForm.value.palm_type_name || !farmForm.value.number_of_trees || farmForm.value.palm_age === "") {
+    window.alert("الرجاء إكمال جميع الحقول");
+    return;
+  }
+
+  isSubmittingFarm.value = true;
+  try {
+    const payload = {
+      name: farmForm.value.name,
+      location: farmForm.value.location,
+      owner_id: currentRouteId.value,
+      palm_types: [
+        {
+          name: farmForm.value.palm_type_name,
+          number_of_trees: farmForm.value.number_of_trees,
+          palm_age: farmForm.value.palm_age,
+        }
+      ]
+    };
+
+    await farmsStore.createRecord(payload);
+    await farmsStore.fetchRecords({ owner_id: currentRouteId.value, per_page: 100 });
+    closeCreateFarmModal();
+  } catch (err) {
+    console.error("error creating farm", err);
+    window.alert("حدث خطأ أثناء إضافة المزرعة");
+  } finally {
+    isSubmittingFarm.value = false;
   }
 };
 

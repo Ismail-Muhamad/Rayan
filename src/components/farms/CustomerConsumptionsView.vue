@@ -38,11 +38,18 @@
           v-if="selectedFarmId && availableYears.length"
           class="consumptions-page__years"
         >
-          <div class="consumptions-page__years-head">
-            <h3 class="consumptions-page__section-title">كل السنوات</h3>
-            <p class="consumptions-page__section-subtitle">
-              اختار السنة اللي عايز تعرض إجمالياتها
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px;">
+            <div>
+              <h3 class="consumptions-page__section-title">كل السنوات</h3>
+              <p class="consumptions-page__section-subtitle">
+                اختار السنة اللي عايز تعرض إجمالياتها أو تحمل تقريرها
+              </p>
+            </div>
+
+            <button type="button" class="consumptions-page__download-button consumptions-page__download-button--year" @click="downloadYearReport">
+              <BaseIcon name="solar:download-outline" />
+              تحميل تقرير السنة
+            </button>
           </div>
 
           <div class="consumptions-page__years-list">
@@ -428,6 +435,14 @@
                       مخطط الشهر
                     </span>
                   </div>
+                </div>
+
+                <!-- Download action -->
+                <div class="consumptions-page__month-actions">
+                  <button type="button" class="consumptions-page__download-button" @click="downloadMonthReport(month)">
+                    <BaseIcon name="solar:download-outline" />
+                    تحميل تقرير الشهر
+                  </button>
                 </div>
 
                 <!-- Fertilization details dropdown -->
@@ -1035,6 +1050,352 @@ const fetchFarmTasks = async (farmId) => {
   await tasksStore.fetchRecords({ farm_id: farmId, per_page: 10000 });
 };
 
+// ─── PDF Exports ──────────────────────────────────────────────────────────
+
+const getSelectedFarmName = () => {
+  return farmsOptions.value.find(f => String(f.id) === String(selectedFarmId.value))?.name || "";
+};
+
+const escapeHtml = (unsafe) => {
+  return String(unsafe || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+};
+
+const pdfBaseStyles = `
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, sans-serif; direction: rtl; color: #0f172a; background: #ffffff; }
+  .report-page { width: 100%; max-width: 720px; margin: 0 auto; padding: 12px; background: #ffffff; overflow: visible; }
+  .report-header { margin-bottom: 20px; padding: 18px; border: 1px solid #dbe3ef; border-radius: 16px; background: radial-gradient(circle at top right, rgba(34, 197, 94, 0.10), transparent 32%), radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 34%), linear-gradient(180deg, #ffffff, #f8fbff); }
+  .report-eyebrow { margin: 0 0 8px; font-size: 13px; font-weight: 800; color: #2563eb; }
+  .report-title { margin: 0 0 10px; font-size: 28px; font-weight: 800; color: #0f172a; }
+  .report-subtitle { margin: 0; color: #475569; line-height: 1.9; font-size: 14px; }
+  .report-section { margin-top: 20px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 18px; background: #ffffff; page-break-inside: avoid; break-inside: avoid; overflow: visible; }
+  .report-section h3 { margin: 0 0 12px; font-size: 20px; font-weight: 800; color: #0f172a; }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .summary-card { border: 1px solid #dbe3ef; border-radius: 16px; padding: 14px; background: #f8fbff; min-width: 0; }
+  .summary-card .summary-label { display: block; color: #64748b; font-size: 13px; font-weight: 700; }
+  .summary-card strong { display: block; margin-top: 8px; font-size: 24px; color: #0f172a; word-break: break-word; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; table-layout: fixed; }
+  th, td { border: 1px solid #dbe3ef; padding: 10px 8px; text-align: right; vertical-align: top; font-size: 13px; word-break: break-word; }
+  th { background: #eff6ff; font-weight: 800; }
+  .empty-row { text-align: center; color: #64748b; background: #f8fafc; }
+  .val-actual { font-weight: 800; color: #16a34a; }
+  .val-planned { font-size: 11px; color: #94a3b8; display: block; margin-top: 2px; }
+  .val-ptd { font-size: 11px; font-weight: 700; color: #d97706; display: block; margin-top: 2px; }
+  .badge-current { display: inline-block; margin-inline-start: 8px; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #eff6ff; color: #2563eb; }
+`;
+
+const plannedSpan = (text) =>
+  `<span style="position:relative;display:inline-block;color:#94a3b8;font-size:11px;margin-top:2px;">${escapeHtml(text)}<span style="position:absolute;left:0;right:0;top:70%;height:1px;background:#94a3b8;"></span></span>`;
+
+const renderTableRows = (rows, columnsCount) => {
+  if (!rows.length) return `<tr><td class="empty-row" colspan="${columnsCount}">لا توجد بيانات</td></tr>`;
+  return rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("");
+};
+
+const buildDocumentHtml = ({ title, subtitle, content }) => `
+  <div class="report-page">
+    <style>${pdfBaseStyles}</style>
+    <div class="report-header">
+      <div class="report-eyebrow">الاستهلاكات</div>
+      <h1 class="report-title">${escapeHtml(title)}</h1>
+      <p class="report-subtitle">${subtitle}</p>
+    </div>
+    ${content}
+  </div>
+`;
+
+const createPdfElement = (htmlString) => {
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-100000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "720px";
+  wrapper.style.maxWidth = "720px";
+  wrapper.style.background = "#ffffff";
+  wrapper.style.padding = "0";
+  wrapper.style.overflow = "visible";
+  wrapper.innerHTML = htmlString;
+  document.body.appendChild(wrapper);
+  return wrapper;
+};
+
+const downloadPdfFile = async (htmlString, fileName) => {
+  let wrapper = null;
+  try {
+    const html2pdf = (await import("html2pdf.js")).default;
+    wrapper = createPdfElement(htmlString);
+    const target = wrapper.querySelector(".report-page");
+    await html2pdf()
+      .set({
+        margin: [6, 6, 6, 6],
+        filename: fileName,
+        image: { type: "jpeg", quality: 1 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", scrollX: 0, scrollY: 0 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
+      })
+      .from(target)
+      .save();
+  } catch (error) {
+    console.error(error);
+    alert("حصلت مشكلة أثناء إنشاء ملف PDF.");
+  } finally {
+    if (wrapper?.parentNode) wrapper.parentNode.removeChild(wrapper);
+  }
+};
+
+const buildMonthReportHtml = (month) => {
+  const isCurrentMonth = month.isCurrentMonth;
+  const fertMap = {};
+  for (const item of month.fertilizationProducts || []) fertMap[item.name] = { planned: item.total, actual: 0, ptd: 0 };
+  for (const item of month.actualFertilizationProducts || []) {
+    if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+    fertMap[item.name].actual = item.total;
+  }
+  if (isCurrentMonth) {
+    for (const item of month.plannedToDateFertilizationProducts || []) {
+      if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+      fertMap[item.name].ptd = item.total;
+    }
+  }
+
+  const sprayMap = {};
+  for (const item of month.sprayingProducts || []) sprayMap[item.name] = { planned: item.total, actual: 0, ptd: 0 };
+  for (const item of month.actualSprayingProducts || []) {
+    if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+    sprayMap[item.name].actual = item.total;
+  }
+  if (isCurrentMonth) {
+    for (const item of month.plannedToDateSprayingProducts || []) {
+      if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0, ptd: 0 };
+      sprayMap[item.name].ptd = item.total;
+    }
+  }
+
+  const fertRows = Object.entries(fertMap).map(([name, v]) => [name, v.actual, v.planned, v.ptd]);
+  const sprayRows = Object.entries(sprayMap).map(([name, v]) => [name, v.actual, v.planned, v.ptd]);
+
+  const renderProductRows = (rows) => {
+    if (!rows.length) return `<tr><td class="empty-row" colspan="4">لا توجد بيانات</td></tr>`;
+    return rows.map(([name, actual, planned, ptd]) => `
+      <tr>
+        <td>${escapeHtml(name)}</td>
+        <td><span class="val-actual">${formatNumber(actual)} كجم</span></td>
+        <td>${plannedSpan(formatNumber(planned) + ' كجم')}</td>
+        ${isCurrentMonth ? `<td><span class="val-ptd">${formatNumber(ptd)} كجم</span></td>` : ""}
+      </tr>
+    `).join("");
+  };
+
+  const ptdHeader = isCurrentMonth ? "<th>مخطط لحد اليوم</th>" : "";
+  const subtitle = `
+    المزرعة: ${escapeHtml(getSelectedFarmName())}<br>
+    الشهر: ${escapeHtml(month.monthLabel)}${isCurrentMonth ? " <strong>(الشهر الحالي)</strong>" : ""}<br>
+    عدد الأسابيع: ${escapeHtml(String(month.weeksCount))}<br>
+    تاريخ إنشاء التقرير: ${escapeHtml(new Date().toLocaleString("ar-EG"))}
+  `;
+
+  const content = `
+    <div class="report-section">
+      <h3>ملخص الشهر</h3>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span class="summary-label">مياه الري</span>
+          <strong class="val-actual">${escapeHtml(formatNumber(month.actualIrrigationLiters))} لتر</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(month.irrigationLiters) + ' لتر')}
+          ${isCurrentMonth && month.plannedToDateIrrigationLiters !== null ? `<span class="val-ptd">لحد اليوم: ${escapeHtml(formatNumber(month.plannedToDateIrrigationLiters))} لتر</span>` : ""}
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">التسميد</span>
+          <strong class="val-actual">${escapeHtml(formatNumber(month.actualFertilizationKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(month.fertilizationKg) + ' كجم')}
+          ${isCurrentMonth && month.plannedToDateFertilizationKg !== null ? `<span class="val-ptd">لحد اليوم: ${escapeHtml(formatNumber(month.plannedToDateFertilizationKg))} كجم</span>` : ""}
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">الرش</span>
+          <strong class="val-actual">${escapeHtml(formatNumber(month.actualSprayingKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(month.sprayingKg) + ' كجم')}
+          ${isCurrentMonth && month.plannedToDateSprayingKg !== null ? `<span class="val-ptd">لحد اليوم: ${escapeHtml(formatNumber(month.plannedToDateSprayingKg))} كجم</span>` : ""}
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h3>أصناف التسميد خلال الشهر</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
+            ${ptdHeader}
+          </tr>
+        </thead>
+        <tbody>
+          ${renderProductRows(fertRows)}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>أصناف الرش خلال الشهر</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
+            ${ptdHeader}
+          </tr>
+        </thead>
+        <tbody>
+          ${renderProductRows(sprayRows)}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  return buildDocumentHtml({ title: `تقرير استهلاكات ${month.monthLabel}`, subtitle, content });
+};
+
+const buildYearReportHtml = () => {
+  const monthsRows = monthlyBreakdown.value.map((month) => [
+    month.monthLabel + (month.isCurrentMonth ? " (الحالي)" : ""),
+    `${month.weeksCount}`,
+    `${formatNumber(month.actualIrrigationLiters)} / ${formatNumber(month.irrigationLiters)} لتر`,
+    `${formatNumber(month.actualFertilizationKg)} / ${formatNumber(month.fertilizationKg)} كجم`,
+    `${formatNumber(month.actualSprayingKg)} / ${formatNumber(month.sprayingKg)} كجم`,
+  ]);
+
+  const fertMap = {};
+  const sprayMap = {};
+  for (const month of monthlyBreakdown.value) {
+    for (const item of month.fertilizationProducts || []) {
+      if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0 };
+      fertMap[item.name].planned += item.total;
+    }
+    for (const item of month.actualFertilizationProducts || []) {
+      if (!fertMap[item.name]) fertMap[item.name] = { planned: 0, actual: 0 };
+      fertMap[item.name].actual += item.total;
+    }
+    for (const item of month.sprayingProducts || []) {
+      if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0 };
+      sprayMap[item.name].planned += item.total;
+    }
+    for (const item of month.actualSprayingProducts || []) {
+      if (!sprayMap[item.name]) sprayMap[item.name] = { planned: 0, actual: 0 };
+      sprayMap[item.name].actual += item.total;
+    }
+  }
+
+  const renderYearlyProductRows = (map) => {
+    const entries = Object.entries(map);
+    if (!entries.length) return `<tr><td class="empty-row" colspan="3">لا توجد بيانات</td></tr>`;
+    return entries.sort((a, b) => b[1].actual - a[1].actual).map(([name, v]) => `
+      <tr>
+        <td>${escapeHtml(name)}</td>
+        <td><span class="val-actual">${formatNumber(v.actual)} كجم</span></td>
+        <td>${plannedSpan(formatNumber(v.planned) + ' كجم')}</td>
+      </tr>
+    `).join("");
+  };
+
+  const subtitle = `
+    المزرعة: ${escapeHtml(getSelectedFarmName())}<br>
+    السنة: ${escapeHtml(selectedYear.value)}<br>
+    تاريخ إنشاء التقرير: ${escapeHtml(new Date().toLocaleString("ar-EG"))}
+  `;
+
+  const content = `
+    <div class="report-section">
+      <h3>الملخص العام</h3>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span class="summary-label">مياه الري</span>
+          <strong class="val-actual">${escapeHtml(formatNumber(yearlyActualTotals.value.irrigationLiters))} لتر</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(yearlyTotals.value.irrigationLiters) + ' لتر')}
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">التسميد</span>
+          <strong class="val-actual">${escapeHtml(formatNumber(yearlyActualTotals.value.fertilizationKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(yearlyTotals.value.fertilizationKg) + ' كجم')}
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">الرش</span>
+          <strong class="val-actual">${escapeHtml(formatNumber(yearlyActualTotals.value.sprayingKg))} كجم</strong>
+          ${plannedSpan('مخطط: ' + formatNumber(yearlyTotals.value.sprayingKg) + ' كجم')}
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h3>تفاصيل الشهور (منفذ / مخطط)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>الشهر</th>
+            <th>أسابيع</th>
+            <th>الري</th>
+            <th>التسميد</th>
+            <th>الرش</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${renderTableRows(monthsRows, 5)}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>أصناف التسميد خلال السنة</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${renderYearlyProductRows(fertMap)}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>أصناف الرش خلال السنة</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>المنفذ فعلاً</th>
+            <th>المخطط</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${renderYearlyProductRows(sprayMap)}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  return buildDocumentHtml({ title: `تقرير استهلاكات السنة ${selectedYear.value}`, subtitle, content });
+};
+
+const downloadYearReport = async () => {
+  if (!selectedYear.value || !monthlyBreakdown.value.length) return;
+  await downloadPdfFile(buildYearReportHtml(), `year-report-${selectedYear.value}-farm-${selectedFarmId.value}.pdf`);
+};
+
+const downloadMonthReport = async (month) => {
+  await downloadPdfFile(buildMonthReportHtml(month), `month-report-${month.year}-${month.monthNumber}-farm-${selectedFarmId.value}.pdf`);
+};
+
 watch(selectedFarmId, async (farmId) => {
   selectedYear.value = "";
   expandedCard.value = "";
@@ -1506,6 +1867,38 @@ onMounted(async () => {
     border-top: 1px dashed rgba(148, 163, 184, 0.35);
   }
 
+  &__month-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 14px;
+  }
+
+  &__download-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2563eb, #22c55e);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+    }
+
+    &--year {
+      white-space: nowrap;
+    }
+  }
+
   &__month-details-title { margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #0f172a; }
 
   // ── Empty state ───────────────────────────────────────────────────────
@@ -1562,6 +1955,15 @@ onMounted(async () => {
     &__details-item { flex-direction: column; align-items: flex-start; }
     &__details-item-value { white-space: normal; }
     &__comparison-label { width: 48px; }
+
+    &__month-actions {
+      justify-content: center;
+      width: 100%;
+    }
+
+    &__download-button {
+      width: 100%;
+    }
   }
 }
 </style>
