@@ -168,7 +168,7 @@
                         </div>
 
                         <div class="day-card__action">
-                          <span>عرض وتحديث</span>
+                          <span>عرض</span>
                           <BaseIcon name="solar:arrow-left-outline" />
                         </div>
                       </div>
@@ -326,7 +326,7 @@ const groupTasksIntoCalendar = (tasks) => {
   const calendar = Array.from(calendarMap.values()).sort((a, b) => b.monthStr.localeCompare(a.monthStr)); 
   
   calendar.forEach(month => {
-    month.weeks = Array.from(month.weeksMap.values()).sort((a, b) => b.weekNum - a.weekNum);
+    month.weeks = Array.from(month.weeksMap.values()).sort((a, b) => a.weekNum - b.weekNum);
     delete month.weeksMap;
     
     month.weeks.forEach(week => {
