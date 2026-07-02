@@ -18,7 +18,7 @@ export default [
   {
     icon: "solar:checklist-minimalistic-outline",
     key: "tasks",
-    label: "مهام الغد",
+    label: "المهام اليومية",
     path: "/tasks",
     routeName: "tasks",
     roles: ["admin", "admin_assistant"],

@@ -24,7 +24,7 @@ const routes = [
       farmsRoutes,
       settingsRoutes,
       requestsRoutes,
-      inspectionsRecommendationsRoutes,
+      ...inspectionsRecommendationsRoutes,
     ],
   },
   {
