@@ -13,16 +13,16 @@
             متابعة مهام العملاء
           </div>
 
-          <h1>مهام يوم {{ tomorrowDayName }}</h1>
+          <h1>مهام يوم {{ selectedDayName }}</h1>
 
           <p>
-            هنا هتشوف كل أصحاب المزارع اللي عندهم مهام يوم {{ tomorrowDayName }}
-            الموافق {{ tomorrowDateLabel }}
+            هنا هتشوف كل أصحاب المزارع اللي عندهم مهام يوم {{ selectedDayName }}
+            الموافق {{ selectedDateLabel }}
           </p>
 
           <div class="tasks-hero__date">
-            <span>{{ tomorrowDayName }}</span>
-            <strong>{{ tomorrowDateLabel }}</strong>
+            <span>{{ selectedDayName }}</span>
+            <strong>{{ selectedDateLabel }}</strong>
           </div>
         </div>
 
@@ -41,6 +41,26 @@
             <span>المهام</span>
             <strong>{{ toEnglishNumbers(totalTasks) }}</strong>
           </div>
+        </div>
+      </div>
+
+      <!-- DAYS TABS -->
+      <div class="days-tabs-container">
+        <div class="days-tabs">
+          <button 
+            v-for="day in availableDays" 
+            :key="day.offset"
+            type="button"
+            class="day-tab"
+            :class="{ 'day-tab--active': dateOffset === day.offset }"
+            @click="dateOffset = day.offset"
+          >
+            <span v-if="day.badge" class="day-tab__badge" :class="`day-tab__badge--${day.badgeType}`">
+              {{ day.badge }}
+            </span>
+            <span class="day-tab__name">{{ day.dayName }}</span>
+            <span class="day-tab__date">{{ day.dateLabel }}</span>
+          </button>
         </div>
       </div>
 
@@ -64,7 +84,7 @@
       <!-- LOADING -->
       <div v-if="loading" class="tasks-loading">
         <div class="loader"></div>
-        <p>جاري تحميل مهام بكرة...</p>
+        <p>جاري تحميل المهام...</p>
       </div>
 
       <!-- ERROR -->
@@ -77,9 +97,9 @@
       <!-- EMPTY -->
       <div v-else-if="filteredUsers.length === 0" class="tasks-empty">
         <div class="tasks-empty__icon">🎉</div>
-        <h3>مفيش مهام بكرة</h3>
+        <h3>مفيش مهام</h3>
         <p>
-          مفيش عملاء عندهم مهام ليوم {{ tomorrowDayName }} حاليًا.
+          مفيش عملاء عندهم مهام ليوم {{ selectedDayName }} حاليًا.
         </p>
       </div>
 
@@ -158,7 +178,7 @@
                   :key="`${farm.id}-${palmType.id}-${ptIndex}`"
                   type="button"
                   class="task-type-card task-type-card--palm"
-                  @click="goToTaskDetails(farm, palmType)"
+                  @click="goToTaskDetails(user, farm, palmType)"
                 >
                   <div class="task-type-card__icon">
                     🌴
@@ -215,38 +235,79 @@ const users = ref([]);
 const farms = ref([]);
 const reports = ref([]);
 
-const tomorrowDate = computed(() => {
+const dateOffset = ref(1);
+
+const availableDays = computed(() => {
+  const days = [];
+  
+  for (let i = -1; i <= 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+    
+    const dayName = new Intl.DateTimeFormat("ar-EG", { weekday: "long" }).format(date);
+    const dateLabel = new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "long" }).format(date);
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    
+    let badge = "";
+    let badgeType = "";
+    
+    if (i === -1) {
+      badge = "الأمس";
+      badgeType = "yesterday";
+    } else if (i === 0) {
+      badge = "اليوم";
+      badgeType = "today";
+    } else if (i === 1) {
+      badge = "الغد";
+      badgeType = "tomorrow";
+    }
+
+    days.push({
+      offset: i,
+      date,
+      iso,
+      dayName,
+      badge,
+      badgeType,
+      dateLabel: toEnglishNumbers(dateLabel)
+    });
+  }
+  return days;
+});
+
+const selectedDate = computed(() => {
   const date = new Date();
-  date.setDate(date.getDate() + 1);
+  date.setDate(date.getDate() + dateOffset.value);
   date.setHours(0, 0, 0, 0);
   return date;
 });
 
-const tomorrowIso = computed(() => {
-  const y = tomorrowDate.value.getFullYear();
-  const m = String(tomorrowDate.value.getMonth() + 1).padStart(2, "0");
-  const d = String(tomorrowDate.value.getDate()).padStart(2, "0");
+const selectedIso = computed(() => {
+  const y = selectedDate.value.getFullYear();
+  const m = String(selectedDate.value.getMonth() + 1).padStart(2, "0");
+  const d = String(selectedDate.value.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 });
 
-const tomorrowDayName = computed(() => {
+const selectedDayName = computed(() => {
   return new Intl.DateTimeFormat("ar-EG", {
     weekday: "long",
-  }).format(tomorrowDate.value);
+  }).format(selectedDate.value);
 });
 
-const tomorrowDayNameEn = computed(() => {
+const selectedDayNameEn = computed(() => {
   return new Intl.DateTimeFormat("en-US", {
     weekday: "long",
-  }).format(tomorrowDate.value);
+  }).format(selectedDate.value);
 });
 
-const tomorrowDateLabel = computed(() => {
+const selectedDateLabel = computed(() => {
   const label = new Intl.DateTimeFormat("ar-EG", {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(tomorrowDate.value);
+  }).format(selectedDate.value);
 
   return toEnglishNumbers(label);
 });
@@ -292,7 +353,7 @@ const groupedUsers = computed(() => {
           return String(getReportFarmId(report)) === String(farmId);
         });
 
-       const tasks = extractTomorrowTasks(farmReports, farm);
+       const tasks = extractTasksForSelectedDate(farmReports, farm);
 
        const palmTypesMap = {};
        tasks.forEach(t => {
@@ -471,8 +532,10 @@ async function fetchAll(url) {
   return all;
 }
 
-function goToTaskDetails(farm, palmType) {
+function goToTaskDetails(user, farm, palmType) {
   const dataToPass = {
+    userId: user.id,
+    date: selectedIso.value,
     farmId: farm.id,
     farmName: farm.name,
     palmTypeId: palmType.id,
@@ -597,14 +660,14 @@ function getLatestReport(reportList) {
   })[0];
 }
 
-function extractTomorrowTasks(reports, farm) {
+function extractTasksForSelectedDate(reports, farm) {
   const reportsArray = Array.isArray(reports) ? reports : [reports];
   const allTasks = [];
 
-  const isTomorrowDay = (day) => {
+  const isSelectedDay = (day) => {
     const raw = day?.date ?? day?.day_date ?? day?.task_date ?? day?.execution_date;
     if (!raw) return false;
-    return String(raw).slice(0, 10) === tomorrowIso.value;
+    return String(raw).slice(0, 10) === selectedIso.value;
   };
 
   const walkDaysInReport = (report) => {
@@ -644,7 +707,7 @@ function extractTomorrowTasks(reports, farm) {
     const reportDays = walkDaysInReport(report);
 
     reportDays.forEach((dayObject) => {
-      if (!isTomorrowDay(dayObject)) return;
+      if (!isSelectedDay(dayObject)) return;
 
       const dayTasks = extractTasksFromDay(dayObject, palmTypeName, palmTypeId, palmCount);
 
@@ -708,7 +771,7 @@ function findMatchingDayObjects(root) {
       return;
     }
 
-    if (isTomorrowDayObject(value)) {
+    if (isSelectedDayObject(value)) {
       result.push(value);
       return; // Stop here, don't go deeper into this day object
     }
@@ -736,7 +799,7 @@ function findMatchingDayObjects(root) {
   return result;
 }
 
-function isTomorrowDayObject(obj) {
+function isSelectedDayObject(obj) {
   const dateKeys = [
     "date",
     "task_date",
@@ -746,7 +809,7 @@ function isTomorrowDayObject(obj) {
   ];
 
   for (const key of dateKeys) {
-    if (obj[key] && String(obj[key]).slice(0, 10) === tomorrowIso.value) {
+    if (obj[key] && String(obj[key]).slice(0, 10) === selectedIso.value) {
       return true;
     }
   }
@@ -762,8 +825,8 @@ function isTomorrowDayObject(obj) {
     "title",
   ];
 
-  const tomorrowAr = normalizeText(tomorrowDayName.value);
-  const tomorrowEn = normalizeText(tomorrowDayNameEn.value);
+  const selectedAr = normalizeText(selectedDayName.value);
+  const selectedEn = normalizeText(selectedDayNameEn.value);
 
   for (const key of dayKeys) {
     if (!obj[key]) continue;
@@ -771,10 +834,10 @@ function isTomorrowDayObject(obj) {
     const value = normalizeText(String(obj[key]));
 
     if (
-      value === tomorrowAr ||
-      value.includes(tomorrowAr) ||
-      value === tomorrowEn ||
-      value.includes(tomorrowEn)
+      value === selectedAr ||
+      value.includes(selectedAr) ||
+      value === selectedEn ||
+      value.includes(selectedEn)
     ) {
       return true;
     }
@@ -2125,5 +2188,90 @@ function toEnglishNumbers(value) {
   .task-details-panel__header {
     flex-direction: column;
   }
+}
+
+.days-tabs-container {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.days-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.day-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 24px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.day-tab:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.day-tab--active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.day-tab__name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.day-tab--active .day-tab__name {
+  color: #1d4ed8;
+}
+
+.day-tab__badge {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 16px;
+  border-radius: 0 0 8px 8px;
+  letter-spacing: 0.5px;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.day-tab__badge--yesterday {
+  background: #64748b;
+  box-shadow: 0 4px 6px -1px rgba(100, 116, 139, 0.3);
+}
+
+.day-tab__badge--today {
+  background: #10b981;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.day-tab__badge--tomorrow {
+  background: #2563eb;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+.day-tab__date {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.day-tab--active .day-tab__date {
+  color: #3b82f6;
 }
 </style>

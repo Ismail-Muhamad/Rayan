@@ -17,19 +17,43 @@
       <div v-else class="details-container">
         <!-- HERO -->
         <div class="details-hero">
-          <div class="details-hero__content">
-            <button class="back-link" @click="$router.push('/tasks')">
-              <BaseIcon name="solar:alt-arrow-right-outline" /> العودة للمهام
-            </button>
-            <div class="badge">
-              <BaseIcon name="solar:leaf-outline" :width="18" :height="18" />
-              مهام نوع النخل
-            </div>
-            <h1>{{ taskData.palmTypeName }}</h1>
-            <p>مزرعة: <strong>{{ taskData.farmName }}</strong></p>
+          <div class="hero-top-bar">
+             <button class="back-link" @click="$router.push('/tasks')">
+               <BaseIcon name="solar:alt-arrow-right-linear" :width="20" :height="20" /> 
+               <span>العودة للمهام</span>
+             </button>
           </div>
-          <div class="details-hero__icon">
-            <BaseIcon name="mdi:palm-tree" :width="180" :height="180" />
+          
+          <div class="hero-main">
+            <div class="hero-info">
+              <div class="hero-badge">
+                <BaseIcon name="solar:leaf-bold-duotone" :width="20" :height="20" />
+                <span>مهام نوع النخل</span>
+              </div>
+              <h1 class="palm-title">{{ taskData.palmTypeName }}</h1>
+              <div class="farm-badge">
+                <BaseIcon name="solar:map-point-bold-duotone" :width="20" :height="20" />
+                <span>مزرعة: <strong>{{ taskData.farmName }}</strong></span>
+              </div>
+            </div>
+            
+            <div class="hero-action">
+              <button class="complete-day-btn" @click="completeDayTasks">
+                <div class="btn-icon">
+                  <BaseIcon name="solar:round-arrow-left-bold" :width="24" :height="24" />
+                </div>
+                <div class="btn-text">
+                  <span>شاشة إنجاز المهام</span>
+                  <small>الانتقال لتسجيل التنفيذ</small>
+                </div>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Decorative background elements -->
+          <div class="hero-decorations">
+             <BaseIcon name="mdi:palm-tree" class="bg-palm" :width="280" :height="280" />
+             <div class="glow-circle"></div>
           </div>
         </div>
 
@@ -170,6 +194,20 @@ const toggleFertilizer = (index) => {
   }
 };
 
+const completeDayTasks = () => {
+  if (!taskData.value) return;
+  const date = taskData.value.date || new Date().toISOString().split('T')[0];
+  const query = {};
+  if (taskData.value.userId) query.userId = taskData.value.userId;
+  if (taskData.value.farmId) query.farmId = taskData.value.farmId;
+  if (taskData.value.palmTypeId) query.palmTypeId = taskData.value.palmTypeId;
+
+  router.push({
+    path: `/tasks/calendar/day/${date}`,
+    query
+  });
+};
+
 onMounted(() => {
   const data = localStorage.getItem('admin_task_details');
   if (data) {
@@ -215,86 +253,169 @@ const fertilizerTasks = computed(() => {
 .details-hero {
   position: relative;
   overflow: hidden;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 48px;
-  border-radius: 32px;
-  background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
+  border-radius: 28px;
+  background: linear-gradient(135deg, #064e3b 0%, #0f766e 100%);
   color: white;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.15);
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top right, rgba(255,255,255,0.08), transparent 60%);
-  }
-
-  &__content {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .back-link {
-    background: transparent;
-    border: none;
-    color: var(--gray-400);
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 24px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0;
-    transition: color 0.2s;
-    &:hover { color: white; }
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 16px;
-    border-radius: 99px;
-    font-size: 1.3rem;
-    font-weight: 800;
-    margin-bottom: 16px;
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  h1 { 
-    margin: 0 0 12px; 
-    font-size: clamp(2.8rem, 4vw, 4.2rem); 
-    font-weight: 900; 
-    line-height: 1.2; 
-  }
-  
-  p { 
-    margin: 0; 
-    color: var(--gray-300); 
-    font-size: 1.8rem; 
-    font-weight: 500; 
-    strong { color: white; }
-  }
-
-  .details-hero__icon {
-    position: absolute;
-    left: -20px;
-    bottom: -40px;
-    z-index: 1;
-    color: var(--gray-700);
-    opacity: 0.2;
-    transform: rotate(15deg);
-    pointer-events: none;
-  }
+  padding: 40px;
+  min-height: 320px;
+  box-shadow: 0 20px 40px -12px rgba(15, 118, 110, 0.4);
 }
+
+.hero-top-bar {
+  position: absolute;
+  top: 32px;
+  right: 40px;
+  z-index: 20;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.back-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-4px);
+}
+
+.hero-main {
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  margin-top: 64px;
+}
+
+.hero-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: right;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #a7f3d0;
+}
+
+.palm-title {
+  font-size: 4.2rem;
+  font-weight: 950;
+  margin: 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.farm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.6rem;
+  color: #e2e8f0;
+}
+.farm-badge strong {
+  color: white;
+}
+
+.hero-action {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+}
+
+.complete-day-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  color: #064e3b;
+  padding: 12px 24px 12px 12px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+.complete-day-btn:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 32px rgba(0,0,0,0.25);
+}
+
+.complete-day-btn .btn-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  background: #10b981;
+  color: white;
+  border-radius: 14px;
+}
+
+.complete-day-btn .btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: right;
+}
+
+.complete-day-btn .btn-text span {
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.complete-day-btn .btn-text small {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.hero-decorations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bg-palm {
+  position: absolute;
+  left: -20px;
+  bottom: -40px;
+  color: rgba(255, 255, 255, 0.08);
+  transform: rotate(-15deg);
+}
+
+.glow-circle {
+  position: absolute;
+  right: 10%;
+  top: -50%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
 
 /* TASKS SECTIONS */
 .tasks-sections {
@@ -569,14 +690,36 @@ const fertilizerTasks = computed(() => {
   .details-hero {
     padding: 32px 24px;
     border-radius: 24px;
+    min-height: auto;
     
-    .details-hero__icon {
+    .hero-top-bar {
+      position: relative;
+      top: 0;
+      right: 0;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+    
+    .bg-palm {
       position: absolute;
       left: -20px;
       bottom: -30px;
       opacity: 0.15;
       font-size: 150px;
     }
+  }
+  
+  .hero-main {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 24px;
+  }
+  
+  .hero-action {
+    position: static;
+    transform: none;
+    align-self: center;
+    margin-top: 24px;
   }
   
   .task-section {
