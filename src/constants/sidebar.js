@@ -95,4 +95,12 @@ export default [
     routeName: "farm_tasks",
     roles: ["farm_owner"],
   },
+  {
+    icon: "solar:document-text-outline",
+    key: "client_inspections_recommendations",
+    label: "المعاينة والتوصيات",
+    path: "/client/inspections-recommendations",
+    routeName: "client_inspections_recommendations",
+    roles: ["farm_owner"],
+  },
 ];

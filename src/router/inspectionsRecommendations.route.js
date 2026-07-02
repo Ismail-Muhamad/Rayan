@@ -17,4 +17,22 @@ export default [
       roles: ["admin", "admin_assistant"],
     },
   },
+  {
+    path: "/client/inspections-recommendations",
+    name: "client_inspections_recommendations",
+    component: () =>
+      import("@/components/inspections/ClientInspectionsRecommendations.vue"),
+    meta: {
+      roles: ["farm_owner"],
+    },
+  },
+  {
+    path: "/client/inspections-recommendations/farm/:farmId",
+    name: "client_inspections_farm_details",
+    component: () =>
+      import("@/components/inspections/ClientInspectionsFarmDetails.vue"),
+    meta: {
+      roles: ["farm_owner"],
+    },
+  },
 ];

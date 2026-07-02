@@ -448,21 +448,22 @@
                     <span v-if="formErrors.year" class="ir-form-error">{{ formErrors.year }}</span>
                   </div>
 
+                  <!-- Month -->
                   <div class="ir-form-group">
-                    <label class="ir-form-label">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 10H3M16 2v4M8 2v4"/>
-                        <rect x="3" y="4" width="18" height="18" rx="2"/>
-                      </svg>
-                      الشهر <span class="ir-required">*</span>
-                    </label>
-                    <select v-model="form.month" class="ir-form-select">
-                      <option value="">اختر الشهر</option>
-                      <option v-for="m in monthsList" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </select>
-                    <span v-if="formErrors.month" class="ir-form-error">{{ formErrors.month }}</span>
-                  </div>
+                  <label class="ir-form-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10H3M16 2v4M8 2v4"/>
+                      <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    </svg>
+                    الشهر <span class="ir-required">*</span>
+                  </label>
+                  <select v-model="form.month" class="ir-form-select">
+                    <option value="">اختر الشهر</option>
+                    <option v-for="m in monthsList" :key="m.value" :value="m.value">{{ m.label }}</option>
+                  </select>
+                  <span v-if="formErrors.month" class="ir-form-error">{{ formErrors.month }}</span>
                 </div>
+              </div>
 
                 <!-- Technical Inspection -->
                 <div class="ir-form-group">
@@ -757,7 +758,12 @@ async function loadData() {
 
     allUsers.value       = extractArray(usersRes?.data);
     allFarms.value       = extractArray(farmsRes?.data);
-    allInspections.value = extractArray(inspRes?.data);
+    
+    // Sort inspections newest to oldest
+    allInspections.value = extractArray(inspRes?.data).sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.month - a.month;
+    });
   } catch (err) {
     console.error(err);
     errorMessage.value = err?.response?.data?.message || err?.message || "فشل تحميل البيانات.";
@@ -931,12 +937,12 @@ async function confirmDelete() {
   overflow: hidden;
   display: grid;
   grid-template-columns: 1.5fr 1fr;
-  gap: 28px;
-  padding: 38px;
-  border-radius: 32px;
-  background: linear-gradient(135deg, #0b1529 0%, #111d42 48%, #0d2438 100%);
+  gap: 16px;
+  padding: 16px 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #fff;
-  box-shadow: 0 28px 60px rgba(11, 21, 41, 0.28);
+  box-shadow: 0 24px 50px rgba(29, 78, 216, 0.25);
 }
 
 .ir-hero__glow {
@@ -981,43 +987,43 @@ async function confirmDelete() {
 }
 
 .ir-hero__content h1 {
-  margin: 0 0 14px;
-  font-size: clamp(34px, 3.5vw, 54px);
+  margin: 0 0 6px;
+  font-size: clamp(20px, 2vw, 28px);
   font-weight: 950;
   line-height: 1.1;
   letter-spacing: -0.5px;
 }
 
-.ir-hero__accent { color: #818cf8; }
+.ir-hero__accent { color: #bfdbfe; }
 
 .ir-hero__content p {
   margin: 0;
   color: rgba(255, 255, 255, 0.72);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
-  line-height: 1.9;
+  line-height: 1.5;
 }
 
 .ir-hero__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 26px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .ir-hero__chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
-  border-radius: 14px;
+  padding: 8px 14px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #e0e7ff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
 
-  svg { width: 16px; height: 16px; opacity: 0.8; }
+  svg { width: 14px; height: 14px; opacity: 0.8; }
 }
 
 /* Stats */
@@ -1033,9 +1039,9 @@ async function confirmDelete() {
 .ir-stat {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 18px 22px;
-  border-radius: 22px;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(10px);
@@ -1045,18 +1051,19 @@ async function confirmDelete() {
 }
 
 .ir-stat__icon {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: rgba(99, 102, 241, 0.25);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
-  svg { width: 22px; height: 22px; stroke: #a5b4fc; }
+  svg { width: 26px; height: 26px; stroke: #3b82f6; stroke-width: 2.2; }
 
-  &--green  { background: rgba(16, 185, 129, 0.2); svg { stroke: #6ee7b7; } }
-  &--amber  { background: rgba(245, 158, 11, 0.2); svg { stroke: #fcd34d; } }
+  &--green  { svg { stroke: #10b981; } }
+  &--amber  { svg { stroke: #f59e0b; } }
 }
 
 .ir-stat__label {
@@ -1070,7 +1077,7 @@ async function confirmDelete() {
 .ir-stat__value {
   display: block;
   color: #fff;
-  font-size: 34px;
+  font-size: 24px;
   font-weight: 950;
   line-height: 1;
 }

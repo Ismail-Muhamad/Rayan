@@ -80,6 +80,50 @@
           </button>
         </div>
 
+        <div class="ird-custom-select" :class="{ 'is-open': isYearDropdownOpen }" tabindex="0" @blur="closeYearDropdown">
+          <div class="ird-custom-select__trigger" @click="isYearDropdownOpen = !isYearDropdownOpen">
+            <div class="ird-custom-select__value">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>{{ selectedYear ? selectedYear : 'كل السنوات' }}</span>
+            </div>
+            <div class="ird-custom-select__arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </div>
+          </div>
+          
+          <Transition name="ird-dropdown">
+            <div v-if="isYearDropdownOpen" class="ird-custom-select__menu">
+              <button 
+                class="ird-custom-select__option" 
+                :class="{ 'is-active': selectedYear === null }"
+                @click="selectedYear = null; isYearDropdownOpen = false"
+                type="button"
+              >
+                <span>كل السنوات</span>
+                <svg v-if="selectedYear === null" class="ird-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+              </button>
+              <button 
+                v-for="y in availableYears" 
+                :key="y" 
+                class="ird-custom-select__option"
+                :class="{ 'is-active': selectedYear === y }"
+                @click="selectedYear = y; isYearDropdownOpen = false"
+                type="button"
+              >
+                <span>{{ y }}</span>
+                <svg v-if="selectedYear === y" class="ird-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+              </button>
+            </div>
+          </Transition>
+        </div>
+
         <button class="ird-add-btn" type="button" @click="openAddModal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M12 5v14M5 12h14"/>
@@ -429,7 +473,9 @@ const route  = useRoute();
 // ═══ State ═══
 const saving    = ref(false);
 const deleting  = ref(false);
-const search    = ref("");
+const search          = ref("");
+const selectedYear    = ref(new Date().getFullYear());
+const isYearDropdownOpen = ref(false);
 
 const showFormModal   = ref(false);
 const showDeleteModal = ref(false);
@@ -478,6 +524,13 @@ const monthsList = [
   { value: 11, label: "ديسمبر" },
 ];
 
+const availableYears = computed(() => {
+  const years = new Set();
+  const records = allRecords.value;
+  records.forEach(i => years.add(i.year));
+  return Array.from(years).sort((a, b) => b - a);
+});
+
 const yearsList = computed(() => {
   const now = new Date().getFullYear();
   const arr = [];
@@ -495,8 +548,16 @@ const recordsWithRecommendations = computed(() =>
 
 const filteredRecords = computed(() => {
   const term = normalizeSearch(search.value);
-  if (!term) return allRecords.value;
-  return allRecords.value.filter((r) => {
+  const yearFilter = selectedYear.value;
+  let records = [...allRecords.value];
+
+  if (yearFilter) {
+    records = records.filter(r => r.year === yearFilter);
+  }
+
+  if (!term) return records;
+
+  return records.filter((r) => {
     const text = normalizeSearch(
       [(r.technical_inspection || ""), (r.technical_recommendations || "")].join(" ")
     );
@@ -641,6 +702,12 @@ async function confirmDelete() {
     deleting.value = false;
   }
 }
+
+function closeYearDropdown(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    isYearDropdownOpen.value = false;
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -681,11 +748,11 @@ async function confirmDelete() {
 .ird-hero {
   position: relative;
   overflow: hidden;
-  padding: 36px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, #0b1529 0%, #111d42 55%, #0d2438 100%);
+  padding: 24px 32px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #fff;
-  box-shadow: 0 24px 55px rgba(11, 21, 41, 0.24);
+  box-shadow: 0 24px 50px rgba(29, 78, 216, 0.25);
 }
 
 .ird-hero__glow {
@@ -700,7 +767,7 @@ async function confirmDelete() {
   pointer-events: none;
 }
 
-.ird-hero__top { margin-bottom: 20px; }
+.ird-hero__top { margin-bottom: 16px; }
 
 .ird-hero__breadcrumb {
   display: inline-flex;
@@ -721,21 +788,21 @@ async function confirmDelete() {
 .ird-hero__body {
   display: flex;
   align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 28px;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .ird-hero__icon {
-  width: 70px;
-  height: 70px;
-  flex: 0 0 70px;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
   display: grid;
   place-items: center;
-  border-radius: 20px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.14);
 
-  svg { width: 34px; height: 34px; stroke: #93c5fd; }
+  svg { width: 28px; height: 28px; stroke: #93c5fd; }
 }
 
 .ird-hero__eyebrow {
@@ -748,8 +815,8 @@ async function confirmDelete() {
 }
 
 .ird-hero__info h1 {
-  margin: 0 0 10px;
-  font-size: clamp(28px, 3vw, 44px);
+  margin: 0 0 6px;
+  font-size: clamp(24px, 2.5vw, 34px);
   font-weight: 950;
   line-height: 1.1;
 }
@@ -757,7 +824,7 @@ async function confirmDelete() {
 .ird-hero__sub {
   margin: 0;
   color: rgba(255, 255, 255, 0.65);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -833,6 +900,119 @@ async function confirmDelete() {
     svg { width: 15px; height: 15px; stroke: #94a3b8; }
     &:hover svg { stroke: #ef4444; }
   }
+}
+
+/* Custom Select Dropdown */
+.ird-custom-select {
+  position: relative;
+  min-width: 170px;
+  outline: none;
+}
+
+.ird-custom-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 16px 0 20px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ird-custom-select__trigger:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.ird-custom-select.is-open .ird-custom-select__trigger {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.ird-custom-select__value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+
+  svg { width: 18px; height: 18px; stroke: #6366f1; opacity: 0.8; }
+}
+
+.ird-custom-select__arrow {
+  display: grid;
+  place-items: center;
+  transition: transform 0.3s ease;
+  svg { width: 18px; height: 18px; stroke: #94a3b8; }
+}
+
+.ird-custom-select.is-open .ird-custom-select__arrow {
+  transform: rotate(180deg);
+  svg { stroke: #6366f1; }
+}
+
+.ird-custom-select__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 100%;
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ird-custom-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: right;
+}
+
+.ird-custom-select__option:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.ird-custom-select__option.is-active {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.ird-check-icon {
+  width: 18px;
+  height: 18px;
+  stroke: #4f46e5;
+}
+
+.ird-dropdown-enter-active, .ird-dropdown-leave-active {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ird-dropdown-enter-from, .ird-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
 }
 
 .ird-add-btn {
